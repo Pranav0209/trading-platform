@@ -33,9 +33,12 @@ Think of it like a kitchen line:
 From the repository root:
 
 ```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -e 'sprint-04-analytics-etl[dev]'
+python3.11 -m venv .venv
+.venv/bin/python -m pip install -e 'sprint-04-analytics-etl[dev'
 ```
+
+If you already created `.venv` with an older Python version, remove it and create it again with
+Python 3.11 before running the install.
 
 Put your local Fauxnance settings in the repository root `.env` file. The extractor reads only these values:
 
@@ -53,7 +56,7 @@ fauxnance-etl --symbols INFY.NS RELIANCE.NS
 You can also run the package directly if you prefer:
 
 ```bash
-python -m sprint_04_analytics_etl
+.venv/bin/python -m sprint_04_analytics_etl
 ```
 
 What happens when you run it:
