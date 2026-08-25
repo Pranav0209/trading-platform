@@ -38,5 +38,7 @@ the rows it rejected, and any claim you started to make and then withdrew
 because the data did not support it. A withdrawn claim with its reasoning is
 worth more in the review than a fourth weak claim.
 
+Symbol universe for this sprint: [SYMBOL_UNIVERSE.md](SYMBOL_UNIVERSE.md).
+
 Say here how a teammate runs your pipeline, whether that is a console script
 declared in your packaging metadata or a module with a `__main__` block.
