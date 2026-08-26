@@ -32,9 +32,9 @@ Think of it like a kitchen line:
 
 From the repository root:
 
-```bash
-python3.11 -m venv .venv
-.venv/bin/python -m pip install -e 'sprint-04-analytics-etl[dev'
+```powershell
+py -m venv .venv
+.venv\Scripts\python.exe -m pip install -e '.\sprint-04-analytics-etl[dev]'
 ```
 
 If you already created `.venv` with an older Python version, remove it and create it again with
@@ -49,14 +49,14 @@ Put your local Fauxnance settings in the repository root `.env` file. The extrac
 
 Use the console script when you want to run the whole pipeline:
 
-```bash
-fauxnance-etl --symbols INFY.NS RELIANCE.NS
+```powershell
+.venv\Scripts\fauxnance-etl.exe --symbols INFY.NS RELIANCE.NS
 ```
 
 You can also run the package directly if you prefer:
 
-```bash
-.venv/bin/python -m sprint_04_analytics_etl
+```powershell
+.venv\Scripts\python.exe -m sprint_04_analytics_etl
 ```
 
 What happens when you run it:
