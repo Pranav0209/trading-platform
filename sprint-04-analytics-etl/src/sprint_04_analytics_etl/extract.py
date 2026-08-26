@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 
 import requests
-
 
 def _cache_path(cache_dir: Path, symbol: str, from_date: str | None, to_date: str | None) -> Path:
     range_token = "__".join(
@@ -25,6 +25,18 @@ def _resolve_base_url(base_url: str | None) -> str:
     return resolved_base_url.rstrip("/")
 
 
+class FauxnanceRateLimitError(RuntimeError):
+    """Raised when Fauxnance returns HTTP 429."""
+
+
+class FauxnanceHTTPError(RuntimeError):
+    """Raised when Fauxnance returns an HTTP error."""
+
+
+class FauxnanceNetworkError(RuntimeError):
+    """Raised when the request fails after network retries."""
+
+
 def _request_json(
     session: requests.Session,
     url: str,
@@ -34,25 +46,73 @@ def _request_json(
 ) -> dict[str, Any]:
     headers = {"X-Api-Key": api_key} if api_key else None
 
-    for _ in range(3):
+    max_attempts = 3
+    base_backoff_seconds = 1
+
+    for attempt in range(1, max_attempts + 1):
         try:
-            response = session.get(url, headers=headers, params=params, timeout=30)
-        except requests.RequestException:
+            response = session.get(
+                url,
+                headers=headers,
+                params=params,
+                timeout=30,
+            )
+
+        except requests.RequestException as exc:
+            if attempt == max_attempts:
+                raise FauxnanceNetworkError(
+                    f"Fauxnance request failed after {max_attempts} attempts"
+                ) from exc
+
+            backoff_seconds = base_backoff_seconds * (2 ** (attempt - 1))
+            time.sleep(backoff_seconds)
             continue
 
+        # 429 is special: quota/rate-limit problem.
+        # Do not automatically sleep for an arbitrary amount of time.
         if response.status_code == 429:
             retry_after = response.headers.get("Retry-After")
+
             message = "Fauxnance rate limit reached"
             if retry_after:
-                message = f"{message}; retry after {retry_after} seconds"
-            raise RuntimeError(message)
+                message = (
+                    f"{message}; retry after {retry_after} seconds"
+                )
 
-        if response.status_code >= 400:
-            raise RuntimeError(f"Fauxnance request failed with HTTP {response.status_code}")
+            raise FauxnanceRateLimitError(message)
 
-        return response.json()
+        # Other 4xx errors are client/request problems.
+        # Retrying the exact same request won't normally fix them.
+        if 400 <= response.status_code < 500:
+            raise FauxnanceHTTPError(
+                f"Fauxnance request failed with HTTP "
+                f"{response.status_code}"
+            )
 
-    raise RuntimeError("Fauxnance request failed after retries")
+        # 5xx means the server may be temporarily unavailable.
+        # Retry with exponential backoff.
+        if 500 <= response.status_code < 600:
+            if attempt == max_attempts:
+                raise FauxnanceHTTPError(
+                    f"Fauxnance server failed with HTTP "
+                    f"{response.status_code} after "
+                    f"{max_attempts} attempts"
+                )
+
+            backoff_seconds = base_backoff_seconds * (2 ** (attempt - 1))
+            time.sleep(backoff_seconds)
+            continue
+
+        # 2xx response.
+        try:
+            return response.json()
+        except ValueError as exc:
+            raise FauxnanceHTTPError(
+                "Fauxnance returned a successful HTTP response "
+                "but the response was not valid JSON"
+            ) from exc
+
+    raise RuntimeError("Fauxnance request failed unexpectedly")
 
 
 def _load_or_fetch_candles(
