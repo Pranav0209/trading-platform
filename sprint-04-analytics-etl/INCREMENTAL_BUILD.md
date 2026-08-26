@@ -68,6 +68,51 @@ What happens when you run it:
 
 If the API seems unhealthy, check `GET /health` first because it needs no key. If that looks fine, check `GET /usage` before assuming the API is broken.
 
+## How to run the tests
+
+Run the complete test suite from the repository root with the Python executable
+inside the virtual environment:
+
+```powershell
+.venv\Scripts\python.exe -m pytest sprint-04-analytics-etl
+```
+
+The suite currently contains five tests. A successful run ends with output
+similar to this:
+
+```text
+collected 5 items
+============================== 5 passed ==============================
+```
+
+To run one test module at a time:
+
+```powershell
+.venv\Scripts\python.exe -m pytest sprint-04-analytics-etl\tests\test_extract.py
+.venv\Scripts\python.exe -m pytest sprint-04-analytics-etl\tests\test_load.py
+.venv\Scripts\python.exe -m pytest sprint-04-analytics-etl\tests\test_transform.py
+```
+
+The tests check these behaviors:
+
+- `test_extract.py` uses a fake HTTP session, so it makes no network request.
+	It verifies that the API key comes from `FAUXNANCE_API_KEY`, the date range
+	is sent to Fauxnance, the raw response is cached using the symbol and range,
+	and a second request reads that cache instead of calling the service again.
+	It also verifies that usage checks fail clearly when the environment key is
+	missing.
+- `test_load.py` loads one candle into a temporary DuckDB file and verifies
+	that the file is created, the returned path is correct, and the
+	`fact_candles` table contains one row.
+- `test_transform.py` verifies that valid fixture rows are retained, dates are
+	converted to pandas datetimes, a missing volume remains null, and the
+	synthetic flag is preserved. Its malformed-input test verifies that a candle
+	with a high price below its low price raises `ValueError`.
+
+The tests use temporary directories and fixture data, so they do not change the
+real `.cache/` directory or `analytics.duckdb`, and they do not require an API
+key or a network connection.
+
 ## Why the cache matters
 
 The cache stores the original raw response, not the cleaned table. That matters because the cleaning rules may change often while the source data stays the same. If we change the cleaner, we do not want to spend another API request just to test the new cleaning rule.
