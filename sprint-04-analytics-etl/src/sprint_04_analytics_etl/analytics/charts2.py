@@ -42,18 +42,18 @@ def create_performance_chart(metrics: pd.DataFrame) -> str:
 
     fig, axes = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
     fig.patch.set_facecolor("#ffffff")
-    fig.suptitle("Performance comparison: growth of 100 and direct adjusted close", fontsize=16, fontweight="bold", color="#17324d", x=0.08, ha="left")
+    fig.suptitle("Performance comparison: direct price and growth of 100", fontsize=16, fontweight="bold", color="#17324d", x=0.08, ha="left")
 
     for index, (symbol, rows) in enumerate(frame.groupby("symbol", sort=True)):
         color = _color(symbol, index)
-        axes[0].plot(rows["trade_date"], rows["normalized_price"], label=symbol, color=color, linewidth=2.4)
-        axes[1].plot(rows["trade_date"], rows["adjclose"], label=symbol, color=color, linewidth=2.2)
+        axes[0].plot(rows["trade_date"], rows["adjclose"], label=symbol, color=color, linewidth=2.2)
+        axes[1].plot(rows["trade_date"], rows["normalized_price"], label=symbol, color=color, linewidth=2.4)
 
-    axes[0].axhline(100, color="#9aaab8", linestyle="--", linewidth=1)
-    axes[0].set_ylabel("Value of 100", color="#62768a")
-    axes[0].set_title("Comparable return path", loc="left", color="#17324d", fontsize=11, pad=10)
-    axes[1].set_ylabel("Adjusted close", color="#62768a")
-    axes[1].set_title("Direct price path", loc="left", color="#17324d", fontsize=11, pad=10)
+    axes[1].axhline(100, color="#9aaab8", linestyle="--", linewidth=1)
+    axes[0].set_ylabel("Adjusted close", color="#62768a")
+    axes[0].set_title("Direct price path", loc="left", color="#17324d", fontsize=11, pad=10)
+    axes[1].set_ylabel("Value of 100", color="#62768a")
+    axes[1].set_title("Comparable return path", loc="left", color="#17324d", fontsize=11, pad=10)
     axes[1].set_xlabel("Trading date", color="#62768a")
 
     for axis in axes:
@@ -61,28 +61,35 @@ def create_performance_chart(metrics: pd.DataFrame) -> str:
         axis.spines[["top", "right"]].set_visible(False)
         axis.spines[["left", "bottom"]].set_color("#d9e3ec")
         axis.tick_params(colors="#62768a")
-    axes[0].legend(loc="upper left", frameon=False, ncol=min(3, frame["symbol"].nunique()))
-    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(
+        handles,
+        labels,
+        loc="center left",
+        bbox_to_anchor=(0.84, 0.5),
+        frameon=False,
+        title="Instrument",
+    )
+    fig.tight_layout(rect=[0, 0, 0.82, 0.95])
     return _to_data_uri(fig)
 
 
-def create_volatility_chart(summary: pd.DataFrame) -> str:
-    """Show volatility against total return to test whether risk predicts direction."""
-    frame = summary.dropna(subset=["volatility_pct", "cumulative_return_pct"]).copy()
+def create_range_chart(summary: pd.DataFrame) -> str:
+    """Show the average daily high-to-low trading range by instrument."""
+    frame = summary.dropna(subset=["average_daily_range_pct"]).sort_values("symbol")
     fig, axis = plt.subplots(figsize=(12, 5.5))
     fig.patch.set_facecolor("#ffffff")
-    axis.axhline(0, color="#9aaab8", linewidth=1)
-    axis.axvline(frame["volatility_pct"].median(), color="#d9e3ec", linestyle="--", linewidth=1)
-
-    for index, row in frame.reset_index(drop=True).iterrows():
-        axis.scatter(row["volatility_pct"], row["cumulative_return_pct"], s=180, color=_color(row["symbol"], index), edgecolor="white", linewidth=1.5, zorder=3)
-        axis.annotate(row["symbol"], (row["volatility_pct"], row["cumulative_return_pct"]), xytext=(8, 8), textcoords="offset points", color="#17324d", fontweight="bold")
-
-    axis.set_title("Volatility does not determine direction", fontsize=16, fontweight="bold", color="#17324d", loc="left")
-    axis.set_xlabel("Daily return volatility (standard deviation, %)", color="#62768a")
-    axis.set_ylabel("Cumulative return (%)", color="#62768a")
-    axis.text(0.02, 0.04, "Higher volatility can appear with either positive or negative returns.", transform=axis.transAxes, color="#62768a", fontsize=10)
-    axis.grid(color="#e8eef3", linewidth=0.8)
+    bars = axis.bar(
+        frame["symbol"],
+        frame["average_daily_range_pct"],
+        color=[_color(symbol, index) for index, symbol in enumerate(frame["symbol"])],
+        width=0.58,
+    )
+    axis.bar_label(bars, fmt="%.2f%%", padding=5, color="#17324d", fontweight="bold")
+    axis.set_title("Average daily trading range by instrument", fontsize=16, fontweight="bold", color="#17324d", loc="center")
+    axis.set_xlabel("Instrument", color="#62768a")
+    axis.set_ylabel("Average daily range (%)", color="#62768a")
+    axis.grid(axis="y", color="#e8eef3", linewidth=0.8)
     axis.spines[["top", "right"]].set_visible(False)
     axis.spines[["left", "bottom"]].set_color("#d9e3ec")
     axis.tick_params(colors="#62768a")
@@ -98,13 +105,14 @@ def create_volume_price_chart(metrics: pd.DataFrame, symbol: str) -> str:
     fig.patch.set_facecolor("#ffffff")
     axis.scatter(rows["volume"], rows["absolute_return_pct"], s=75, alpha=0.78, color=_color(symbol), edgecolor="white", linewidth=0.7)
 
+    correlation = None
     if len(rows) >= 2:
         correlation = rows["volume"].corr(rows["absolute_return_pct"])
-        axis.text(0.02, 0.94, f"Correlation: {correlation:.2f}", transform=axis.transAxes, color="#17324d", fontweight="bold")
-    axis.set_title(f"Volume does not imply extreme price movement: {symbol}", fontsize=16, fontweight="bold", color="#17324d", loc="left")
+        axis.text(0.02, 0.94, f"Pearson correlation (r): {correlation:.2f}", transform=axis.transAxes, color="#17324d", fontweight="bold")
+    axis.set_title(f"Volume alone is not a reliable predictor of extreme movement: {symbol}", fontsize=16, fontweight="bold", color="#17324d", loc="left")
     axis.set_xlabel("Volume (shares)", color="#62768a")
     axis.set_ylabel("Absolute daily return (%)", color="#62768a")
-    axis.text(0.02, 0.04, "Absolute return measures movement size without treating up or down differently.", transform=axis.transAxes, color="#62768a", fontsize=10)
+    interpretation = "Moderate association; volume is not sufficient on its own." if correlation is not None and abs(correlation) < 0.7 else "Strong association in this sample; investigate other periods before generalising."
     axis.grid(color="#e8eef3", linewidth=0.8)
     axis.spines[["top", "right"]].set_visible(False)
     axis.spines[["left", "bottom"]].set_color("#d9e3ec")

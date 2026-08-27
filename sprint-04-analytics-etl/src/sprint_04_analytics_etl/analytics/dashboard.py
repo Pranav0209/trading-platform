@@ -7,7 +7,7 @@ import pandas as pd
 
 from .charts2 import (
     create_performance_chart,
-    create_volatility_chart,
+    create_range_chart,
     create_volume_price_chart,
 )
 
@@ -25,14 +25,13 @@ def build_dashboard(
         raise ValueError("Cannot build dashboard without symbols")
 
     performance_image = create_performance_chart(metrics)
-    volatility_image = create_volatility_chart(summary)
+    range_image = create_range_chart(summary)
     scatter_images = {
         symbol: create_volume_price_chart(metrics, symbol)
         for symbol in symbols
     }
 
     best_row = summary.loc[summary["cumulative_return_pct"].idxmax()]
-    most_volatile = summary.loc[summary["volatility_pct"].idxmax()]
     start_date = metrics["trade_date"].min().strftime("%d %b %Y")
     end_date = metrics["trade_date"].max().strftime("%d %b %Y")
 
@@ -41,7 +40,7 @@ def build_dashboard(
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ZKUBA | Market Analytics</title>
+    <title></title>
     <style>
         :root {{ --ink:#17324d; --muted:#62768a; --line:#dfe8ef; --canvas:#f4f7f9; --paper:#fff; --teal:#2d9b83; }}
         * {{ box-sizing:border-box; }}
@@ -70,14 +69,12 @@ def build_dashboard(
 <body>
 <main>
     <header>
-        <div><div class="eyebrow">ZKUBA / Market analytics</div><h1>Three views for better judgement</h1><p>Performance, risk and activity from cleaned candle data between {start_date} and {end_date}.</p></div>
+        <div><div class="eyebrow">Sprint 4</div><h1>ZKUBA</h1><p>Zero Knowledge Unified Brokerage and Analysis</p></div>
         <div class="controls"><label for="scatter-symbol">Volume study</label><select id="scatter-symbol">{''.join(f'<option value="{symbol}">{symbol}</option>' for symbol in symbols)}</select></div>
     </header>
-    <section class="kpis"><article class="kpi"><div class="label">Best normalized result</div><div class="value">{best_row['cumulative_return_pct']:.2f}%</div><div class="note">{best_row['symbol']} ending value from a 100 starting base</div></article><article class="kpi"><div class="label">Highest volatility</div><div class="value">{most_volatile['volatility_pct']:.2f}%</div><div class="note">{most_volatile['symbol']} daily-return standard deviation</div></article><article class="kpi"><div class="label">Symbols compared</div><div class="value">{len(symbols)}</div><div class="note">All available instruments plotted together</div></article></section>
-    <section class="panel"><div class="panel-head"><h2>1. Performance comparison</h2><span class="note">Every instrument starts at 100; direct adjusted-close prices appear below.</span></div><div class="chart"><img src="{performance_image}" alt="Normalized growth of 100 and direct adjusted-close price lines for all symbols"></div></section>
-    <section class="panel"><div class="panel-head"><h2>2. Volatility does not determine direction</h2><span class="note">Volatility is compared with cumulative return, so positive and negative outcomes are visible.</span></div><div class="chart"><img src="{volatility_image}" alt="Volatility plotted against cumulative return for each symbol"></div></section>
-    <section class="panel"><div class="panel-head"><h2>3. Volume does not imply extreme movement</h2><span class="note">Choose one instrument. The y-axis uses absolute daily return, measuring movement size regardless of direction.</span></div><div class="chart"><img id="scatter-chart" src="{scatter_images[symbols[0]]}" alt="Volume plotted against absolute daily return for {symbols[0]}"></div></section>
-    <footer>Source: DuckDB fact_candles · Matplotlib static charts · Selected-stock drill-down is available above.</footer>
+    <section class="panel"><div class="panel-head"><h2>1. Performance comparison</h2><span class="note">Direct adjusted-close prices appear first; the normalized growth-of-100 comparison follows below.</span></div><div class="chart"><img src="{performance_image}" alt="Direct adjusted-close prices followed by normalized growth of 100 for all symbols"></div></section>
+    <section class="panel"><div class="panel-head"><h2>2. Average daily trading range by instrument</h2><span class="note">A wider range indicates larger typical high-to-low movement during a trading session.</span></div><div class="chart"><img src="{range_image}" alt="Bar chart of average daily trading range for all symbols"></div></section>
+    <section class="panel"><div class="panel-head"><h2>3. Volume alone is not a reliable predictor of extreme movement</h2><span class="note">Choose one instrument. Pearson's r is shown on the chart; the y-axis uses absolute daily return.</span></div><div class="chart"><img id="scatter-chart" src="{scatter_images[symbols[0]]}" alt="Volume plotted against absolute daily return for {symbols[0]}"></div></section>
 </main>
 <script>
 const scatterImages = {json.dumps(scatter_images)};
