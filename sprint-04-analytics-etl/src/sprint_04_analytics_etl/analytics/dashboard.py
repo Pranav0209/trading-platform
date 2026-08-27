@@ -1,6 +1,9 @@
 from __future__ import annotations
 from pathlib import Path
-from .analytics import (
+
+import pandas as pd
+
+from .charts import (
     create_performance_chart,
     create_price_chart,
     create_range_chart,
