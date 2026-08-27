@@ -2,6 +2,7 @@
 .env
 .env.local
 *.local.env
+.cache
 
 # Java and Maven
 target/
