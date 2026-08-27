@@ -74,6 +74,10 @@ def calculate_symbol_summary(
                 "daily_return_pct",
                 "mean",
             ),
+            volatility_pct=(
+                "daily_return_pct",
+                "std",
+            ),
             average_estimated_turnover=(
                 "estimated_turnover",
                 "mean",

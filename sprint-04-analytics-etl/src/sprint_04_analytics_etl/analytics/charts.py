@@ -1,5 +1,7 @@
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 
 CHART_TEMPLATE = "plotly_white"
@@ -20,48 +22,62 @@ def _style_chart(fig):
     return fig
 
 
-def create_performance_chart(summary: pd.DataFrame):
+def create_performance_chart(metrics: pd.DataFrame):
+    normalized = metrics.copy()
+    normalized["normalized_price"] = normalized["adjclose"] / normalized.groupby("symbol")["adjclose"].transform("first") * 100
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.14,
+        subplot_titles=("Growth of 100 invested", "Direct adjusted-close prices"),
+    )
+    for symbol, rows in normalized.groupby("symbol", sort=True):
+        hover = [rows["adjclose"], rows["daily_return_pct"]]
+        fig.add_trace(go.Scatter(x=rows["trade_date"], y=rows["normalized_price"], name=symbol, mode="lines+markers", customdata=list(zip(*hover)), hovertemplate="<b>%{fullData.name}</b><br>%{x|%d %b %Y}<br>Value of 100: %{y:.2f}<br>Direct adjusted close: %{customdata[0]:,.2f}<br>Daily return: %{customdata[1]:.2f}%<extra></extra>"), row=1, col=1)
+        fig.add_trace(go.Scatter(x=rows["trade_date"], y=rows["adjclose"], name=f"{symbol} direct", mode="lines", showlegend=False, line={"dash": "dot"}), row=2, col=1)
+    fig.update_yaxes(title_text="Portfolio value", row=1, col=1, gridcolor="#e8eef3")
+    fig.update_yaxes(title_text="Adjusted close", row=2, col=1, gridcolor="#e8eef3")
+    return _style_chart(fig).update_layout(height=680, hovermode="x unified")
+
+def create_volatility_chart(summary: pd.DataFrame):
     fig = px.bar(
         summary,
         x="symbol",
-        y="cumulative_return_pct",
-        custom_data=["first_adjclose", "last_adjclose", "average_daily_return_pct"],
+        y="volatility_pct",
+        custom_data=["cumulative_return_pct", "average_daily_range_pct"],
         labels={
             "symbol": "Instrument",
-            "cumulative_return_pct": "Cumulative return (%)",
-        },
-    )
-
-    fig.update_traces(
-        hovertemplate=(
-            "<b>%{x}</b><br>Cumulative return: %{y:.2f}%<br>"
-            "Start: %{customdata[0]:,.2f}<br>End: %{customdata[1]:,.2f}<br>"
-            "Average daily return: %{customdata[2]:.2f}%<extra></extra>"
-        ),
-    )
-    return _style_chart(fig)
-
-def create_range_chart(summary: pd.DataFrame):
-    fig = px.bar(
-        summary,
-        x="symbol",
-        y="average_daily_range_pct",
-        custom_data=["cumulative_return_pct", "average_daily_return_pct"],
-        labels={
-            "symbol": "Instrument",
-            "average_daily_range_pct": "Average daily range (%)",
+            "volatility_pct": "Daily return volatility (%)",
         },
     )
 
     fig.update_traces(
         marker_color="#e8b25b",
         hovertemplate=(
-            "<b>%{x}</b><br>Average daily range: %{y:.2f}%<br>"
+            "<b>%{x}</b><br>Return volatility: %{y:.2f}%<br>"
             "Cumulative return: %{customdata[0]:.2f}%<br>"
-            "Average daily return: %{customdata[1]:.2f}%<extra></extra>"
+            "Average daily range: %{customdata[1]:.2f}%<extra></extra>"
         ),
     )
     return _style_chart(fig)
+
+def create_volume_price_scatter(metrics: pd.DataFrame, symbol: str):
+    rows = metrics[metrics["symbol"] == symbol].copy()
+    rows["plot_volume"] = rows["volume"].fillna(0)
+    fig = px.scatter(
+        rows,
+        x="volume",
+        y="adjclose",
+        size="plot_volume",
+        color="daily_return_pct",
+        color_continuous_scale=["#3977a9", "#e8b25b", "#2d9b83"],
+        custom_data=["trade_date", "close", "high", "low", "daily_return_pct"],
+        labels={"volume": "Volume (shares)", "adjclose": "Adjusted close", "daily_return_pct": "Daily return (%)"},
+    )
+    fig.update_traces(hovertemplate="<b>%{x:,.0f} shares</b><br>Adjusted close: %{y:,.2f}<br>Date: %{customdata[0]|%d %b %Y}<br>Close: %{customdata[1]:,.2f}<br>High / low: %{customdata[2]:,.2f} / %{customdata[3]:,.2f}<br>Daily return: %{customdata[4]:.2f}%<extra></extra>")
+    return _style_chart(fig).update_layout(coloraxis_colorbar={"title": "Daily return (%)"})
+
 
 def create_turnover_chart(summary: pd.DataFrame):
     fig = px.bar(
