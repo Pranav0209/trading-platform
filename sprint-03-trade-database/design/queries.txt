@@ -1,0 +1,270 @@
+1. Find recent orders for an account
+
+EXPLAIN ANALYZE
+SELECT order_id,
+       instrument_id,
+       order_side,
+       quantity,
+       status,
+       placed_at
+FROM orders
+WHERE account_id = 101
+ORDER BY placed_at DESC;
+
+Expected:
+Seq Scan on orders
+  Filter: (account_id = 101)
+Sort
+  Sort Key: placed_at DESC
+Execution Time: ...
+
+Problem:
+
+PostgreSQL scans all orders.
+Then sorts matching rows by date.
+
+New index
+CREATE INDEX idx_orders_account_recent
+ON orders(account_id, placed_at DESC);
+
+Plan after index
+
+Expected:
+
+Index Scan using idx_orders_account_recent
+  Index Cond: (account_id = 101)
+
+The index provides:
+
+direct lookup by account
+rows already ordered by placed_at DESC
+no extra sort step
+
+Index justification:
+
+Query: Recent account orders
+Benefit: Faster account history lookup
+Cost on writes:
+
+Every INSERT into orders updates this extra B-tree.
+UPDATE of account_id or placed_at requires index maintenance.
+Additional disk storage.
+
+Query 2 - Search orders by instrument and status
+
+EXPLAIN ANALYZE
+SELECT order_id,
+       account_id,
+       quantity,
+       placed_at
+FROM orders
+WHERE instrument_id = 1002
+AND status = 'FILLED';
+
+Before index
+
+Expected:
+
+Seq Scan on orders
+ Filter:
+   instrument_id = 1002
+   status = 'FILLED'
+
+Add index
+
+CREATE INDEX idx_orders_instrument_status
+ON orders(instrument_id,status);
+
+After index
+
+Expected:
+
+Index Scan using idx_orders_instrument_status
+ Index Cond:
+   instrument_id = 1002
+   status = 'FILLED'
+Index justification
+
+Query: Filled orders for an instrument
+
+The index helps because:
+
+instrument filtering is selective
+status avoids scanning unrelated order states
+
+Write cost:
+
+INSERTs become slightly slower.
+More WAL logging.
+More storage.
+Query 3 - User PnL history
+Query
+EXPLAIN ANALYZE
+SELECT pnl_id,
+       instrument_id,
+       net_pnl,
+       realized_at
+FROM pnl
+WHERE account_id = 103
+ORDER BY realized_at DESC;
+Before index
+
+Expected:
+
+Seq Scan on pnl
+Sort
+Existing index
+
+Your schema already has:
+
+CREATE INDEX idx_pnl_account_date
+ON pnl(account_id, realized_at DESC);
+After EXPLAIN ANALYZE
+
+Expected:
+
+Index Scan using idx_pnl_account_date
+ Index Cond:
+   account_id = 103
+Review conclusion
+
+No new index required.
+
+The existing composite index satisfies:
+
+filtering by account_id
+ordering by realized_at DESC
+
+The primary key on pnl_id does not help because the query is not searching by pnl_id.
+
+Query 4 — Find instruments in a user's watchlists
+Query
+EXPLAIN ANALYZE
+SELECT i.symbol,
+       i.company_name
+FROM watchlist_instruments wi
+JOIN instruments i
+ON i.instrument_id = wi.instrument_id
+WHERE wi.watchlist_id = 8001;
+Before index
+
+Possible:
+
+Seq Scan on watchlist_instruments
+Nested Loop
+ Index Scan on instruments_pkey
+Add index
+CREATE INDEX idx_watchlist_lookup
+ON watchlist_instruments(watchlist_id, instrument_id);
+After index
+
+Expected:
+
+Index Scan using idx_watchlist_lookup
+ Index Cond:
+   watchlist_id = 8001
+Index justification
+
+Query: Retrieve instruments in a watchlist.
+
+Benefit:
+
+avoids scanning all watchlist relationships.
+
+Write cost:
+
+Every watchlist addition/deletion updates this index.
+Slightly slower inserts into watchlist_instruments.
+Query 5 — Find open orders by account
+Query
+EXPLAIN ANALYZE
+SELECT order_id,
+       instrument_id,
+       quantity,
+       limit_price
+FROM orders
+WHERE account_id = 101
+AND status = 'OPEN';
+Before index
+
+Expected:
+
+Seq Scan on orders
+Filter:
+ account_id=101
+ status='OPEN'
+Add index
+CREATE INDEX idx_orders_account_status
+ON orders(account_id,status);
+After index
+
+Expected:
+
+Index Scan using idx_orders_account_status
+ Index Cond:
+ account_id=101
+ status='OPEN'
+Index justification
+
+Query: Active orders lookup.
+
+Benefit:
+
+trading systems frequently need pending/open orders.
+
+Write cost:
+
+Each order status update changes index entries.
+Extra storage and maintenance overhead.
+Query 6 — Rank users by total realised profit
+
+Requirement:
+
+Must use window function or CTE.
+No new index.
+Query
+WITH account_profit AS
+(
+    SELECT
+        account_id,
+        SUM(net_pnl) AS total_profit
+    FROM pnl
+    GROUP BY account_id
+)
+
+SELECT
+    account_id,
+    total_profit,
+    RANK() OVER
+    (
+        ORDER BY total_profit DESC
+    ) AS profit_rank
+FROM account_profit;
+Plan explanation
+
+Expected:
+
+CTE Scan
+ Aggregate
+ WindowAgg
+ Sort
+
+No index justification:
+
+This query:
+
+aggregates all accounts
+calculates ranking across the complete result set
+
+An index would not remove the required sorting/window operation.
+
+Final Index Review Summary
+Query	Purpose	New Index	Result
+Q1	Recent account orders	idx_orders_account_recent	Removes scan + sort
+Q2	Instrument filled orders	idx_orders_instrument_status	Faster filtering
+Q3	Account PnL history	None	Existing idx_pnl_account_date works
+Q4	Watchlist instruments	idx_watchlist_lookup	Faster relationship lookup
+Q5	Open account orders	idx_orders_account_status	Faster active order lookup
+Q6	Profit ranking	None	Window function required
+
+For the review, capture the actual output of:
