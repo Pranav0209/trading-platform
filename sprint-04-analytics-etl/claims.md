@@ -15,8 +15,8 @@ way.
 | # | Claim | Chart artefact |
 |---|---|---|
 | 1 | CHANGE_ME | CHANGE_ME |
-| 2 | CHANGE_ME | CHANGE_ME |
-| 3 | CHANGE_ME | CHANGE_ME |
+| 2 | LAURUSLABS.NS had the widest average daily trading range at 2.78%, compared with 2.31% for BAJFINANCE.NS and 2.10% for TCS.NS, indicating the largest typical high-to-low price movement. | report.html |
+| 3 | For BAJFINANCE.NS, volume and absolute daily return had a moderate Pearson correlation of r = 0.54 across 249 observations, so volume alone was not a reliable predictor of extreme price movement. | report.html |
 
 Filled in, a row looks like this. The claim is invented and out of domain
 deliberately, so that copying it gets you nothing. It is numbered `x` rather
