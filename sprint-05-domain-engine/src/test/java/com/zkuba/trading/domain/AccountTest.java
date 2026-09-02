@@ -1,5 +1,9 @@
 package com.zkuba.trading.domain;
 
+import com.zkuba.trading.domain.enums.AccountStatus;
+import com.zkuba.trading.domain.exception.AccountNotActiveException;
+import com.zkuba.trading.domain.exception.InsufficientFundsException;
+import com.zkuba.trading.domain.model.Account;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
