@@ -13,9 +13,9 @@ from .charts import (
 
 
 CLAIMS = {
-    "performance-chart": "Higher daily volatility doesn't determine the size of the loss",
-    "range-chart": "A wider average daily trading range doesn't scale with the loss",
-    "volume-return-chart": "Volume alone is not a reliable predictor of extreme movement",
+    "performance-chart": "higher stock price doesn't imply it'll give more returns. Hence normalized charts are needed for actual comparision",
+    "range-chart": "Higher volatality doesn't have any signifance in the performance of the stock. We can see a correlation that one with the highest volatality has the best performance",
+    "volume-return-chart": "High volume of trade per day doesn't mean the returns are high",
 }
 
 
@@ -44,7 +44,7 @@ def build_dashboard(
     <meta charset="utf-8">
     <title>ZKUBA</title>
     <style>
-        body {{ font-family: sans-serif; max-width: 900px; margin: 20px auto; }}
+        body {{ font-family: sans-serif; max-width: 900px; margin: 20px auto; background-color: #F5FBFF; }}
         section {{ margin-bottom: 30px; }}
         img {{ max-width: 100%; }}
         .claim {{ font-weight: bold; }}

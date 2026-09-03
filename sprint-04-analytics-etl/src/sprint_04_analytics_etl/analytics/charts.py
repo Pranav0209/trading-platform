@@ -32,11 +32,11 @@ def create_performance_chart(metrics: pd.DataFrame) -> str:
         axes[0].plot(rows["trade_date"], rows["adjclose"], label=symbol)
         axes[1].plot(rows["trade_date"], rows["normalized_price"], label=symbol)
 
-    axes[0].set_title("Direct adjusted-close price")
+    axes[0].set_title("Misleading - Direct adjusted-close price")
     axes[0].set_ylabel("Adjusted close")
     axes[0].legend()
 
-    axes[1].set_title("Growth of 100 (normalized)")
+    axes[1].set_title("Correct - Growth of 100 (normalized)")
     axes[1].set_xlabel("Trading date")
     axes[1].set_ylabel("Value of 100")
     axes[1].legend()
