@@ -1,6 +1,4 @@
 package com.zkuba.trading.services;
-
-import com.zkuba.trading.domain.model.Instrument;
 import com.zkuba.trading.domain.exception.InstrumentNotFoundException;
 
 public class instrumentService{
