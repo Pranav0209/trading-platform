@@ -37,20 +37,10 @@ def calculate_daily_metrics(frame: pd.DataFrame) -> pd.DataFrame:
         .mul(100)
     )
 
-    result["intraday_return_pct"] = (
-        (result["close"] - result["open"])
-        / result["open"]
-        * 100
-    )
-
     result["daily_range_pct"] = (
         (result["high"] - result["low"])
         / result["low"]
         * 100
-    )
-
-    result["estimated_turnover"] = (
-        result["close"] * result["volume"]
     )
 
     return result
@@ -61,36 +51,13 @@ def calculate_symbol_summary(
 ) -> pd.DataFrame:
     metrics = calculate_daily_metrics(frame)
 
-    summary = (
+    return (
         metrics.groupby("symbol")
         .agg(
-            first_adjclose=("adjclose", "first"),
-            last_adjclose=("adjclose", "last"),
             average_daily_range_pct=(
                 "daily_range_pct",
-                "mean",
-            ),
-            average_daily_return_pct=(
-                "daily_return_pct",
-                "mean",
-            ),
-            volatility_pct=(
-                "daily_return_pct",
-                "std",
-            ),
-            average_estimated_turnover=(
-                "estimated_turnover",
                 "mean",
             ),
         )
         .reset_index()
     )
-
-    summary["cumulative_return_pct"] = (
-        (
-            summary["last_adjclose"]
-            / summary["first_adjclose"]
-        ) - 1
-    ) * 100
-
-    return summary
