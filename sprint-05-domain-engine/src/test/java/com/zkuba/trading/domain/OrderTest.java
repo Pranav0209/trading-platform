@@ -24,7 +24,7 @@ class OrderTest {
                 "RELIANCE",
                 OrderType.LIMIT,
                 OrderSide.BUY,
-                new BigDecimal("100"),
+                100,
                 new BigDecimal("1400.00"),
                 "idem-12345"
         );
@@ -38,7 +38,7 @@ class OrderTest {
                 "RELIANCE",
                 OrderType.LIMIT,
                 OrderSide.BUY,
-                new BigDecimal("100"),
+                100,
                 new BigDecimal("1400.00"),
                 "idem-12345"
         );
@@ -48,8 +48,9 @@ class OrderTest {
     // Testing basic methods - use mutable order from @BeforeEach
     @Test
     void fillMovesToFilled() {
-        mutableOrder.fill();
+        mutableOrder.fill(new BigDecimal("1399.50"));
         assertEquals(OrderStatus.FILLED, mutableOrder.getStatus());
+        assertEquals(new BigDecimal("1399.50"), mutableOrder.getExecutedPrice());
     }
 
     @Test
@@ -67,14 +68,14 @@ class OrderTest {
     // Illegal status change shouldn't be allowed
     @Test
     void filledOrderCannotCancel() {
-        mutableOrder.fill();
+        mutableOrder.fill(new BigDecimal("1399.50"));
         assertThrows(InvalidOrderTransitionException.class, mutableOrder::cancel);
     }
 
     @Test
     void rejectedOrderCannotFill() {
         mutableOrder.reject();
-        assertThrows(InvalidOrderTransitionException.class, mutableOrder::fill);
+        assertThrows(InvalidOrderTransitionException.class, () -> mutableOrder.fill(new BigDecimal("1399.50")));
     }
 
     // Constraints based checks
@@ -87,7 +88,7 @@ class OrderTest {
                         "RELIANCE.NS",
                         OrderType.MARKET,
                         OrderSide.BUY,
-                        new BigDecimal("100"),
+                        100,
                         new BigDecimal("1400.00"),
                         "idem-12345"
                 )
@@ -103,7 +104,7 @@ class OrderTest {
                         "RELIANCE.NS",
                         OrderType.LIMIT,
                         OrderSide.BUY,
-                        new BigDecimal("100"),
+                        100,
                         new BigDecimal("-12"),
                         "idem-12345"
                 )
@@ -119,7 +120,7 @@ class OrderTest {
                         "RELIANCE.NS",
                         OrderType.LIMIT,
                         OrderSide.BUY,
-                        new BigDecimal("-100"),
+                        -100,
                         new BigDecimal("1200"),
                         "idem-12345"
                 )

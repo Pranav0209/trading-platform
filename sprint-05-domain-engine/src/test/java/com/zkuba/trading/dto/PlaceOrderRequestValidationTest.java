@@ -30,7 +30,7 @@ class PlaceOrderRequestValidationTest {
                 181L,
                 "RELIANCE",
                 OrderSide.BUY,
-                new BigDecimal("100"),
+                100,
                 new BigDecimal("1400.00"),
                 "idem-12345",
                 OrderType.LIMIT
@@ -51,35 +51,35 @@ class PlaceOrderRequestValidationTest {
     @Test
     void nullAccountIdFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                null, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
+                null, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void zeroAccountIdFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                0L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
+                0L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void emptySymbolFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
+                1L, "", OrderSide.BUY, 100, new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void longSymbolFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "ABCDEFGHIJKLMNOPQRSTU", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
+                1L, "ABCDEFGHIJKLMNOPQRSTU", OrderSide.BUY, 100, new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void nullSideFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", null, new BigDecimal("100"), new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
+                1L, "RELIANCE", null, 100, new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
@@ -93,105 +93,98 @@ class PlaceOrderRequestValidationTest {
     @Test
     void zeroQuantityFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, BigDecimal.ZERO, new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
+                1L, "RELIANCE", OrderSide.BUY, 0, new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void oneQuantityPasses() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("1"), new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
+                1L, "RELIANCE", OrderSide.BUY, 1, new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
         assertTrue(validator.validate(r).isEmpty());
-    }
-
-    @Test
-    void fractionalQuantityFails() {
-        PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("1.5"), new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
-        assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void nullPriceFailsForLimitOrder() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), null, "idem-12345", OrderType.LIMIT);
+                1L, "RELIANCE", OrderSide.BUY, 100, null, "idem-12345", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void zeroPriceFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), BigDecimal.ZERO, "idem-12345", OrderType.LIMIT);
+                1L, "RELIANCE", OrderSide.BUY, 100, BigDecimal.ZERO, "idem-12345", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void oneCentPricePasses() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("0.01"), "idem-12345", OrderType.LIMIT);
+                1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("0.01"), "idem-12345", OrderType.LIMIT);
         assertTrue(validator.validate(r).isEmpty());
     }
 
     @Test
     void extraPriceScaleFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("25.555"), "idem-12345", OrderType.LIMIT);
+                1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("25.555"), "idem-12345", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void shortKeyFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("1400.00"), "1234567", OrderType.LIMIT);
+                1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("1400.00"), "1234567", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void goodKeyPasses() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("1400.00"), "12345678", OrderType.LIMIT);
+                1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("1400.00"), "12345678", OrderType.LIMIT);
         assertTrue(validator.validate(r).isEmpty());
     }
 
     @Test
     void longKeyFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("1400.00"), "a".repeat(101), OrderType.LIMIT);
+                1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("1400.00"), "a".repeat(101), OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void nullOrderTypeFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("1400.00"), "idem-12345", null);
+                1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("1400.00"), "idem-12345", null);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void limitOrderPasses() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
+                1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
         assertTrue(validator.validate(r).isEmpty());
     }
 
     @Test
     void limitOrderWithoutPriceFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), null, "idem-12345", OrderType.LIMIT);
+                1L, "RELIANCE", OrderSide.BUY, 100, null, "idem-12345", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
     @Test
     void marketOrderWithoutPricePasses() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), null, "idem-12345", OrderType.MARKET);
+                1L, "RELIANCE", OrderSide.BUY, 100, null, "idem-12345", OrderType.MARKET);
         assertTrue(validator.validate(r).isEmpty());
     }
 
     @Test
     void marketOrderWithPriceFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, new BigDecimal("100"), new BigDecimal("1400.00"), "idem-12345", OrderType.MARKET);
+                1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("1400.00"), "idem-12345", OrderType.MARKET);
         assertFalse(validator.validate(r).isEmpty());
     }
 }

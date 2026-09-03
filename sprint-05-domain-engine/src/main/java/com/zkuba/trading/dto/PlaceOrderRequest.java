@@ -31,12 +31,11 @@ public class PlaceOrderRequest {
 
     @NotNull
     @Positive
-    @Digits(integer = 19, fraction = 0)
-    private BigDecimal quantity;
+    private Integer quantity;
 
     // required for LIMIT, must be absent for MARKET; see isPriceConsistentWithOrderType()
     @DecimalMin(value = "0.00", inclusive = false)
-    @ValidPrice
+    @Digits(integer = 10, fraction = 2)
     private BigDecimal price;
 
     @NotBlank
@@ -47,7 +46,7 @@ public class PlaceOrderRequest {
             Long accountId,
             String symbol,
             OrderSide side,
-            BigDecimal quantity,
+            Integer quantity,
             BigDecimal price,
             String idempotencyKey,
             OrderType orderType) {
@@ -77,7 +76,7 @@ public class PlaceOrderRequest {
         return orderType;
     }
 
-    public BigDecimal getQuantity() {
+    public Integer getQuantity() {
         return quantity;
     }
 
