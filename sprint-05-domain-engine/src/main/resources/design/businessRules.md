@@ -20,15 +20,17 @@ nforce existence, then active status, then a tradable instrument, then quantity,
 1. existence ACC-404
 2. active ACC-403
 3. instrument INS-404
-4. quantity ORD-400
-5. price ORD-400
+4. quantity VAL-400
+5. price VAL-400
 Buy: 
-6. enough funds ACC-
+6. enough funds ACC-400
 
 Sell: 
-7. Enough holdings
+7. Enough holdings ACC-410
 
-8. Idempotency -> checked last cost the previous errors are more important
+8. Idempotency -> ACC-409 
+
+checked last cost the previous errors are more important
 
 Unit Test Execution Paths
 buy succeeds and updates cash and position
