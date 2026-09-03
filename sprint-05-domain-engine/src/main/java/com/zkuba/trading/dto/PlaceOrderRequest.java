@@ -88,7 +88,7 @@ public class PlaceOrderRequest {
         return idempotencyKey;
     }
 
-    @AssertTrue(message = "for limit it must have price, for limit no price")
+    @AssertTrue(message = "for limit it must have price, for market no price")
     public boolean isPriceConsistentWithOrderType() {
         if (orderType == null) {
             return true;
