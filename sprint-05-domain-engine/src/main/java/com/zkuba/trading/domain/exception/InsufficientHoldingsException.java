@@ -6,7 +6,7 @@ public class InsufficientHoldingsException extends GlobalExceptionHandler {
     private final String symbol;
 
     public InsufficientHoldingsException(Long accountId, String symbol) {
-        super("ORD-409", "Insufficient holdings");
+        super("ORD-410", "Insufficient holdings");
         this.accountId = accountId;
         this.symbol = symbol;
     }
