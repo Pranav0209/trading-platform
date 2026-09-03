@@ -46,6 +46,14 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- EL implementation required by hibernate-validator's message interpolator -->
+    <dependency>
+      <groupId>org.glassfish</groupId>
+      <artifactId>jakarta.el</artifactId>
+      <version>4.0.2</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
