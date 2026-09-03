@@ -29,3 +29,29 @@ Sell:
 7. Enough holdings
 
 8. Idempotency -> checked last cost the previous errors are more important
+
+Unit Test Execution Paths
+buy succeeds and updates cash and position
+
+buy rejected on insufficient funds
+
+sell rejected on insufficient holdings
+
+order rejected on an account that does not exist
+
+order rejected on an inactive account
+
+order rejected on an unknown or non-tradable instrument
+
+duplicate idempotency key rejected
+
+a request breaking two rules returns the code of the first
+
+Enforce existence, then active status, then a tradable instrument, then quantity, then price, then affordability on a buy, then held quantity on a sell, then the idempotency key.
+
+Check quantity and price in the rules as well as on the DTO, because the domain has to hold for a caller that never ran a validator.
+
+Leave room for the two rules that carry no code this sprint: cash and position move together or neither moves, and every order is recorded, including a rejected one.
+
+Design a seam that makes the idempotency rule expressible and testable here without a database, since in Sprint 6 the authority is the unique constraint you built in Sprint 3.
+

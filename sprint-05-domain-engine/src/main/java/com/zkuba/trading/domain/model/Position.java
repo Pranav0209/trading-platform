@@ -63,7 +63,7 @@ public class Position {
     }
 
     // sell must retain average price and just quantity gets reduced
-    // Rule 7: held quantity must cover the sell before it is applied.
+    // 7. insuffient holdings in sell
     public void sell(BigDecimal units) {
 
         requirePositive(units);

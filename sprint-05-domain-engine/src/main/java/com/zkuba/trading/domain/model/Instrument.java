@@ -31,7 +31,7 @@ public class Instrument {
         this.delisted = delisted;
     }
 
-    // flag to check if instrument is delisted or not tradeable anymore
+    // rule 3.2 flag to check if instrument is delisted or not tradeable anymore
     public boolean isTradable() {
         return !delisted;
     }
