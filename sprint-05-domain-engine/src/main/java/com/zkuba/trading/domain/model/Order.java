@@ -11,8 +11,6 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.UUID;
-
-// Annotations document the invariants; validate() below is what actually enforces them.
 public class Order {
 
     @NotNull
@@ -49,27 +47,24 @@ public class Order {
         this.type = Objects.requireNonNull(type);
         this.side = Objects.requireNonNull(side);
         this.quantity = Objects.requireNonNull(quantity);
-        this.limitPrice = limitPrice;           // null is valid for MARKET orders
+        this.limitPrice = limitPrice;           // null is valid for market orders
         this.idempotencyKey = Objects.requireNonNull(idempotencyKey);
         this.status = OrderStatus.NEW;
-        this.executedPrice = null;              // null until order is FILLED
+        this.executedPrice = null;              // null until order is completed
         validate();
     }
 
-    /** Transitions the order to FILLED. */
     public void fill(BigDecimal executedPrice) {
         ensureTransitionAllowed("fill");
         this.executedPrice = Objects.requireNonNull(executedPrice);
         status = OrderStatus.FILLED;
     }
 
-    /** Transitions the order to REJECTED. */
     public void reject() {
         ensureTransitionAllowed("reject");
         status = OrderStatus.REJECTED;
     }
 
-    /** Transitions the order to CANCELLED. */
     public void cancel() {
         ensureTransitionAllowed("cancel");
         status = OrderStatus.CANCELLED;

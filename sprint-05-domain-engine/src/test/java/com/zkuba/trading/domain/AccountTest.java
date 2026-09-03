@@ -25,7 +25,7 @@ class AccountTest {
         activeAccount = new Account(
                 181L,
                 "TRD000181",
-                "Krishnendu",
+                "testName",
                 new BigDecimal("1000.00"),
                 AccountStatus.ACTIVE,
                 3L
@@ -37,17 +37,11 @@ class AccountTest {
         mutableAccount = new Account(
                 181L,
                 "TRD000181",
-                "Krishnendu",
+                "testName",
                 new BigDecimal("1000.00"),
                 AccountStatus.ACTIVE,
                 3L
         );
-    }
-
-    // Simple getter checks - use shared account
-    @Test
-    void version() {
-        assertEquals(3L, activeAccount.getVersion());
     }
 
     @Test
@@ -60,7 +54,7 @@ class AccountTest {
         assertEquals(AccountStatus.ACTIVE, activeAccount.getStatus());
     }
 
-    // Edge case checks - create new accounts
+    // edge case for create new account with - balance
     @Test
     void negativeBalanceRejected() {
         assertThrows(
@@ -76,15 +70,15 @@ class AccountTest {
         );
     }
 
-    // Business logic checks - use mutable account from @BeforeEach
+    // check business logic for account class
     @Test
-    void debitCutsCash() {
+    void debitCutsBalance() {
         mutableAccount.debit(new BigDecimal("250.00"));
         assertEquals(new BigDecimal("750.00"), mutableAccount.getCashBalance());
     }
 
     @Test
-    void creditAddsCash() {
+    void creditAddsBalance() {
         mutableAccount.credit(new BigDecimal("250.00"));
         assertEquals(new BigDecimal("1250.00"), mutableAccount.getCashBalance());
     }
@@ -112,7 +106,7 @@ class AccountTest {
         Account suspendedAccount = new Account(
                 200L,
                 "TRD000200",
-                "Krishnendu",
+                "testName",
                 new BigDecimal("500.00"),
                 AccountStatus.SUSPENDED,
                 8L

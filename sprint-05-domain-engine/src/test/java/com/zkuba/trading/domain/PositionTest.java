@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class PositionTest {
 
-    // Mutable position for each test
     private Position mutablePosition;
 
     @BeforeEach
@@ -24,16 +23,16 @@ class PositionTest {
         );
     }
 
-    // Buy and sell logic based checks
+    // Buy should update average price
     @Test
     void buyUpdatesAverageCost() {
         mutablePosition.buy(new BigDecimal("50"), new BigDecimal("130.00"));
 
         assertEquals(new BigDecimal("150"), mutablePosition.getQuantity());
-        // (100 * 100.00 + 50 * 130.00) / 150 = 110.00000000
         assertEquals(0, new BigDecimal("110.00").compareTo(mutablePosition.getAverageCost()));
     }
 
+    // sell should retain average purchase price
     @Test
     void sellKeepsAverageCost() {
         mutablePosition.sell(new BigDecimal("40"));

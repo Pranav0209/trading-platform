@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class OrderTest {
 
-    // Mutable order for each test
+    // Mutable order
     private Order mutableOrder;
 
     @BeforeEach
@@ -30,7 +30,7 @@ class OrderTest {
         );
     }
 
-    // Order lifecycle should start with 'NEW'
+    // Order lifecycle should starting as new
     @Test
     void newOrderStartsFresh() {
         Order order = new Order(
@@ -45,7 +45,7 @@ class OrderTest {
         assertEquals(OrderStatus.NEW, order.getStatus());
     }
 
-    // Testing basic methods - use mutable order from @BeforeEach
+    // checking after new to filled
     @Test
     void fillMovesToFilled() {
         mutableOrder.fill(new BigDecimal("1399.50"));
@@ -65,22 +65,23 @@ class OrderTest {
         assertEquals(OrderStatus.CANCELLED, mutableOrder.getStatus());
     }
 
-    // Illegal status change shouldn't be allowed
+    // filled order cannot be cancelled
     @Test
     void filledOrderCannotCancel() {
         mutableOrder.fill(new BigDecimal("1399.50"));
         assertThrows(InvalidOrderTransitionException.class, mutableOrder::cancel);
     }
 
+    // rejected orders cannot be filled
     @Test
     void rejectedOrderCannotFill() {
         mutableOrder.reject();
         assertThrows(InvalidOrderTransitionException.class, () -> mutableOrder.fill(new BigDecimal("1399.50")));
     }
 
-    // Constraints based checks
+    // market order should not have a limit price
     @Test
-    void marketCannotHaveLimitPrice() {
+    void marketOrderCannotHaveLimitPrice() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> new Order(

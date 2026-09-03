@@ -5,8 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.Objects;
-
-// Annotations document the invariants; the constructor below is what actually enforces them.
 public class Instrument {
 
     @NotBlank
@@ -33,16 +31,11 @@ public class Instrument {
         this.delisted = delisted;
     }
 
-    /**
-     * An instrument may be traded when it has not been delisted.
-     * Delisting is a flag on this object rather than a deleted row,
-     * so that the order history, which references the symbol, stays intact.
-     */
+    // flag to check if instrument is delisted or not tradeable anymore
     public boolean isTradable() {
         return !delisted;
     }
 
-    /** Sets the delisted flag. Calling this is the only way to delist. */
     public void delist() {
         this.delisted = true;
     }
