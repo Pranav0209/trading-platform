@@ -9,8 +9,6 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Objects;
-
-// Annotations document the invariants; the constructor below is what actually enforces them.
 public class Position {
 
     @NotNull
@@ -47,11 +45,7 @@ public class Position {
         }
     }
 
-    /**
-     * Applies a buy: recalculates the average cost across the existing
-     * holding and the new units.
-     * averageCost = (oldQty * oldAvg + units * price) / (oldQty + units)
-     */
+    // buy update logic, take old position and new position to obtain new average price
     public void buy(BigDecimal units, BigDecimal price) {
 
         requirePositive(units);
@@ -68,11 +62,8 @@ public class Position {
         quantity = totalQuantity;
     }
 
-    /**
-     * Applies a sell: reduces the quantity and leaves the average cost
-     * unchanged. A sell that would take the quantity negative is refused.
-     */
-    // Rule 7: held quantity must cover the sell before it is applied.
+    // sell must retain average price and just quantity gets reduced
+    // 7. insuffient holdings in sell
     public void sell(BigDecimal units) {
 
         requirePositive(units);

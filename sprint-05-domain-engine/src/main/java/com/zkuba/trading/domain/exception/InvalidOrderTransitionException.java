@@ -6,6 +6,6 @@ import java.util.UUID;
 public class InvalidOrderTransitionException extends GlobalExceptionHandler {
 
     public InvalidOrderTransitionException(UUID orderId, OrderStatus currentStatus, String operation) {
-        super("ORD-409", "Order " + orderId + " cannot be " + operation + ": already " + currentStatus);
+        super("ORD-411", "Order " + orderId + " cannot be " + operation + ": already " + currentStatus);
     }
 }

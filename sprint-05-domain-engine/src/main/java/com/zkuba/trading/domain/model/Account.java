@@ -10,8 +10,6 @@ import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
 import java.util.Objects;
-
-// Annotations document the invariants; the constructor below is what actually enforces them.
 public class Account {
 
     @NotNull
@@ -59,7 +57,7 @@ public class Account {
     public void debit(BigDecimal amount) {
         requirePositive(amount);
 
-        if (status != AccountStatus.ACTIVE) {
+        if (this.accountIsActive()) {
             throw new AccountNotActiveException(accountId);
         }
 
@@ -73,7 +71,7 @@ public class Account {
     public void credit(BigDecimal amount) {
         requirePositive(amount);
 
-        if (status != AccountStatus.ACTIVE) {
+        if (this.accountIsActive()) {
             throw new AccountNotActiveException(accountId);
         }
 
@@ -111,4 +109,13 @@ public class Account {
             throw new IllegalArgumentException("Amount must be positive");
         }
     }
+
+    // second business rule
+    public boolean accountIsActive(){
+        if (this.account.status = ACTIVE){
+            return true;
+        }
+        return false;
+    }
+
 }

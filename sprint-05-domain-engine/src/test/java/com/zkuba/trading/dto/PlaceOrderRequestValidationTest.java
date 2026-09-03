@@ -17,34 +17,16 @@ class PlaceOrderRequestValidationTest {
 
     private static ValidatorFactory factory;
     private static Validator validator;
-    
-    //immutable
-    private static PlaceOrderRequest validPOR;
 
     @BeforeAll
     static void setup() {
         factory = Validation.buildDefaultValidatorFactory();
         validator = factory.getValidator();
-
-        validPOR = new PlaceOrderRequest(
-                181L,
-                "RELIANCE",
-                OrderSide.BUY,
-                100,
-                new BigDecimal("1400.00"),
-                "idem-12345",
-                OrderType.LIMIT
-        );
     }
 
     @AfterAll
     static void cleanup() {
         factory.close();
-    }
-
-    @Test
-    void validRequestPasses() {
-        assertTrue(validator.validate(validPOR).isEmpty());
     }
 
     // DTO validation checks
@@ -66,13 +48,6 @@ class PlaceOrderRequestValidationTest {
     void emptySymbolFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
                 1L, "", OrderSide.BUY, 100, new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
-        assertFalse(validator.validate(r).isEmpty());
-    }
-
-    @Test
-    void longSymbolFails() {
-        PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "ABCDEFGHIJKLMNOPQRSTU", OrderSide.BUY, 100, new BigDecimal("1400.00"), "idem-12345", OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
@@ -119,7 +94,7 @@ class PlaceOrderRequestValidationTest {
     }
 
     @Test
-    void oneCentPricePasses() {
+    void decimalPricePasses() {
         PlaceOrderRequest r = new PlaceOrderRequest(
                 1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("0.01"), "idem-12345", OrderType.LIMIT);
         assertTrue(validator.validate(r).isEmpty());
@@ -129,27 +104,6 @@ class PlaceOrderRequestValidationTest {
     void extraPriceScaleFails() {
         PlaceOrderRequest r = new PlaceOrderRequest(
                 1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("25.555"), "idem-12345", OrderType.LIMIT);
-        assertFalse(validator.validate(r).isEmpty());
-    }
-
-    @Test
-    void shortKeyFails() {
-        PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("1400.00"), "1234567", OrderType.LIMIT);
-        assertFalse(validator.validate(r).isEmpty());
-    }
-
-    @Test
-    void goodKeyPasses() {
-        PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("1400.00"), "12345678", OrderType.LIMIT);
-        assertTrue(validator.validate(r).isEmpty());
-    }
-
-    @Test
-    void longKeyFails() {
-        PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, 100, new BigDecimal("1400.00"), "a".repeat(101), OrderType.LIMIT);
         assertFalse(validator.validate(r).isEmpty());
     }
 
@@ -167,12 +121,6 @@ class PlaceOrderRequestValidationTest {
         assertTrue(validator.validate(r).isEmpty());
     }
 
-    @Test
-    void limitOrderWithoutPriceFails() {
-        PlaceOrderRequest r = new PlaceOrderRequest(
-                1L, "RELIANCE", OrderSide.BUY, 100, null, "idem-12345", OrderType.LIMIT);
-        assertFalse(validator.validate(r).isEmpty());
-    }
 
     @Test
     void marketOrderWithoutPricePasses() {

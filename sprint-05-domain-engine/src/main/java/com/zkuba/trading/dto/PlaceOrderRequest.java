@@ -33,7 +33,7 @@ public class PlaceOrderRequest {
     @Positive
     private Integer quantity;
 
-    // required for LIMIT, must be absent for MARKET; see isPriceConsistentWithOrderType()
+    // must be present for limit and not for market
     @DecimalMin(value = "0.00", inclusive = false)
     @Digits(integer = 10, fraction = 2)
     private BigDecimal price;
@@ -88,10 +88,10 @@ public class PlaceOrderRequest {
         return idempotencyKey;
     }
 
-    @AssertTrue(message = "Price is required for LIMIT orders and must be absent for MARKET orders")
+    @AssertTrue(message = "for limit it must have price, for limit no price")
     public boolean isPriceConsistentWithOrderType() {
         if (orderType == null) {
-            return true; // reported separately by @NotNull on orderType
+            return true;
         }
         return orderType == OrderType.MARKET ? price == null : price != null;
     }
