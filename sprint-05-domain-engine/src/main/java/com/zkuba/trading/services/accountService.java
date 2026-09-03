@@ -1,6 +1,4 @@
 package com.zkuba.trading.services;
-
-import com.zkuba.trading.domain.model.Account;
 import com.zkuba.trading.domain.exception.AccountNotFoundException;
 
 public class accountService{
