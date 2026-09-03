@@ -57,7 +57,7 @@ public class Account {
     public void debit(BigDecimal amount) {
         requirePositive(amount);
 
-        if (this.accountIsActive()) {
+        if (!this.accountIsActive()) {
             throw new AccountNotActiveException(accountId);
         }
 
@@ -71,7 +71,7 @@ public class Account {
     public void credit(BigDecimal amount) {
         requirePositive(amount);
 
-        if (this.accountIsActive()) {
+        if (!this.accountIsActive()) {
             throw new AccountNotActiveException(accountId);
         }
 

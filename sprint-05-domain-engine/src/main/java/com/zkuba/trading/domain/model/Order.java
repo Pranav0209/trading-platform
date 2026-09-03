@@ -118,7 +118,7 @@ public class Order {
                     "Quantity must be greater than zero");
         }
 
-        if (executedPrice.compareTo(BigDecimal.ZERO) <= 0){
+        if (executedPrice != null && executedPrice.signum() <= 0){
             throw new IllegalArgumentException(
                     "Executed price must be greater than zero"
             );
