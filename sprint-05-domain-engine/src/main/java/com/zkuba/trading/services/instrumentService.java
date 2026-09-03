@@ -7,7 +7,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class instrumentService{
 
-    public boolean instrumentExists(Instrument instrument){
-
+    public boolean instrumentExists(String symbol){
+        // check w repo
+            if (symbol == null){
+                throw new InstrumentNotFoundException();
+            }
+            return true;
+        }
     }
 }
