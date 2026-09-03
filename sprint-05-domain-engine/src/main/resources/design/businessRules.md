@@ -25,7 +25,7 @@ nforce existence, then active status, then a tradable instrument, then quantity,
 Buy: 
 6. enough funds ACC-
 
-Sell
+Sell: 
 7. Enough holdings
 
 8. Idempotency -> checked last cost the previous errors are more important

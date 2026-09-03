@@ -1,3 +1,72 @@
-{init: {'sequence': {'mirrorActors': false}}}
+%% {init: {'sequence': {'mirrorActors': false}}}
+
+
 sequenceDiagram
 
+
+    actor C as Client
+    participant O as Order
+    participant A as Account
+    participant I as Instrument
+    participant P as Position
+
+    C->>O: Place order
+
+    O->>A: 1. accountExists()
+    alt Account not found
+        A-->>O: Not found
+        O-->>C: ACC-404
+    else Account exists
+        A-->>O: A
+
+        O->>A: 2. accountActive()
+        alt A inactive
+            A-->>O: Not Active
+            O-->>C: ACC-403
+        else Active
+            O->>I: 3. instrumentValid()
+            alt Insturment not found / delisted
+                I-->>O: Not found / delisted
+                O-->>C: INS-404
+
+            else Valid
+                O->>O: 4. Quantity is positive?
+                alt Invalid quantity
+                    O-->>C: VAL-422 Quantity is not positive
+                else Valid
+
+                    O->>O: 5. Price is positive?
+                    alt Invalid price
+                        O-->>C: VAL-422 Price is not positive
+                    else Valid
+
+                        alt BUY
+                            O->>A: 6. Suffient funds found?
+                            alt Insufficient funds
+                                A-->>O: Refuse
+                                O-->>C: ORD-400 Insufficient funds
+                            else Affordable
+                            end
+                        end
+
+                        alt SELL
+                            O->>O: 7. Held quantity sufficient?
+                            alt Insufficient holdings
+                                O-->>C: ORD-410 Insufficient holdings to sell
+                            else Sufficient
+                            end
+                        end
+                    end
+                end
+            end
+        end
+         O->>O: 8. Key already used?
+            alt Duplicate
+                O-->>O: Exists
+                O-->>C: Duplicate order
+            else New key
+                O-->>O: Available
+                O->>O: Create order as NEW
+                O-->>C: Order accepted
+            end
+    end
