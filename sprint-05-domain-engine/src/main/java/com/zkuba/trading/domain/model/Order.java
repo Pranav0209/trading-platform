@@ -26,21 +26,21 @@ public class Order {
     private final OrderSide side;
     @NotNull
     @Positive
-    private final BigDecimal quantity;
-    // null is valid for MARKET orders, so no @Positive here; validate() checks it conditionally
+    private final Integer quantity;
     private final BigDecimal limitPrice;
     @NotBlank
     private final String idempotencyKey;
     private final UUID orderId = UUID.randomUUID();
     @NotNull
     private OrderStatus status;
+    private BigDecimal executedPrice;
 
     public Order(
             Long accountId,
             String symbol,
             OrderType type,
             OrderSide side,
-            BigDecimal quantity,
+            Integer quantity,
             BigDecimal limitPrice,
             String idempotencyKey) {
 
@@ -52,12 +52,14 @@ public class Order {
         this.limitPrice = limitPrice;           // null is valid for MARKET orders
         this.idempotencyKey = Objects.requireNonNull(idempotencyKey);
         this.status = OrderStatus.NEW;
+        this.executedPrice = null;              // null until order is FILLED
         validate();
     }
 
     /** Transitions the order to FILLED. */
-    public void fill() {
+    public void fill(BigDecimal executedPrice) {
         ensureTransitionAllowed("fill");
+        this.executedPrice = Objects.requireNonNull(executedPrice);
         status = OrderStatus.FILLED;
     }
 
@@ -93,7 +95,7 @@ public class Order {
         return side;
     }
 
-    public BigDecimal getQuantity() {
+    public Integer getQuantity() {
         return quantity;
     }
 
@@ -109,10 +111,14 @@ public class Order {
         return status;
     }
 
+    public BigDecimal getExecutedPrice() {
+        return executedPrice;
+    }
+
     // Rules 4 and 5: re-checked here so a caller that skips the DTO validator can't bypass them.
     private void validate() {
 
-        if (quantity.signum() <= 0) {
+        if (quantity <= 0) {
             throw new IllegalArgumentException(
                     "Quantity must be greater than zero");
         }
