@@ -2,17 +2,11 @@
 
 set -euo pipefail
 
-# Directory containing this script: rootdir/Database
+# resolve paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Directory containing database migrations
 MIGRATIONS_DIR="$SCRIPT_DIR/migrations"
-
-# Project root: rootdir
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
-# Load root .env
-ENV_FILE="$REPO_ROOT/.env"
+SEED_DIR="$SCRIPT_DIR/seed"
+ENV_FILE="$SCRIPT_DIR/.env"
 
 if [[ ! -f "$ENV_FILE" ]]; then
     echo "ERROR: .env file not found at $ENV_FILE"
@@ -23,13 +17,13 @@ set -a
 source "$ENV_FILE"
 set +a
 
-# PostgreSQL configuration from .env
+# connection settings from .env
 HOST="${POSTGRES_HOST:-localhost}"
 PORT="${POSTGRES_PORT:-5432}"
 USER="${POSTGRES_USER:-postgres}"
 DATABASE="${TARGET_DATABASE:-${POSTGRES_DB:-}}"
 
-# Validate database
+# validate database
 if [[ -z "$DATABASE" ]]; then
     echo "ERROR: TARGET_DATABASE or POSTGRES_DB must be set in .env"
     exit 1
@@ -41,14 +35,15 @@ echo "Port:     $PORT"
 echo "Database: $DATABASE"
 echo "User:     $USER"
 
-# -W / --password forces psql to prompt for the password
+# apply schema then seed data
 psql \
     --host="$HOST" \
     --port="$PORT" \
     --username="$USER" \
     --dbname="$DATABASE" \
     -v ON_ERROR_STOP=1 \
-    -f "$MIGRATIONS_DIR/zkuba_dbschema.sql"
+    -f "$MIGRATIONS_DIR/zkuba_dbschema.sql" \
+    -f "$SEED_DIR/zkuba_dbseed.sql"
 
 echo "Database setup completed successfully."
 
