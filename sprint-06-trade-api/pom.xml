@@ -44,6 +44,18 @@
       <artifactId>spring-boot-starter-security</artifactId>
     </dependency>
 
+    <!-- AOP for logging -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-aop</artifactId>
+    </dependency>
+
+    <!-- Actuator for health checks -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
     <!-- MyBatis -->
     <dependency>
       <groupId>org.mybatis.spring.boot</groupId>
@@ -56,6 +68,13 @@
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
+    </dependency>
+
+    <!-- Environment Variables from .env file -->
+    <dependency>
+      <groupId>me.paulschwarz</groupId>
+      <artifactId>spring-dotenv</artifactId>
+      <version>4.0.0</version>
     </dependency>
 
     <dependency>
