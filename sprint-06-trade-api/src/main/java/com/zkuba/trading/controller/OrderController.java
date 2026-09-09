@@ -33,11 +33,13 @@ public class OrderController {
     public OrderResponse cancel(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String id) {
-        String cleanId = id.startsWith("ORD-") ? id.substring(4) : id;
+        if (id != null && id.startsWith("ORD-")) {
+            throw new com.zkuba.trading.exception.InvalidOrderException("Order ID must be a raw UUID without 'ORD-' prefix: " + id);
+        }
         try {
-            return orderService.cancel(user.userId(), UUID.fromString(cleanId));
+            return orderService.cancel(user.userId(), UUID.fromString(id));
         } catch (IllegalArgumentException e) {
-            throw new com.zkuba.trading.exception.InvalidOrderException("Invalid order ID: " + id);
+            throw new com.zkuba.trading.exception.InvalidOrderException("Invalid order ID format: " + id);
         }
     }
 }
