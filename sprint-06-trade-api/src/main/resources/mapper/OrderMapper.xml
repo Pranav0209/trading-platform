@@ -40,16 +40,16 @@
 
   <update id="updateAccountBalance">
     UPDATE accounts
-    SET cash_balance = #{cashBalance},
+    SET cash_balance = #{newBalance},
         version = version + 1,
         updated_at = CURRENT_TIMESTAMP
-    WHERE id = #{id} AND version = #{expectedVersion}
+    WHERE id = #{accountId} AND version = #{expectedVersion}
   </update>
 
   <select id="findByIdAndAccountId" resultMap="OrderResultMap">
     SELECT id, account_id, symbol, side, order_type, quantity, limit_price, executed_price, status, idempotency_key, created_at
     FROM orders
-    WHERE id = #{id} AND account_id = #{accountId}
+    WHERE id = #{orderId} AND account_id = #{accountId}
   </select>
 
   <select id="findById" resultMap="OrderResultMap">
@@ -74,10 +74,8 @@
     UPDATE orders
     SET status = 'CANCELLED',
         updated_at = CURRENT_TIMESTAMP
-    WHERE id = #{id}
-      <if test="accountId != null">
-        AND account_id = #{accountId}
-      </if>
+    WHERE id = #{orderId}
+      AND account_id = #{accountId}
       AND status = #{expectedStatus}
   </update>
 

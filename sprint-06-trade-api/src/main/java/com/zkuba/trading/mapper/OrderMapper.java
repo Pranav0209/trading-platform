@@ -16,11 +16,11 @@ public interface OrderMapper {
     Account findAccountById(@Param("id") Long id);
 
     int updateAccountBalance(
-            @Param("id") Long id,
-            @Param("cashBalance") BigDecimal cashBalance,
+            @Param("accountId") Long accountId,
+            @Param("newBalance") BigDecimal newBalance,
             @Param("expectedVersion") Integer expectedVersion);
 
-    Order findByIdAndAccountId(@Param("id") UUID id, @Param("accountId") Long accountId);
+    Order findByIdAndAccountId(@Param("orderId") UUID orderId, @Param("accountId") Long accountId);
 
     Order findById(@Param("id") UUID id);
 
@@ -29,7 +29,7 @@ public interface OrderMapper {
     int insert(Order order);
 
     int cancelOrderConditionally(
-            @Param("id") UUID id,
+            @Param("orderId") UUID orderId,
             @Param("accountId") Long accountId,
             @Param("expectedStatus") String expectedStatus);
 }
