@@ -1,11 +1,7 @@
 package com.zkuba.trading.exception;
 
-public class OrderConflictException extends com.zkuba.trading.domain.exception.OrderConflictException {
+public class OrderConflictException extends ConflictException {
     public OrderConflictException(String message) {
-        super(message);
-    }
-
-    public OrderConflictException() {
-        super();
+        super("ORD-409", message);
     }
 }

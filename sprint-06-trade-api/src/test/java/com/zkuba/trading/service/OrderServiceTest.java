@@ -60,7 +60,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("placing an order updates balance and inserts order with expected computed values")
     void placeOrder_success_updatesBalanceAndInsertsOrder() {
-        PlaceOrderRequest request = new PlaceOrderRequest("aapl", OrderSide.BUY, OrderType.MARKET, 2, null, "key-1");
+        PlaceOrderRequest request = new PlaceOrderRequest(null, "aapl", OrderSide.BUY, OrderType.MARKET, 2, null, "key-1");
         BigDecimal price = new BigDecimal("100.00");
         BigDecimal expectedBalance = new BigDecimal("800.00");
 
@@ -89,7 +89,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("insufficient funds throws before any mapper write")
     void placeOrder_insufficientFunds_throwsBeforeWrite() {
-        PlaceOrderRequest request = new PlaceOrderRequest("AAPL", OrderSide.BUY, OrderType.MARKET, 2, null, "key-2");
+        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.BUY, OrderType.MARKET, 2, null, "key-2");
 
         when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
         when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("600.00"));
@@ -104,7 +104,7 @@ class OrderServiceTest {
     @Test
     @DisplayName("balance update affected rows 0 throws conflict and prevents insert")
     void placeOrder_optimisticLockFailure_throwsConflict() {
-        PlaceOrderRequest request = new PlaceOrderRequest("AAPL", OrderSide.BUY, OrderType.MARKET, 1, null, "key-3");
+        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.BUY, OrderType.MARKET, 1, null, "key-3");
 
         when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
         when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("100.00"));

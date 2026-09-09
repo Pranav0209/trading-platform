@@ -2,8 +2,8 @@ package com.zkuba.trading.service;
 
 import com.zkuba.trading.domain.entity.Instrument;
 import com.zkuba.trading.domain.entity.Watchlist;
-import com.zkuba.trading.domain.exception.InstrumentNotFoundException;
-import com.zkuba.trading.domain.exception.WatchlistNotFoundException;
+import com.zkuba.trading.exception.InstrumentNotFoundException;
+import com.zkuba.trading.exception.WatchlistNotFoundException;
 import com.zkuba.trading.dto.request.CreateWatchlistRequest;
 import com.zkuba.trading.dto.response.WatchlistResponse;
 import com.zkuba.trading.mapper.WatchlistMapper;
@@ -38,7 +38,7 @@ class WatchlistServiceTest {
     private WatchlistRepository watchlists;
 
     @InjectMocks
-    private WatchlistService watchlistService;
+    private WatchlistServiceImpl watchlistService;
 
     private Watchlist userWatchlist;
 

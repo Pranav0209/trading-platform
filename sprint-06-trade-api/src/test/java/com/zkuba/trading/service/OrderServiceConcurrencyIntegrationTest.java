@@ -1,5 +1,7 @@
 package com.zkuba.trading.service;
 
+import com.zkuba.trading.domain.enums.OrderSide;
+import com.zkuba.trading.domain.enums.OrderType;
 import com.zkuba.trading.dto.request.PlaceOrderRequest;
 import com.zkuba.trading.dto.response.OrderResponse;
 import com.zkuba.trading.exception.OrderConflictException;
@@ -81,12 +83,10 @@ class OrderServiceConcurrencyIntegrationTest {
         }).when(orderMapper).findAccountByUserId(userId);
 
         PlaceOrderRequest requestOne =
-                new PlaceOrderRequest(symbol, com.zkuba.trading.domain.enums.OrderSide.BUY,
-                        com.zkuba.trading.domain.enums.OrderType.MARKET, 1, null,
+                new PlaceOrderRequest(null, symbol, OrderSide.BUY, OrderType.MARKET, 1, null,
                         "concurrency-key-" + UUID.randomUUID());
         PlaceOrderRequest requestTwo =
-                new PlaceOrderRequest(symbol, com.zkuba.trading.domain.enums.OrderSide.BUY,
-                        com.zkuba.trading.domain.enums.OrderType.MARKET, 1, null,
+                new PlaceOrderRequest(null, symbol, OrderSide.BUY, OrderType.MARKET, 1, null,
                         "concurrency-key-" + UUID.randomUUID());
 
         ExecutorService executor = Executors.newFixedThreadPool(2);

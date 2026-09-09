@@ -1,7 +1,7 @@
 package com.zkuba.trading.service;
 
 import com.zkuba.trading.domain.entity.Instrument;
-import com.zkuba.trading.domain.exception.InstrumentNotFoundException;
+import com.zkuba.trading.exception.InstrumentNotFoundException;
 import com.zkuba.trading.repository.InstrumentRepository;
 import java.util.List;
 import java.util.Optional;
@@ -24,7 +24,7 @@ class InstrumentServiceTest {
     private InstrumentRepository instruments;
 
     @InjectMocks
-    private InstrumentService instrumentService;
+    private InstrumentServiceImpl instrumentService;
 
     private Instrument aapl;
 

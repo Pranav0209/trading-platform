@@ -3,7 +3,7 @@ package com.zkuba.trading.service;
 import com.zkuba.trading.domain.entity.User;
 import com.zkuba.trading.domain.enums.UserRole;
 import com.zkuba.trading.domain.enums.UserStatus;
-import com.zkuba.trading.domain.exception.UnauthorizedException;
+import com.zkuba.trading.exception.UnauthorizedException;
 import com.zkuba.trading.dto.request.LoginRequest;
 import com.zkuba.trading.dto.response.LoginResponse;
 import com.zkuba.trading.repository.UserRepository;
@@ -35,7 +35,7 @@ class AuthServiceTest {
     private JwtService jwtService;
 
     @InjectMocks
-    private AuthService authService;
+    private AuthServiceImpl authService;
 
     private User activeUser;
     private LoginRequest validLoginRequest;

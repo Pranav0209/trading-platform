@@ -2,78 +2,37 @@ package com.zkuba.trading.service;
 
 import com.zkuba.trading.domain.entity.Account;
 import com.zkuba.trading.domain.entity.Position;
-import com.zkuba.trading.domain.enums.AccountStatus;
-import com.zkuba.trading.domain.exception.AccountAlreadyExistsException;
-import com.zkuba.trading.domain.exception.AccountNotActiveException;
-import com.zkuba.trading.domain.exception.AccountNotFoundException;
+import com.zkuba.trading.domain.enums.OrderStatus;
 import com.zkuba.trading.dto.request.CreateAccountRequest;
 import com.zkuba.trading.dto.response.AccountResponse;
-import com.zkuba.trading.repository.AccountRepository;
-import com.zkuba.trading.repository.PositionRepository;
-import java.math.BigDecimal;
+import com.zkuba.trading.dto.response.BalanceResponse;
+import com.zkuba.trading.dto.response.OrderHistoryEntry;
+import com.zkuba.trading.dto.response.PositionResponse;
+import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.UUID;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-@Service
-public class AccountService {
+public interface AccountService {
 
-    @Autowired
-    private AccountRepository accounts;
+    AccountResponse create(CreateAccountRequest request);
 
-    @Autowired
-    private PositionRepository positionRepository;
+    Account getByUserId(Long userId);
 
-    @Autowired
-    private UserService userService;
+    Account getAccountAndValidateAccess(Long accountId, Long userId);
 
-    @Value("${trading.default-initial-balance}")
-    private BigDecimal defaultBalance;
+    AccountResponse getAccountResponseById(Long accountId, Long userId);
 
-    @Transactional
-    public AccountResponse create(CreateAccountRequest request) {
-        userService.get(request.userId());
-        if (accounts.findByUserId(request.userId()).isPresent()) {
-            throw new AccountAlreadyExistsException(request.userId());
-        }
-        Account account = new Account();
-        account.setAccountNumber("ACC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
-        account.setUserId(request.userId());
-        account.setCashBalance(defaultBalance);
-        account.setCurrency(request.currency() == null ? "USD" : request.currency());
-        account.setStatus(AccountStatus.ACTIVE);
-        account.setVersion(0);
-        accounts.save(account);
-        return response(account);
-    }
+    AccountResponse responseByUser(Long userId);
 
-    public Account getByUserId(Long userId) {
-        Account account = accounts.findByUserId(userId)
-                .orElseThrow(() -> new AccountNotFoundException(userId));
-        if (account.getStatus() != AccountStatus.ACTIVE) {
-            throw new AccountNotActiveException(account.getId());
-        }
-        return account;
-    }
+    BalanceResponse getBalance(Long accountId, Long userId);
 
-    public AccountResponse responseByUser(Long userId) {
-        return response(getByUserId(userId));
-    }
+    List<PositionResponse> getPositionsResponse(Long accountId, Long userId);
 
-    public List<Position> getPositions(Long userId) {
-        return positionRepository.findByAccountId(getByUserId(userId).getId());
-    }
+    List<Position> getPositions(Long userId);
 
-    private AccountResponse response(Account account) {
-        return new AccountResponse(
-                account.getId(),
-                account.getAccountNumber(),
-                account.getUserId(),
-                account.getCashBalance(),
-                account.getCurrency(),
-                account.getStatus().name());
-    }
+    List<OrderHistoryEntry> getOrderHistory(
+            Long accountId,
+            OrderStatus status,
+            OffsetDateTime from,
+            OffsetDateTime to,
+            Long userId);
 }

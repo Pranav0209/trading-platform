@@ -16,7 +16,7 @@ class MarketDataServiceTest {
 
     @BeforeEach
     void setUp() {
-        marketDataService = new MarketDataService();
+        marketDataService = new MarketDataServiceImpl();
     }
 
     @ParameterizedTest

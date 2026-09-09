@@ -4,9 +4,9 @@ import com.zkuba.trading.domain.entity.Account;
 import com.zkuba.trading.domain.entity.Position;
 import com.zkuba.trading.domain.entity.User;
 import com.zkuba.trading.domain.enums.AccountStatus;
-import com.zkuba.trading.domain.exception.AccountAlreadyExistsException;
-import com.zkuba.trading.domain.exception.AccountNotActiveException;
-import com.zkuba.trading.domain.exception.AccountNotFoundException;
+import com.zkuba.trading.exception.AccountAlreadyExistsException;
+import com.zkuba.trading.exception.AccountNotActiveException;
+import com.zkuba.trading.exception.AccountNotFoundException;
 import com.zkuba.trading.dto.request.CreateAccountRequest;
 import com.zkuba.trading.dto.response.AccountResponse;
 import com.zkuba.trading.repository.AccountRepository;
@@ -42,7 +42,7 @@ class AccountServiceTest {
     private UserService userService;
 
     @InjectMocks
-    private AccountService accountService;
+    private AccountServiceImpl accountService;
 
     private BigDecimal defaultBalance;
     private Account activeAccount;
@@ -72,9 +72,7 @@ class AccountServiceTest {
         AccountResponse response = accountService.create(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.userId()).isEqualTo(1L);
         assertThat(response.cashBalance()).isEqualTo(defaultBalance);
-        assertThat(response.currency()).isEqualTo("USD");
         assertThat(response.status()).isEqualTo("ACTIVE");
 
         verify(accounts).save(any(Account.class));
@@ -90,7 +88,6 @@ class AccountServiceTest {
         AccountResponse response = accountService.create(request);
 
         assertThat(response).isNotNull();
-        assertThat(response.currency()).isEqualTo("EUR");
     }
 
     @Test
@@ -143,7 +140,7 @@ class AccountServiceTest {
 
         assertThat(response).isNotNull();
         assertThat(response.id()).isEqualTo(100L);
-        assertThat(response.accountNumber()).isEqualTo("ACC-12345678");
+        assertThat(response.accountId()).isEqualTo("ACC-12345678");
     }
 
     @Test

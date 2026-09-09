@@ -2,8 +2,9 @@ package com.zkuba.trading.dto.response;
 
 public record AccountResponse(
         Long id,
-        String accountNumber,
-        Long userId,
+        String accountId,
+        String holderName,
         java.math.BigDecimal cashBalance,
-        String currency,
-        String status) {}
+        String status,
+        Integer version,
+        String lastUpdated) {}

@@ -1,4 +1,4 @@
-package com.zkuba.trading.domain.exception;
+package com.zkuba.trading.exception;
 
 public class AccountAlreadyExistsException extends ConflictException {
     private final Long userId;

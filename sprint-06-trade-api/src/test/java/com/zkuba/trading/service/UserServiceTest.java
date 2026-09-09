@@ -3,8 +3,8 @@ package com.zkuba.trading.service;
 import com.zkuba.trading.domain.entity.User;
 import com.zkuba.trading.domain.enums.UserRole;
 import com.zkuba.trading.domain.enums.UserStatus;
-import com.zkuba.trading.domain.exception.DuplicateUserException;
-import com.zkuba.trading.domain.exception.UserNotFoundException;
+import com.zkuba.trading.exception.DuplicateUserException;
+import com.zkuba.trading.exception.UserNotFoundException;
 import com.zkuba.trading.dto.request.RegisterRequest;
 import com.zkuba.trading.dto.response.RegisterResponse;
 import com.zkuba.trading.repository.UserRepository;
@@ -35,7 +35,7 @@ class UserServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private UserService userService;
+    private UserServiceImpl userService;
 
     private RegisterRequest registerRequest;
     private User user;

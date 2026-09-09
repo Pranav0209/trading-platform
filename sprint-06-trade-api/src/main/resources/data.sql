@@ -2,7 +2,9 @@
 INSERT INTO instruments (symbol, display_name, asset_class, currency, tradable) VALUES
     ('GOOGL', 'Alphabet Inc.', 'EQUITY', 'USD', TRUE),
     ('AMZN', 'Amazon.com Inc.', 'EQUITY', 'USD', TRUE),
-    ('META', 'Meta Platforms Inc.', 'EQUITY', 'USD', TRUE)
+    ('META', 'Meta Platforms Inc.', 'EQUITY', 'USD', TRUE),
+    ('ACME', 'Acme Corporation', 'EQUITY', 'USD', TRUE),
+    ('INFY.NS', 'Infosys Limited', 'EQUITY', 'INR', TRUE)
 ON CONFLICT (symbol) DO NOTHING;
 
 -- Seed Sample Users (Password for all seeded users is: password123)

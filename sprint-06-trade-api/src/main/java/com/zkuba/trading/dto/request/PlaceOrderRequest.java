@@ -9,6 +9,10 @@ import java.math.BigDecimal;
 
 public record PlaceOrderRequest(
 
+        @NotNull
+        @Min(1)
+        Long accountId,
+
         @NotBlank
         String symbol,
 

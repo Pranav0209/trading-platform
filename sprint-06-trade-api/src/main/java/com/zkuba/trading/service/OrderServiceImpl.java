@@ -6,11 +6,12 @@ import com.zkuba.trading.domain.enums.AccountStatus;
 import com.zkuba.trading.domain.enums.OrderSide;
 import com.zkuba.trading.domain.enums.OrderStatus;
 import com.zkuba.trading.domain.enums.OrderType;
-import com.zkuba.trading.domain.exception.AccountNotActiveException;
-import com.zkuba.trading.domain.exception.AccountNotFoundException;
-import com.zkuba.trading.domain.exception.InvalidOrderException;
 import com.zkuba.trading.dto.request.PlaceOrderRequest;
 import com.zkuba.trading.dto.response.OrderResponse;
+import com.zkuba.trading.exception.AccountNotActiveException;
+import com.zkuba.trading.exception.AccountNotFoundException;
+import com.zkuba.trading.exception.ForbiddenException;
+import com.zkuba.trading.exception.InvalidOrderException;
 import com.zkuba.trading.exception.InsufficientFundsException;
 import com.zkuba.trading.exception.OrderConflictException;
 import com.zkuba.trading.mapper.OrderMapper;
@@ -42,10 +43,24 @@ public class OrderServiceImpl implements OrderService {
         validate(request);
         String symbol = request.symbol().trim().toUpperCase(Locale.ROOT);
 
-        // External price lookup is done before opening the transactional section.
         BigDecimal marketPrice = marketDataService.getCurrentPrice(symbol);
 
-        Account account = requireActiveAccount(userId);
+        Account account;
+        if (request.accountId() != null) {
+            account = orderMapper.findAccountById(request.accountId());
+            if (account == null) {
+                throw new AccountNotFoundException(request.accountId());
+            }
+            if (!account.getUserId().equals(userId)) {
+                throw new ForbiddenException("ACC-403", "Account does not belong to user");
+            }
+            if (account.getStatus() != AccountStatus.ACTIVE) {
+                throw new AccountNotActiveException(account.getId());
+            }
+        } else {
+            account = requireActiveAccount(userId);
+        }
+
         BigDecimal executionPrice = request.orderType() == OrderType.MARKET
             ? marketPrice
             : request.limitPrice();
@@ -56,7 +71,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional
-        public OrderResponse placeOrderAtomically(
+    public OrderResponse placeOrderAtomically(
             Account account,
             PlaceOrderRequest request,
             String symbol,
@@ -73,7 +88,7 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderConflictException("Order insert failed for account: " + account.getId());
         }
 
-        return response(order, "Order placed");
+        return response(order, "Order executed");
     }
 
     @Override

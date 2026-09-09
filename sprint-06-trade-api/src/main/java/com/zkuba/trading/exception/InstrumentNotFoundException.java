@@ -1,4 +1,4 @@
-package com.zkuba.trading.domain.exception;
+package com.zkuba.trading.exception;
 
 public class InstrumentNotFoundException extends NotFoundException {
     private final String symbol;

@@ -26,6 +26,12 @@ public interface OrderMapper {
 
     List<Order> findByAccountId(@Param("accountId") Long accountId);
 
+    List<Order> findByAccountIdFiltered(
+            @Param("accountId") Long accountId,
+            @Param("status") String status,
+            @Param("from") java.time.OffsetDateTime from,
+            @Param("to") java.time.OffsetDateTime to);
+
     int insert(Order order);
 
     int cancelOrderConditionally(
