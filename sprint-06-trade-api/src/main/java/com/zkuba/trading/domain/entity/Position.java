@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 
 @Entity
@@ -25,6 +26,9 @@ public class Position {
 
     @Column(name = "average_cost")
     private BigDecimal averageCost;
+
+    @Version
+    private Integer version;
 
     public Long getId() {
         return id;
@@ -64,6 +68,14 @@ public class Position {
 
     public void setAverageCost(BigDecimal averageCost) {
         this.averageCost = averageCost;
+    }
+
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
     }
 }
 

@@ -29,10 +29,10 @@ ON CONFLICT (id) DO NOTHING;
 SELECT setval('accounts_id_seq', (SELECT MAX(id) FROM accounts));
 
 -- Seed User Positions
-INSERT INTO positions (id, account_id, symbol, quantity, average_cost) VALUES
-    (1, 2, 'AAPL', 15, 220.5000),
-    (2, 2, 'NVDA', 25, 165.0000),
-    (3, 3, 'MSFT', 10, 495.2500)
+INSERT INTO positions (id, account_id, symbol, quantity, average_cost, version) VALUES
+    (1, 2, 'AAPL', 15, 220.5000, 0),
+    (2, 2, 'NVDA', 25, 165.0000, 0),
+    (3, 3, 'MSFT', 10, 495.2500, 0)
 ON CONFLICT (account_id, symbol) DO NOTHING;
 
 -- Reset sequence for positions table
