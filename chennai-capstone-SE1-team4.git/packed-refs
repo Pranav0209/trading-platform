@@ -1,0 +1,9 @@
+# pack-refs with: peeled fully-peeled sorted 
+d03c3ecac3770a52384c42d222311fb94ea3d002 refs/heads/Sprint-03-Postgres
+5f8a1a3ed300c96f790470db760315b3b2623b26 refs/heads/main
+534e2c27b807580b4cd59b4d2b1c6b3a0bda1d9d refs/heads/sprint-04-etl-analytics
+f6bd5bd3cd7bf0eb9b6a0f6f15dd26d0b7c0a879 refs/heads/sprint-05-java
+534e2c27b807580b4cd59b4d2b1c6b3a0bda1d9d refs/pull/1/head
+d03c3ecac3770a52384c42d222311fb94ea3d002 refs/pull/2/head
+f6bd5bd3cd7bf0eb9b6a0f6f15dd26d0b7c0a879 refs/pull/3/head
+eaa8e68a8ff21a2bf81e2f89009582a6c1482fbd refs/pull/3/merge
