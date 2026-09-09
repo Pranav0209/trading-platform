@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zkuba.trading.mapper.PositionMapper">
+  <insert id="upsert">INSERT INTO positions(account_id,symbol,quantity,average_cost) VALUES(#{accountId},#{symbol},#{quantity},#{averageCost}) ON CONFLICT(account_id,symbol) DO UPDATE SET quantity=EXCLUDED.quantity,average_cost=EXCLUDED.average_cost,updated_at=CURRENT_TIMESTAMP</insert>
+</mapper>
+
