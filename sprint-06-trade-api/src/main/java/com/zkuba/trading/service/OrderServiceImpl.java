@@ -2,33 +2,36 @@ package com.zkuba.trading.service;
 
 import com.zkuba.trading.domain.entity.Account;
 import com.zkuba.trading.domain.entity.Order;
+import com.zkuba.trading.domain.entity.Position;
 import com.zkuba.trading.domain.enums.AccountStatus;
 import com.zkuba.trading.domain.enums.OrderSide;
 import com.zkuba.trading.domain.enums.OrderStatus;
 import com.zkuba.trading.domain.enums.OrderType;
 import com.zkuba.trading.dto.request.PlaceOrderRequest;
+import com.zkuba.trading.dto.request.UpdateOrderRequest;
 import com.zkuba.trading.dto.response.OrderResponse;
 import com.zkuba.trading.exception.AccountNotActiveException;
 import com.zkuba.trading.exception.AccountNotFoundException;
+import com.zkuba.trading.exception.DuplicateOrderException;
 import com.zkuba.trading.exception.ForbiddenException;
-import com.zkuba.trading.exception.InvalidOrderException;
 import com.zkuba.trading.exception.InsufficientFundsException;
+import com.zkuba.trading.exception.InsufficientHoldingsException;
+import com.zkuba.trading.exception.InvalidOrderException;
+import com.zkuba.trading.exception.InvalidOrderTransitionException;
 import com.zkuba.trading.exception.OrderConflictException;
 import com.zkuba.trading.mapper.OrderMapper;
+import com.zkuba.trading.repository.OrderRepository;
+import com.zkuba.trading.repository.PositionRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.zkuba.trading.domain.entity.Position;
-import com.zkuba.trading.exception.InsufficientHoldingsException;
-import com.zkuba.trading.repository.PositionRepository;
-import java.math.RoundingMode;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -37,18 +40,22 @@ public class OrderServiceImpl implements OrderService {
     private OrderMapper orderMapper;
 
     @Autowired
+    private OrderRepository orderRepository;
+
+    @Autowired
     private MarketDataService marketDataService;
 
     @Autowired
     private PositionRepository positionRepository;
 
-    @Autowired
-    @Lazy
-    private OrderServiceImpl self;
-
     @Override
+    @Transactional
     public OrderResponse place(Long userId, PlaceOrderRequest request) {
         validate(request);
+        if (request.idempotencyKey() != null && orderMapper.findByIdempotencyKey(request.idempotencyKey()) != null) {
+            throw new DuplicateOrderException(request.idempotencyKey());
+        }
+
         String symbol = request.symbol().trim().toUpperCase(Locale.ROOT);
 
         BigDecimal marketPrice = marketDataService.getCurrentPrice(symbol);
@@ -69,25 +76,48 @@ public class OrderServiceImpl implements OrderService {
             account = requireActiveAccount(userId);
         }
 
-        if (request.side() == OrderSide.SELL) {
-            Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), symbol);
-            int currentQty = position != null ? position.getQuantity() : 0;
-            if (currentQty < request.quantity()) {
-                throw new InsufficientHoldingsException(account.getId(), symbol);
+        boolean isMarket = request.orderType() == OrderType.MARKET;
+        boolean isExecutable = isMarket || (request.side() == OrderSide.BUY
+                ? request.limitPrice().compareTo(marketPrice) >= 0
+                : request.limitPrice().compareTo(marketPrice) <= 0);
+
+        if (isExecutable) {
+            if (request.side() == OrderSide.SELL) {
+                Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), symbol);
+                int currentQty = position != null ? position.getQuantity() : 0;
+                if (currentQty < request.quantity()) {
+                    throw new InsufficientHoldingsException(account.getId(), symbol);
+                }
             }
+
+            BigDecimal executionPrice = isMarket
+                    ? marketPrice
+                    : request.limitPrice();
+            BigDecimal totalValue = executionPrice.multiply(BigDecimal.valueOf(request.quantity()));
+            BigDecimal newBalance = calculateNewBalance(account, request.side(), totalValue);
+
+            return processOrderPlacement(account, request, symbol, executionPrice, newBalance);
+        } else {
+            Order order = buildNewOrder(account, request, symbol);
+            try {
+                int insertedRows = orderMapper.insert(order);
+                if (insertedRows == 0) {
+                    throw new OrderConflictException("Order insert failed for account: " + account.getId());
+                }
+            } catch (DataIntegrityViolationException e) {
+                if (request.idempotencyKey() != null) {
+                    Order existing = orderMapper.findByIdempotencyKey(request.idempotencyKey());
+                    if (existing != null) {
+                        return response(existing, "Order already processed with idempotency key");
+                    }
+                }
+                throw e;
+            }
+            return response(order, "Limit order placed as NEW");
         }
-
-        BigDecimal executionPrice = request.orderType() == OrderType.MARKET
-            ? marketPrice
-            : request.limitPrice();
-        BigDecimal totalValue = executionPrice.multiply(BigDecimal.valueOf(request.quantity()));
-        BigDecimal newBalance = calculateNewBalance(account, request.side(), totalValue);
-
-        return self.placeOrderAtomically(account, request, symbol, executionPrice, newBalance);
     }
 
-    @Transactional
-    public OrderResponse placeOrderAtomically(
+    private OrderResponse processOrderPlacement(
             Account account,
             PlaceOrderRequest request,
             String symbol,
@@ -131,27 +161,131 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Order order = buildFilledOrder(account, request, symbol, executionPrice);
-        int insertedRows = orderMapper.insert(order);
-        if (insertedRows == 0) {
-            throw new OrderConflictException("Order insert failed for account: " + account.getId());
+        try {
+            int insertedRows = orderMapper.insert(order);
+            if (insertedRows == 0) {
+                throw new OrderConflictException("Order insert failed for account: " + account.getId());
+            }
+        } catch (DataIntegrityViolationException e) {
+            if (request.idempotencyKey() != null) {
+                Order existing = orderMapper.findByIdempotencyKey(request.idempotencyKey());
+                if (existing != null) {
+                    return response(existing, "Order already processed with idempotency key");
+                }
+            }
+            throw e;
         }
 
         return response(order, "Order executed");
     }
 
     @Override
+    @Transactional
     public OrderResponse cancel(Long userId, UUID orderId) {
         Account account = requireActiveAccount(userId);
+        Order order = orderMapper.findByIdAndAccountId(orderId, account.getId());
+        if (order == null) {
+            throw new OrderConflictException("Order not found or access denied: " + orderId);
+        }
+        if (order.getStatus() != OrderStatus.NEW) {
+            throw new InvalidOrderTransitionException(orderId, order.getStatus(), "cancel");
+        }
+
         int updatedRows = orderMapper.cancelOrderConditionally(orderId, account.getId(), OrderStatus.NEW.name());
         if (updatedRows == 0) {
             throw new OrderConflictException("Order cancellation conflict for order: " + orderId);
         }
 
-        Order order = orderMapper.findByIdAndAccountId(orderId, account.getId());
-        if (order == null) {
-            throw new OrderConflictException("Order could not be read after cancellation: " + orderId);
-        }
+        order.setStatus(OrderStatus.CANCELLED);
         return response(order, "Order cancelled");
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse update(Long userId, UUID orderId, UpdateOrderRequest request) {
+        Account account = requireActiveAccount(userId);
+        Order order = orderRepository.findByIdAndAccountId(orderId, account.getId())
+                .orElseThrow(() -> new OrderConflictException("Order not found or access denied: " + orderId));
+
+        if (order.getStatus() != OrderStatus.NEW) {
+            throw new InvalidOrderTransitionException(orderId, order.getStatus(), "update");
+        }
+
+        if (request.quantity() == null && request.limitPrice() == null) {
+            throw new InvalidOrderException("At least quantity or limitPrice must be provided to update order");
+        }
+
+        int newQuantity = request.quantity() != null ? request.quantity() : order.getQuantity();
+        BigDecimal newLimitPrice = request.limitPrice() != null ? request.limitPrice() : order.getLimitPrice();
+
+        if (newLimitPrice != null && newLimitPrice.signum() <= 0) {
+            throw new InvalidOrderException("Limit price must be positive");
+        }
+
+        order.setQuantity(newQuantity);
+        order.setLimitPrice(newLimitPrice);
+
+        BigDecimal marketPrice = marketDataService.getCurrentPrice(order.getSymbol());
+        boolean isExecutable = order.getSide() == OrderSide.BUY
+                ? newLimitPrice.compareTo(marketPrice) >= 0
+                : newLimitPrice.compareTo(marketPrice) <= 0;
+
+        if (isExecutable) {
+            if (order.getSide() == OrderSide.SELL) {
+                Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol());
+                int currentQty = position != null ? position.getQuantity() : 0;
+                if (currentQty < newQuantity) {
+                    throw new InsufficientHoldingsException(account.getId(), order.getSymbol());
+                }
+            }
+
+            BigDecimal executionPrice = newLimitPrice;
+            BigDecimal totalValue = executionPrice.multiply(BigDecimal.valueOf(newQuantity));
+            BigDecimal newBalance = calculateNewBalance(account, order.getSide(), totalValue);
+
+            Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol());
+            if (order.getSide() == OrderSide.SELL) {
+                int currentQty = position != null ? position.getQuantity() : 0;
+                int remaining = currentQty - newQuantity;
+                if (remaining == 0) {
+                    positionRepository.delete(position);
+                } else {
+                    position.setQuantity(remaining);
+                    positionRepository.save(position);
+                }
+            } else if (order.getSide() == OrderSide.BUY) {
+                if (position == null) {
+                    position = new Position();
+                    position.setAccountId(account.getId());
+                    position.setSymbol(order.getSymbol());
+                    position.setQuantity(newQuantity);
+                    position.setAverageCost(executionPrice);
+                } else {
+                    int oldQty = position.getQuantity();
+                    int newQty = oldQty + newQuantity;
+                    BigDecimal totalCost = position.getAverageCost().multiply(BigDecimal.valueOf(oldQty))
+                            .add(executionPrice.multiply(BigDecimal.valueOf(newQuantity)));
+                    BigDecimal newAvgCost = totalCost.divide(BigDecimal.valueOf(newQty), 4, RoundingMode.HALF_UP);
+                    position.setQuantity(newQty);
+                    position.setAverageCost(newAvgCost);
+                }
+                positionRepository.save(position);
+            }
+
+            int updatedRows = orderMapper.updateAccountBalance(account.getId(), newBalance, account.getVersion());
+            if (updatedRows == 0) {
+                throw new OrderConflictException("Account update conflict for account: " + account.getId());
+            }
+
+            order.setExecutedPrice(executionPrice);
+            order.setStatus(OrderStatus.FILLED);
+            orderRepository.save(order);
+
+            return response(order, "Order updated and executed");
+        } else {
+            orderRepository.save(order);
+            return response(order, "Order updated");
+        }
     }
 
     @Override
@@ -199,7 +333,24 @@ public class OrderServiceImpl implements OrderService {
         return account.getCashBalance().add(totalValue);
     }
 
-    private Order buildFilledOrder(Account account, PlaceOrderRequest request, String symbol, BigDecimal executionPrice) {
+    private Order buildNewOrder(Account account, PlaceOrderRequest request, String symbol) {
+        Order order = new Order();
+        order.setId(UUID.randomUUID());
+        order.setAccountId(account.getId());
+        order.setSymbol(symbol);
+        order.setSide(request.side());
+        order.setOrderType(request.orderType());
+        order.setQuantity(request.quantity());
+        order.setLimitPrice(request.limitPrice());
+        order.setExecutedPrice(null);
+        order.setStatus(OrderStatus.NEW);
+        order.setIdempotencyKey(request.idempotencyKey());
+        order.setCreatedAt(OffsetDateTime.now());
+        return order;
+    }
+
+    private Order buildFilledOrder(Account account, PlaceOrderRequest request, String symbol,
+            BigDecimal executionPrice) {
         Order order = new Order();
         order.setId(UUID.randomUUID());
         order.setAccountId(account.getId());
@@ -228,3 +379,4 @@ public class OrderServiceImpl implements OrderService {
                 message);
     }
 }
+
