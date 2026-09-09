@@ -154,7 +154,8 @@ public class AccountServiceImpl implements AccountService {
         String holderName;
         try {
             holderName = userService.get(account.getUserId()).getUsername();
-        } catch (Exception e) {
+        } catch (com.zkuba.trading.exception.UserNotFoundException e) {
+            // User was deleted or not found - use ID as fallback
             holderName = "User " + account.getUserId();
         }
         return new AccountResponse(

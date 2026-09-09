@@ -3,6 +3,7 @@ package com.zkuba.trading.service;
 import java.math.BigDecimal;
 import java.util.Map;
 import org.springframework.stereotype.Service;
+import com.zkuba.trading.exception.MarketDataException;
 
 @Service
 public class MarketDataServiceImpl implements MarketDataService {
@@ -20,7 +21,7 @@ public class MarketDataServiceImpl implements MarketDataService {
     @Override
     public BigDecimal getCurrentPrice(String symbol) {
         BigDecimal p = demo.get(symbol.toUpperCase());
-        if (p == null) throw new IllegalArgumentException("No price configured for " + symbol);
+        if (p == null) throw new MarketDataException(symbol);
         return p;
     }
 }
