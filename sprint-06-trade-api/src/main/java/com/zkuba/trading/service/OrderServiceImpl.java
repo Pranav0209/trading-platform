@@ -2,6 +2,7 @@ package com.zkuba.trading.service;
 
 import com.zkuba.trading.domain.entity.Account;
 import com.zkuba.trading.domain.entity.Order;
+import com.zkuba.trading.domain.entity.Position;
 import com.zkuba.trading.domain.enums.AccountStatus;
 import com.zkuba.trading.domain.enums.OrderSide;
 import com.zkuba.trading.domain.enums.OrderStatus;
@@ -10,28 +11,24 @@ import com.zkuba.trading.dto.request.PlaceOrderRequest;
 import com.zkuba.trading.dto.response.OrderResponse;
 import com.zkuba.trading.exception.AccountNotActiveException;
 import com.zkuba.trading.exception.AccountNotFoundException;
+import com.zkuba.trading.exception.DuplicateOrderException;
 import com.zkuba.trading.exception.ForbiddenException;
-import com.zkuba.trading.exception.InvalidOrderException;
 import com.zkuba.trading.exception.InsufficientFundsException;
+import com.zkuba.trading.exception.InsufficientHoldingsException;
+import com.zkuba.trading.exception.InvalidOrderException;
+import com.zkuba.trading.exception.InvalidOrderTransitionException;
 import com.zkuba.trading.exception.OrderConflictException;
 import com.zkuba.trading.mapper.OrderMapper;
+import com.zkuba.trading.repository.PositionRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.zkuba.trading.domain.entity.Position;
-import com.zkuba.trading.exception.InsufficientHoldingsException;
-import com.zkuba.trading.repository.PositionRepository;
-import java.math.RoundingMode;
-
-import com.zkuba.trading.exception.DuplicateOrderException;
-import com.zkuba.trading.exception.InvalidOrderTransitionException;
 
 @Service
 public class OrderServiceImpl implements OrderService {
@@ -45,11 +42,8 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private PositionRepository positionRepository;
 
-    @Autowired
-    @Lazy
-    private OrderServiceImpl self;
-
     @Override
+    @Transactional
     public OrderResponse place(Long userId, PlaceOrderRequest request) {
         validate(request);
         if (request.idempotencyKey() != null && orderMapper.findByIdempotencyKey(request.idempotencyKey()) != null) {
@@ -85,16 +79,15 @@ public class OrderServiceImpl implements OrderService {
         }
 
         BigDecimal executionPrice = request.orderType() == OrderType.MARKET
-            ? marketPrice
-            : request.limitPrice();
+                ? marketPrice
+                : request.limitPrice();
         BigDecimal totalValue = executionPrice.multiply(BigDecimal.valueOf(request.quantity()));
         BigDecimal newBalance = calculateNewBalance(account, request.side(), totalValue);
 
-        return self.placeOrderAtomically(account, request, symbol, executionPrice, newBalance);
+        return processOrderPlacement(account, request, symbol, executionPrice, newBalance);
     }
 
-    @Transactional
-    public OrderResponse placeOrderAtomically(
+    private OrderResponse processOrderPlacement(
             Account account,
             PlaceOrderRequest request,
             String symbol,
@@ -147,6 +140,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    @Transactional
     public OrderResponse cancel(Long userId, UUID orderId) {
         Account account = requireActiveAccount(userId);
         Order order = orderMapper.findByIdAndAccountId(orderId, account.getId());
@@ -211,7 +205,8 @@ public class OrderServiceImpl implements OrderService {
         return account.getCashBalance().add(totalValue);
     }
 
-    private Order buildFilledOrder(Account account, PlaceOrderRequest request, String symbol, BigDecimal executionPrice) {
+    private Order buildFilledOrder(Account account, PlaceOrderRequest request, String symbol,
+            BigDecimal executionPrice) {
         Order order = new Order();
         order.setId(UUID.randomUUID());
         order.setAccountId(account.getId());
@@ -240,3 +235,4 @@ public class OrderServiceImpl implements OrderService {
                 message);
     }
 }
+

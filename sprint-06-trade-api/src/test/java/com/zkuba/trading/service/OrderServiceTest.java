@@ -56,8 +56,6 @@ class OrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(orderService, "self", orderService);
-
         activeAccount = new Account();
         activeAccount.setId(10L);
         activeAccount.setUserId(1L);
