@@ -30,6 +30,9 @@ import com.zkuba.trading.exception.InsufficientHoldingsException;
 import com.zkuba.trading.repository.PositionRepository;
 import java.math.RoundingMode;
 
+import com.zkuba.trading.exception.DuplicateOrderException;
+import com.zkuba.trading.exception.InvalidOrderTransitionException;
+
 @Service
 public class OrderServiceImpl implements OrderService {
 
@@ -49,6 +52,10 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponse place(Long userId, PlaceOrderRequest request) {
         validate(request);
+        if (request.idempotencyKey() != null && orderMapper.findByIdempotencyKey(request.idempotencyKey()) != null) {
+            throw new DuplicateOrderException(request.idempotencyKey());
+        }
+
         String symbol = request.symbol().trim().toUpperCase(Locale.ROOT);
 
         BigDecimal marketPrice = marketDataService.getCurrentPrice(symbol);
@@ -142,15 +149,20 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponse cancel(Long userId, UUID orderId) {
         Account account = requireActiveAccount(userId);
+        Order order = orderMapper.findByIdAndAccountId(orderId, account.getId());
+        if (order == null) {
+            throw new OrderConflictException("Order not found or access denied: " + orderId);
+        }
+        if (order.getStatus() != OrderStatus.NEW) {
+            throw new InvalidOrderTransitionException(orderId, order.getStatus(), "cancel");
+        }
+
         int updatedRows = orderMapper.cancelOrderConditionally(orderId, account.getId(), OrderStatus.NEW.name());
         if (updatedRows == 0) {
             throw new OrderConflictException("Order cancellation conflict for order: " + orderId);
         }
 
-        Order order = orderMapper.findByIdAndAccountId(orderId, account.getId());
-        if (order == null) {
-            throw new OrderConflictException("Order could not be read after cancellation: " + orderId);
-        }
+        order.setStatus(OrderStatus.CANCELLED);
         return response(order, "Order cancelled");
     }
 

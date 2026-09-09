@@ -32,7 +32,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.zkuba.trading.domain.entity.Position;
+import com.zkuba.trading.exception.DuplicateOrderException;
 import com.zkuba.trading.exception.InsufficientHoldingsException;
+import com.zkuba.trading.exception.InvalidOrderTransitionException;
 import com.zkuba.trading.repository.PositionRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -127,12 +129,45 @@ class OrderServiceTest {
     @DisplayName("cancel affected rows 0 throws conflict")
     void cancelOrder_affectedRowsZero_throwsConflict() {
         UUID orderId = UUID.randomUUID();
+        Order existing = new Order();
+        existing.setId(orderId);
+        existing.setAccountId(10L);
+        existing.setStatus(OrderStatus.NEW);
 
         when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
+        when(orderMapper.findByIdAndAccountId(orderId, 10L)).thenReturn(existing);
         when(orderMapper.cancelOrderConditionally(orderId, 10L, "NEW")).thenReturn(0);
 
         assertThatThrownBy(() -> orderService.cancel(1L, orderId))
                 .isInstanceOf(OrderConflictException.class);
+    }
+
+    @Test
+    @DisplayName("cancel order in non-NEW status throws InvalidOrderTransitionException")
+    void cancelOrder_invalidStatus_throwsInvalidOrderTransitionException() {
+        UUID orderId = UUID.randomUUID();
+        Order existing = new Order();
+        existing.setId(orderId);
+        existing.setAccountId(10L);
+        existing.setStatus(OrderStatus.FILLED);
+
+        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
+        when(orderMapper.findByIdAndAccountId(orderId, 10L)).thenReturn(existing);
+
+        assertThatThrownBy(() -> orderService.cancel(1L, orderId))
+                .isInstanceOf(InvalidOrderTransitionException.class);
+    }
+
+    @Test
+    @DisplayName("placing order with duplicate idempotencyKey throws DuplicateOrderException")
+    void placeOrder_duplicateKey_throwsDuplicateOrderException() {
+        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.BUY, OrderType.MARKET, 2, null, "key-dup");
+        Order existing = new Order();
+
+        when(orderMapper.findByIdempotencyKey("key-dup")).thenReturn(existing);
+
+        assertThatThrownBy(() -> orderService.place(1L, request))
+                .isInstanceOf(DuplicateOrderException.class);
     }
 
     @Test
