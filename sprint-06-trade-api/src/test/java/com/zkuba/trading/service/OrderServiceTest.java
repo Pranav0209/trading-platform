@@ -31,6 +31,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.zkuba.trading.domain.entity.Position;
+import com.zkuba.trading.exception.InsufficientHoldingsException;
+import com.zkuba.trading.repository.PositionRepository;
+
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
 
@@ -39,6 +43,9 @@ class OrderServiceTest {
 
     @Mock
     private MarketDataService marketDataService;
+
+    @Mock
+    private PositionRepository positionRepository;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -126,5 +133,42 @@ class OrderServiceTest {
 
         assertThatThrownBy(() -> orderService.cancel(1L, orderId))
                 .isInstanceOf(OrderConflictException.class);
+    }
+
+    @Test
+    @DisplayName("sell order without enough holdings throws InsufficientHoldingsException")
+    void placeOrder_sell_insufficientHoldings_throwsException() {
+        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.SELL, OrderType.LIMIT, 10, new BigDecimal("150.00"), "key-sell-1");
+
+        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
+        when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("150.00"));
+        when(positionRepository.findByAccountIdAndSymbol(10L, "AAPL")).thenReturn(null);
+
+        assertThatThrownBy(() -> orderService.place(1L, request))
+                .isInstanceOf(InsufficientHoldingsException.class);
+    }
+
+    @Test
+    @DisplayName("sell order with sufficient holdings succeeds and reduces position quantity")
+    void placeOrder_sell_success_updatesPosition() {
+        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.SELL, OrderType.LIMIT, 5, new BigDecimal("150.00"), "key-sell-2");
+        Position position = new Position();
+        position.setAccountId(10L);
+        position.setSymbol("AAPL");
+        position.setQuantity(20);
+        position.setAverageCost(new BigDecimal("100.00"));
+
+        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
+        when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("150.00"));
+        when(positionRepository.findByAccountIdAndSymbol(10L, "AAPL")).thenReturn(position);
+        when(orderMapper.updateAccountBalance(eq(10L), any(BigDecimal.class), eq(5))).thenReturn(1);
+        when(orderMapper.insert(any(Order.class))).thenReturn(1);
+
+        OrderResponse response = orderService.place(1L, request);
+
+        assertThat(response.status()).isEqualTo("FILLED");
+        assertThat(response.side()).isEqualTo("SELL");
+        assertThat(position.getQuantity()).isEqualTo(15);
+        verify(positionRepository).save(position);
     }
 }

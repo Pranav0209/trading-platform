@@ -25,6 +25,11 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.zkuba.trading.domain.entity.Position;
+import com.zkuba.trading.exception.InsufficientHoldingsException;
+import com.zkuba.trading.repository.PositionRepository;
+import java.math.RoundingMode;
+
 @Service
 public class OrderServiceImpl implements OrderService {
 
@@ -33,6 +38,9 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private MarketDataService marketDataService;
+
+    @Autowired
+    private PositionRepository positionRepository;
 
     @Autowired
     @Lazy
@@ -61,6 +69,14 @@ public class OrderServiceImpl implements OrderService {
             account = requireActiveAccount(userId);
         }
 
+        if (request.side() == OrderSide.SELL) {
+            Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), symbol);
+            int currentQty = position != null ? position.getQuantity() : 0;
+            if (currentQty < request.quantity()) {
+                throw new InsufficientHoldingsException(account.getId(), symbol);
+            }
+        }
+
         BigDecimal executionPrice = request.orderType() == OrderType.MARKET
             ? marketPrice
             : request.limitPrice();
@@ -77,6 +93,38 @@ public class OrderServiceImpl implements OrderService {
             String symbol,
             BigDecimal executionPrice,
             BigDecimal newBalance) {
+        Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), symbol);
+        if (request.side() == OrderSide.SELL) {
+            int currentQty = position != null ? position.getQuantity() : 0;
+            if (currentQty < request.quantity()) {
+                throw new InsufficientHoldingsException(account.getId(), symbol);
+            }
+            int remaining = currentQty - request.quantity();
+            if (remaining == 0) {
+                positionRepository.delete(position);
+            } else {
+                position.setQuantity(remaining);
+                positionRepository.save(position);
+            }
+        } else if (request.side() == OrderSide.BUY) {
+            if (position == null) {
+                position = new Position();
+                position.setAccountId(account.getId());
+                position.setSymbol(symbol);
+                position.setQuantity(request.quantity());
+                position.setAverageCost(executionPrice);
+            } else {
+                int oldQty = position.getQuantity();
+                int newQty = oldQty + request.quantity();
+                BigDecimal totalCost = position.getAverageCost().multiply(BigDecimal.valueOf(oldQty))
+                        .add(executionPrice.multiply(BigDecimal.valueOf(request.quantity())));
+                BigDecimal newAvgCost = totalCost.divide(BigDecimal.valueOf(newQty), 4, RoundingMode.HALF_UP);
+                position.setQuantity(newQty);
+                position.setAverageCost(newAvgCost);
+            }
+            positionRepository.save(position);
+        }
+
         int updatedRows = orderMapper.updateAccountBalance(account.getId(), newBalance, account.getVersion());
         if (updatedRows == 0) {
             throw new OrderConflictException("Account update conflict for account: " + account.getId());
