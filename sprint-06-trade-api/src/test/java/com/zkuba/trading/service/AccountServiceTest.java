@@ -135,6 +135,7 @@ class AccountServiceTest {
     @DisplayName("responseByUser should return AccountResponse for user")
     void responseByUser_Success() {
         when(accounts.findByUserId(1L)).thenReturn(Optional.of(activeAccount));
+        when(userService.get(1L)).thenReturn(new User());
 
         AccountResponse response = accountService.responseByUser(1L);
 
