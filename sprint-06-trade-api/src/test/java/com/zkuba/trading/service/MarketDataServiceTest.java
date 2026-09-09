@@ -25,7 +25,10 @@ class MarketDataServiceTest {
             "AAPL, 234.12",
             "MSFT, 505.10",
             "NVDA, 171.40",
-            "TSLA, 350.00"
+            "TSLA, 350.00",
+            "GOOGL, 178.25",
+            "AMZN, 198.60",
+            "META, 510.75"
     })
     @DisplayName("getCurrentPrice should return configured price for known symbols regardless of case")
     void getCurrentPrice_KnownSymbols_ReturnsPrice(String symbol, String expectedPriceStr) {
@@ -36,8 +39,8 @@ class MarketDataServiceTest {
     @Test
     @DisplayName("getCurrentPrice should throw IllegalArgumentException for unknown symbols")
     void getCurrentPrice_UnknownSymbol_ThrowsException() {
-        assertThatThrownBy(() -> marketDataService.getCurrentPrice("GOOGL"))
+        assertThatThrownBy(() -> marketDataService.getCurrentPrice("UNKNOWN"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("No price configured for GOOGL");
+                .hasMessageContaining("No price configured for UNKNOWN");
     }
 }

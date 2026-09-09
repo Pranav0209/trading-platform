@@ -8,18 +8,18 @@ import com.zkuba.trading.domain.exception.UserNotFoundException;
 import com.zkuba.trading.dto.request.RegisterRequest;
 import com.zkuba.trading.dto.response.RegisterResponse;
 import com.zkuba.trading.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public RegisterResponse register(RegisterRequest request) {
         if (userRepository.findByUsername(request.username()).isPresent()
@@ -47,4 +47,3 @@ public class UserService {
         return userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(id));
     }
 }
-

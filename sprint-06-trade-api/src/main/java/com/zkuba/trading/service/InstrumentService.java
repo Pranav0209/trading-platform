@@ -4,15 +4,14 @@ import com.zkuba.trading.domain.entity.Instrument;
 import com.zkuba.trading.domain.exception.InstrumentNotFoundException;
 import com.zkuba.trading.repository.InstrumentRepository;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class InstrumentService {
-    private final InstrumentRepository instruments;
 
-    public InstrumentService(InstrumentRepository instruments) {
-        this.instruments = instruments;
-    }
+    @Autowired
+    private InstrumentRepository instruments;
 
     public List<Instrument> all() {
         return instruments.findAll();

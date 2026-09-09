@@ -3,6 +3,7 @@ package com.zkuba.trading.controller;
 import com.zkuba.trading.dto.response.InstrumentResponse;
 import com.zkuba.trading.service.InstrumentService;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,11 +12,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/instruments")
 public class InstrumentController {
-    private final InstrumentService instrumentService;
-
-    public InstrumentController(InstrumentService instrumentService) {
-        this.instrumentService = instrumentService;
-    }
+    @Autowired
+    private InstrumentService instrumentService;
 
     @GetMapping
     public List<InstrumentResponse> all() {

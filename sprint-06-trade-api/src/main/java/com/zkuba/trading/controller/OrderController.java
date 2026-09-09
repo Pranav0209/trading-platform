@@ -6,6 +6,7 @@ import com.zkuba.trading.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.zkuba.trading.service.OrderService;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,11 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/orders")
 public class OrderController {
-    private final OrderService orderService;
-
-    public OrderController(OrderService orderService) {
-        this.orderService = orderService;
-    }
+    @Autowired
+    private OrderService orderService;
 
     @PostMapping
     public OrderResponse place(

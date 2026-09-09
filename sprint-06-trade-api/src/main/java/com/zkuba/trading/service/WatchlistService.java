@@ -9,23 +9,21 @@ import com.zkuba.trading.mapper.WatchlistMapper;
 import com.zkuba.trading.repository.InstrumentRepository;
 import com.zkuba.trading.repository.WatchlistRepository;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class WatchlistService {
-    private final WatchlistMapper watchlistMapper;
-    private final InstrumentRepository instruments;
-    private final WatchlistRepository watchlists;
 
-    public WatchlistService(
-            WatchlistMapper watchlistMapper,
-            InstrumentRepository instruments,
-            WatchlistRepository watchlists) {
-        this.watchlistMapper = watchlistMapper;
-        this.instruments = instruments;
-        this.watchlists = watchlists;
-    }
+    @Autowired
+    private WatchlistMapper watchlistMapper;
+
+    @Autowired
+    private InstrumentRepository instruments;
+
+    @Autowired
+    private WatchlistRepository watchlists;
 
     public List<WatchlistResponse> getAll(Long userId) {
         return watchlists
@@ -72,4 +70,3 @@ public class WatchlistService {
         }
     }
 }
-

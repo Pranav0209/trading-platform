@@ -4,6 +4,7 @@ import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,7 +16,9 @@ class JwtServiceTest {
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtService(secret, expirationMs);
+        jwtService = new JwtService();
+        jwtService.init(secret);
+        ReflectionTestUtils.setField(jwtService, "expirationMs", expirationMs);
     }
 
     @Test

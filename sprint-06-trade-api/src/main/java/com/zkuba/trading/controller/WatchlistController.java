@@ -6,6 +6,7 @@ import com.zkuba.trading.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.zkuba.trading.service.WatchlistService;
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,11 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/watchlists")
 public class WatchlistController {
-    private final WatchlistService watchlistService;
-
-    public WatchlistController(WatchlistService watchlistService) {
-        this.watchlistService = watchlistService;
-    }
+    @Autowired
+    private WatchlistService watchlistService;
 
     @GetMapping
     public List<WatchlistResponse> all(@AuthenticationPrincipal AuthenticatedUser user) {

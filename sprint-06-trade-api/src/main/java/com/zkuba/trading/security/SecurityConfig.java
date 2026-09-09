@@ -1,5 +1,6 @@
 package com.zkuba.trading.security;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -13,17 +14,20 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
     @Bean
-    SecurityFilterChain chain(HttpSecurity h, JwtAuthenticationFilter f) throws Exception {
-        return h.csrf(c -> c.disable())
+    SecurityFilterChain chain(HttpSecurity http) throws Exception {
+        return http.csrf(c -> c.disable())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
-                        a ->
-                                a.requestMatchers("/api/v1/auth/**", "/api/v1/users/register")
-                                        .permitAll()
-                                        .anyRequest()
-                                        .authenticated())
-                .addFilterBefore(f, UsernamePasswordAuthenticationFilter.class)
+                        a -> a.requestMatchers("/api/v1/auth/**", "/api/v1/users/register")
+                                .permitAll()
+                                .anyRequest()
+                                .authenticated())
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

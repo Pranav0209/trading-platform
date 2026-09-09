@@ -28,37 +28,36 @@ import com.zkuba.trading.repository.PositionRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class OrderService {
-    private final AccountMapper accountMapper;
-    private final AccountRepository accounts;
-    private final InstrumentRepository instruments;
-    private final OrderRepository orders;
-    private final PositionRepository positions;
-    private final PositionMapper positionMapper;
-    private final MarketDataService marketDataService;
 
-    public OrderService(
-            AccountMapper accountMapper,
-            AccountRepository accounts,
-            InstrumentRepository instruments,
-            OrderRepository orders,
-            PositionRepository positions,
-            PositionMapper positionMapper,
-            MarketDataService marketDataService) {
-        this.accountMapper = accountMapper;
-        this.accounts = accounts;
-        this.instruments = instruments;
-        this.orders = orders;
-        this.positions = positions;
-        this.positionMapper = positionMapper;
-        this.marketDataService = marketDataService;
-    }
+    @Autowired
+    private AccountMapper accountMapper;
+
+    @Autowired
+    private AccountRepository accounts;
+
+    @Autowired
+    private InstrumentRepository instruments;
+
+    @Autowired
+    private OrderRepository orders;
+
+    @Autowired
+    private PositionRepository positions;
+
+    @Autowired
+    private PositionMapper positionMapper;
+
+    @Autowired
+    private MarketDataService marketDataService;
 
     @Transactional
     public OrderResponse place(Long userId, PlaceOrderRequest request) {
@@ -86,30 +85,11 @@ public class OrderService {
 
         BigDecimal totalValue = price.multiply(BigDecimal.valueOf(request.quantity()));
         Position position = positions.findByAccountIdAndSymbol(account.getId(), symbol);
+
         if (request.side() == OrderSide.BUY) {
-            if (account.getCashBalance().compareTo(totalValue) < 0) {
-                throw new InsufficientFundsException(account.getId());
-            }
-            updateCash(account, account.getCashBalance().subtract(totalValue));
-            int oldQuantity = position == null ? 0 : position.getQuantity();
-            BigDecimal oldCost = position == null ? BigDecimal.ZERO : position.getAverageCost();
-            int newQuantity = oldQuantity + request.quantity();
-            BigDecimal averageCost = oldQuantity == 0
-                    ? price
-                    : oldCost.multiply(BigDecimal.valueOf(oldQuantity))
-                            .add(totalValue)
-                            .divide(BigDecimal.valueOf(newQuantity), 8, RoundingMode.HALF_UP);
-            positionMapper.upsert(account.getId(), symbol, newQuantity, averageCost);
+            executeBuy(account, symbol, request.quantity(), price, totalValue, position);
         } else {
-            if (position == null || position.getQuantity() < request.quantity()) {
-                throw new InsufficientHoldingsException(account.getId(), symbol);
-            }
-            positionMapper.upsert(
-                    account.getId(),
-                    symbol,
-                    position.getQuantity() - request.quantity(),
-                    position.getAverageCost());
-            updateCash(account, account.getCashBalance().add(totalValue));
+            executeSell(account, symbol, request.quantity(), totalValue, position);
         }
 
         Order order = buildOrder(account, request, symbol);
@@ -118,6 +98,38 @@ public class OrderService {
         insert(order);
 
         return response(order, "Order executed");
+    }
+
+    private void executeBuy(Account account, String symbol, int quantity,
+                            BigDecimal price, BigDecimal totalValue, Position position) {
+        if (account.getCashBalance().compareTo(totalValue) < 0) {
+            throw new InsufficientFundsException(account.getId());
+        }
+        updateCash(account, account.getCashBalance().subtract(totalValue));
+
+        int oldQuantity = position == null ? 0 : position.getQuantity();
+        BigDecimal oldCost = position == null ? BigDecimal.ZERO : position.getAverageCost();
+        int newQuantity = oldQuantity + quantity;
+        BigDecimal averageCost = oldQuantity == 0
+                ? price
+                : oldCost.multiply(BigDecimal.valueOf(oldQuantity))
+                        .add(totalValue)
+                        .divide(BigDecimal.valueOf(newQuantity), 8, RoundingMode.HALF_UP);
+
+        positionMapper.upsert(account.getId(), symbol, newQuantity, averageCost);
+    }
+
+    private void executeSell(Account account, String symbol, int quantity,
+                             BigDecimal totalValue, Position position) {
+        if (position == null || position.getQuantity() < quantity) {
+            throw new InsufficientHoldingsException(account.getId(), symbol);
+        }
+        positionMapper.upsert(
+                account.getId(),
+                symbol,
+                position.getQuantity() - quantity,
+                position.getAverageCost());
+        updateCash(account, account.getCashBalance().add(totalValue));
     }
 
     private void validate(PlaceOrderRequest request) {
@@ -187,7 +199,7 @@ public class OrderService {
         return response(order, "Order cancelled");
     }
 
-    public java.util.List<OrderResponse> getOrderHistory(Long userId) {
+    public List<OrderResponse> getOrderHistory(Long userId) {
         Account account = accounts.findByUserId(userId)
                 .orElseThrow(() -> new AccountNotFoundException(userId));
         return orders.findByAccountIdOrderByCreatedAtDesc(account.getId())

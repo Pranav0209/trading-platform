@@ -6,6 +6,7 @@ import com.zkuba.trading.dto.response.PositionResponse;
 import com.zkuba.trading.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.zkuba.trading.service.AccountService;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,11 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/account")
 public class AccountController {
 
-    private final AccountService accountService;
-
-    public AccountController(AccountService accountService) {
-        this.accountService = accountService;
-    }
+    @Autowired
+    private AccountService accountService;
 
     @GetMapping
     public AccountResponse account(@AuthenticationPrincipal AuthenticatedUser user) {

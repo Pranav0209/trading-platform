@@ -7,20 +7,21 @@ import com.zkuba.trading.dto.request.LoginRequest;
 import com.zkuba.trading.dto.response.LoginResponse;
 import com.zkuba.trading.repository.UserRepository;
 import com.zkuba.trading.security.JwtService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService {
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-    }
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
 
     public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByUsername(request.username()).orElse(null);
@@ -35,4 +36,3 @@ public class AuthService {
                 jwtService.expirationMs());
     }
 }
-

@@ -13,27 +13,25 @@ import com.zkuba.trading.repository.PositionRepository;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AccountService {
-    private final AccountRepository accounts;
-    private final PositionRepository positionRepository;
-    private final UserService userService;
-    private final BigDecimal defaultBalance;
 
-    public AccountService(
-            AccountRepository accounts,
-            PositionRepository positionRepository,
-            UserService userService,
-            @Value("${trading.default-initial-balance}") BigDecimal defaultBalance) {
-        this.accounts = accounts;
-        this.positionRepository = positionRepository;
-        this.userService = userService;
-        this.defaultBalance = defaultBalance;
-    }
+    @Autowired
+    private AccountRepository accounts;
+
+    @Autowired
+    private PositionRepository positionRepository;
+
+    @Autowired
+    private UserService userService;
+
+    @Value("${trading.default-initial-balance}")
+    private BigDecimal defaultBalance;
 
     @Transactional
     public AccountResponse create(CreateAccountRequest request) {
@@ -79,5 +77,3 @@ public class AccountService {
                 account.getStatus().name());
     }
 }
-
-
