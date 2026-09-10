@@ -55,13 +55,6 @@ public class OrderController {
         return handleCancel(user, id);
     }
 
-    @DeleteMapping("/{id}")
-    public OrderResponse cancelDelete(
-            @AuthenticationPrincipal AuthenticatedUser user,
-            @PathVariable String id) {
-        return handleCancel(user, id);
-    }
-
     private OrderResponse handleCancel(AuthenticatedUser user, String id) {
         if (id != null && id.startsWith("ORD-")) {
             throw new com.zkuba.trading.exception.InvalidOrderException("Order ID must be a raw UUID without 'ORD-' prefix: " + id);
