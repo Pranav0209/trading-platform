@@ -23,7 +23,7 @@ services:
 
   trade-api:
     build:
-      context: ..
+      context: .
       dockerfile: Dockerfile
     container_name: zkuba-trade-api
     environment:
