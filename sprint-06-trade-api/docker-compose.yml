@@ -1,55 +1,131 @@
 version: '3.8'
 
 services:
+
   postgres:
     image: postgres:16-alpine
     container_name: zkuba-postgres
+
     environment:
       POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_USER: ${DATABASE_USERNAME}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+
     ports:
       - "5432:5432"
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./infra/postgres:/docker-entrypoint-initdb.d
+
     networks:
       - trading-net
+
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME}" ]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+
+  db-init:
+    image: postgres:16-alpine
+    container_name: zkuba-db-init
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      PGPASSWORD: ${DATABASE_PASSWORD}
+
+    volumes:
+      - ./src/main/resources:/sql:ro
+
+    networks:
+      - trading-net
+
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "Waiting for PostgreSQL..."
+        until pg_isready -h postgres -U "${DATABASE_USERNAME}" -d "${DATABASE_NAME}"; do
+          sleep 2
+        done
+
+        echo "PostgreSQL is ready."
+        echo "Running schema.sql..."
+
+        psql \
+          -h postgres \
+          -U "${DATABASE_USERNAME}" \
+          -d "${DATABASE_NAME}" \
+          -v ON_ERROR_STOP=1 \
+          -f /sql/schema.sql
+
+        echo "schema.sql completed successfully."
+
+        echo "Running data.sql..."
+
+        psql \
+          -h postgres \
+          -U "${DATABASE_USERNAME}" \
+          -d "${DATABASE_NAME}" \
+          -v ON_ERROR_STOP=1 \
+          -f /sql/data.sql
+
+        echo "data.sql completed successfully."
+        echo "Database initialization completed."
+
+    profiles:
+      - platform
+
 
   trade-api:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: zkuba-trade-api
+
     environment:
       DATABASE_URL: jdbc:postgresql://postgres:5432/${DATABASE_NAME}
       DATABASE_USERNAME: ${DATABASE_USERNAME}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       SERVER_PORT: 8080
+
     ports:
       - "8080:8080"
+
     depends_on:
       postgres:
         condition: service_healthy
+
+      db-init:
+        condition: service_completed_successfully
+
     networks:
       - trading-net
+
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1" ]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:8080/actuator/health || exit 1"
+        ]
       interval: 15s
       timeout: 5s
       retries: 3
       start_period: 30s
+
     profiles:
       - platform
 
+
 volumes:
   postgres_data:
+
 
 networks:
   trading-net:
