@@ -122,11 +122,6 @@ services:
     profiles:
       - platform
 
-
-volumes:
-  postgres_data:
-
-
 networks:
   trading-net:
     driver: bridge
