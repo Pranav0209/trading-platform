@@ -24,8 +24,6 @@ public interface OrderMapper {
 
     Order findByIdempotencyKey(@Param("idempotencyKey") String idempotencyKey);
 
-    Order findById(@Param("id") UUID id);
-
     List<Order> findByAccountId(@Param("accountId") Long accountId);
 
     List<Order> findByAccountIdFiltered(

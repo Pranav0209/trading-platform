@@ -288,15 +288,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    @Override
-    public List<OrderResponse> getOrderHistory(Long userId) {
-        Account account = requireActiveAccount(userId);
-        List<Order> orderList = orderMapper.findByAccountId(account.getId());
-        return orderList.stream()
-                .map(order -> response(order, "Order status: " + order.getStatus()))
-                .toList();
-    }
-
     private Account requireActiveAccount(Long userId) {
         Account account = orderMapper.findAccountByUserId(userId);
         if (account == null) {

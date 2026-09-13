@@ -1,7 +1,6 @@
 package com.zkuba.trading.service;
 
 import com.zkuba.trading.domain.entity.Account;
-import com.zkuba.trading.domain.entity.Position;
 import com.zkuba.trading.domain.enums.OrderStatus;
 import com.zkuba.trading.dto.request.CreateAccountRequest;
 import com.zkuba.trading.dto.response.AccountResponse;
@@ -21,13 +20,9 @@ public interface AccountService {
 
     AccountResponse getAccountResponseById(Long accountId, Long userId);
 
-    AccountResponse responseByUser(Long userId);
-
     BalanceResponse getBalance(Long accountId, Long userId);
 
     List<PositionResponse> getPositionsResponse(Long accountId, Long userId);
-
-    List<Position> getPositions(Long userId);
 
     List<OrderHistoryEntry> getOrderHistory(
             Long accountId,

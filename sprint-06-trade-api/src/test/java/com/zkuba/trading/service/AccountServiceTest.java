@@ -130,35 +130,4 @@ class AccountServiceTest {
         assertThatThrownBy(() -> accountService.getByUserId(1L))
                 .isInstanceOf(AccountNotActiveException.class);
     }
-
-    @Test
-    @DisplayName("responseByUser should return AccountResponse for user")
-    void responseByUser_Success() {
-        when(accounts.findByUserId(1L)).thenReturn(Optional.of(activeAccount));
-        when(userService.get(1L)).thenReturn(new User());
-
-        AccountResponse response = accountService.responseByUser(1L);
-
-        assertThat(response).isNotNull();
-        assertThat(response.id()).isEqualTo(100L);
-        assertThat(response.accountId()).isEqualTo("ACC-12345678");
-    }
-
-    @Test
-    @DisplayName("getPositions should return positions list for user's account")
-    void getPositions_Success() {
-        Position p1 = new Position();
-        p1.setAccountId(100L);
-        p1.setSymbol("AAPL");
-        p1.setQuantity(10);
-        p1.setAverageCost(new BigDecimal("150.00"));
-
-        when(accounts.findByUserId(1L)).thenReturn(Optional.of(activeAccount));
-        when(positionRepository.findByAccountId(100L)).thenReturn(List.of(p1));
-
-        List<Position> positions = accountService.getPositions(1L);
-
-        assertThat(positions).hasSize(1);
-        assertThat(positions.get(0).getSymbol()).isEqualTo("AAPL");
-    }
 }

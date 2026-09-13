@@ -93,11 +93,6 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public AccountResponse responseByUser(Long userId) {
-        return response(getByUserId(userId));
-    }
-
-    @Override
     public BalanceResponse getBalance(Long accountId, Long userId) {
         Account account = getAccountAndValidateAccess(accountId, userId);
         return new BalanceResponse(
@@ -115,11 +110,6 @@ public class AccountServiceImpl implements AccountService {
                 .filter(p -> p.getQuantity() > 0)
                 .map(p -> new PositionResponse(account.getId(), p.getSymbol(), p.getQuantity(), p.getAverageCost()))
                 .toList();
-    }
-
-    @Override
-    public List<Position> getPositions(Long userId) {
-        return positionRepository.findByAccountId(getByUserId(userId).getId());
     }
 
     @Override
