@@ -25,7 +25,6 @@ import com.zkuba.trading.repository.PositionRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
-import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -370,4 +369,3 @@ public class OrderServiceImpl implements OrderService {
                 message);
     }
 }
-

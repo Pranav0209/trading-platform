@@ -6,7 +6,6 @@ import org.aspectj.lang.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -23,19 +22,22 @@ public class LoggingAspect {
      * Log all method calls in service layer
      */
     @Pointcut("execution(* com.zkuba.trading.service..*(..))")
-    public void serviceLayer() {}
+    public void serviceLayer() {
+    }
 
     /**
      * Log all method calls in controller layer
      */
     @Pointcut("execution(* com.zkuba.trading.controller..*(..))")
-    public void controllerLayer() {}
+    public void controllerLayer() {
+    }
 
     /**
      * Log all method calls in repository layer
      */
     @Pointcut("execution(* com.zkuba.trading.repository..*(..))")
-    public void repositoryLayer() {}
+    public void repositoryLayer() {
+    }
 
     /**
      * Around advice to log method execution time and parameters
@@ -47,19 +49,19 @@ public class LoggingAspect {
         String className = joinPoint.getTarget().getClass().getSimpleName();
         Object[] args = joinPoint.getArgs();
 
-        logger.debug("[{}:{}] Method started with args: {}", 
-            className, methodName, formatArgs(args));
+        logger.debug("[{}:{}] Method started with args: {}",
+                className, methodName, formatArgs(args));
 
         try {
             Object result = joinPoint.proceed();
             long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
-            logger.debug("[{}:{}] Method completed successfully in {}ms", 
-                className, methodName, duration);
+            logger.debug("[{}:{}] Method completed successfully in {}ms",
+                    className, methodName, duration);
             return result;
         } catch (Throwable throwable) {
             long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
-            logger.error("[{}:{}] Method failed after {}ms with exception: {}", 
-                className, methodName, duration, throwable.getClass().getSimpleName(), throwable);
+            logger.error("[{}:{}] Method failed after {}ms with exception: {}",
+                    className, methodName, duration, throwable.getClass().getSimpleName(), throwable);
             throw throwable;
         }
     }
@@ -84,8 +86,8 @@ public class LoggingAspect {
             return result;
         } catch (Throwable throwable) {
             long duration = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
-            logger.error("[API] {}::{} failed after {}ms - {}", 
-                className, methodName, duration, throwable.getMessage(), throwable);
+            logger.error("[API] {}::{} failed after {}ms - {}",
+                    className, methodName, duration, throwable.getMessage(), throwable);
             throw throwable;
         }
     }
@@ -107,9 +109,9 @@ public class LoggingAspect {
     public void afterReturningController(JoinPoint joinPoint, Object result) {
         String methodName = joinPoint.getSignature().getName();
         String className = joinPoint.getTarget().getClass().getSimpleName();
-        logger.debug("[EXIT] {}.{} returned: {}", 
-            className, methodName, 
-            result != null ? result.getClass().getSimpleName() : "null");
+        logger.debug("[EXIT] {}.{} returned: {}",
+                className, methodName,
+                result != null ? result.getClass().getSimpleName() : "null");
     }
 
     /**
@@ -119,10 +121,10 @@ public class LoggingAspect {
     public void afterThrowingException(JoinPoint joinPoint, Throwable exception) {
         String methodName = joinPoint.getSignature().getName();
         String className = joinPoint.getTarget().getClass().getSimpleName();
-        logger.error("[EXCEPTION] {}.{} threw {}: {}", 
-            className, methodName, 
-            exception.getClass().getSimpleName(), 
-            exception.getMessage());
+        logger.error("[EXCEPTION] {}.{} threw {}: {}",
+                className, methodName,
+                exception.getClass().getSimpleName(),
+                exception.getMessage());
     }
 
     /**
@@ -134,7 +136,8 @@ public class LoggingAspect {
         }
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < args.length; i++) {
-            if (i > 0) sb.append(", ");
+            if (i > 0)
+                sb.append(", ");
             Object arg = args[i];
             if (arg == null) {
                 sb.append("null");

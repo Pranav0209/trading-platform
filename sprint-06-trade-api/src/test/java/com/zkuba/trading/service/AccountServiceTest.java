@@ -1,7 +1,6 @@
 package com.zkuba.trading.service;
 
 import com.zkuba.trading.domain.entity.Account;
-import com.zkuba.trading.domain.entity.Position;
 import com.zkuba.trading.domain.entity.User;
 import com.zkuba.trading.domain.enums.AccountStatus;
 import com.zkuba.trading.exception.AccountAlreadyExistsException;
@@ -12,7 +11,6 @@ import com.zkuba.trading.dto.response.AccountResponse;
 import com.zkuba.trading.repository.AccountRepository;
 import com.zkuba.trading.repository.PositionRepository;
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
