@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zkuba.trading.mapper.WatchlistMapper">
+  <select id="findSymbols" resultType="string">SELECT symbol FROM watchlist_items WHERE watchlist_id=#{id} ORDER BY symbol</select>
+  <insert id="addSymbol">INSERT INTO watchlist_items(watchlist_id,symbol) VALUES(#{watchlistId},#{symbol}) ON CONFLICT DO NOTHING</insert>
+  <delete id="removeSymbol">DELETE FROM watchlist_items WHERE watchlist_id=#{watchlistId} AND symbol=#{symbol}</delete>
+</mapper>
+

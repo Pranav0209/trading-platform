@@ -1,0 +1,45 @@
+---
+title: ZKUBA - ZERO KNOWLEDGE UNIFIED BROKERAGE AND ANALYTICS
+---
+
+flowchart TD
+    Start([User Registers]) --> Admin[Admin Creates account]
+    Admin --> Login[User Logs in]
+    Login --> Dashboard[Dashboard]
+
+    Dashboard --> Watchlist[Watchlist]
+    Watchlist -->|Add| AddSymbol[Add Symbols]
+    Watchlist -->|Remove| DelSymbol[Delete Symbols]
+
+    Dashboard --> PlaceOrder[Place Order]
+
+    PlaceOrder --> OrderType{Buy/Sell?}
+
+    OrderType -->|Buy| CheckBalance[Check Balance]
+    CheckBalance --> BuyOrder[Buy Order]
+
+    OrderType -->|Sell| CheckPosition[Check Position]
+    CheckPosition --> SellOrder[Sell Order]
+
+    BuyOrder --> UpdatePos[Update Positions & balance]
+    SellOrder --> UpdatePos
+
+    UpdatePos --> End([Complete])
+
+    style Start fill:#4CAF50,stroke:#2E7D32,stroke-width:3px,color:#fff,font-weight:bold
+    style Admin fill:#2196F3,stroke:#1565C0,stroke-width:2px,color:#fff
+    style Login fill:#2196F3,stroke:#1565C0,stroke-width:2px,color:#fff
+    style Dashboard fill:#9C27B0,stroke:#6A1B9A,stroke-width:2px,color:#fff,font-weight:bold
+    style Watchlist fill:#FF9800,stroke:#E65100,stroke-width:2px,color:#fff,font-weight:bold
+    style AddSymbol fill:#FFB74D,stroke:#E65100,stroke-width:2px,color:#000
+    style DelSymbol fill:#FFB74D,stroke:#E65100,stroke-width:2px,color:#000
+    style PlaceOrder fill:#FF6F00,stroke:#E65100,stroke-width:3px,color:#fff,font-weight:bold
+    style OrderType fill:#FDD835,stroke:#F57F17,stroke-width:2px,color:#000,font-weight:bold
+    style CheckBalance fill:#29B6F6,stroke:#0277BD,stroke-width:2px,color:#000
+    style CheckPosition fill:#29B6F6,stroke:#0277BD,stroke-width:2px,color:#000
+    style BuyOrder fill:#66BB6A,stroke:#2E7D32,stroke-width:2px,color:#fff
+    style SellOrder fill:#66BB6A,stroke:#2E7D32,stroke-width:2px,color:#fff
+    style UpdatePos fill:#EC407A,stroke:#AD1457,stroke-width:3px,color:#fff,font-weight:bold
+    style End fill:#EF5350,stroke:#C62828,stroke-width:3px,color:#fff,font-weight:bold
+
+
