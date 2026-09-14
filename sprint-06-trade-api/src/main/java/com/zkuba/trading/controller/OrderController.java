@@ -9,7 +9,6 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -39,7 +38,8 @@ public class OrderController {
             @PathVariable String id,
             @Valid @RequestBody com.zkuba.trading.dto.request.UpdateOrderRequest request) {
         if (id != null && id.startsWith("ORD-")) {
-            throw new com.zkuba.trading.exception.InvalidOrderException("Order ID must be a raw UUID without 'ORD-' prefix: " + id);
+            throw new com.zkuba.trading.exception.InvalidOrderException(
+                    "Order ID must be a raw UUID without 'ORD-' prefix: " + id);
         }
         try {
             return orderService.update(user.userId(), UUID.fromString(id), request);
@@ -57,7 +57,8 @@ public class OrderController {
 
     private OrderResponse handleCancel(AuthenticatedUser user, String id) {
         if (id != null && id.startsWith("ORD-")) {
-            throw new com.zkuba.trading.exception.InvalidOrderException("Order ID must be a raw UUID without 'ORD-' prefix: " + id);
+            throw new com.zkuba.trading.exception.InvalidOrderException(
+                    "Order ID must be a raw UUID without 'ORD-' prefix: " + id);
         }
         try {
             return orderService.cancel(user.userId(), UUID.fromString(id));
