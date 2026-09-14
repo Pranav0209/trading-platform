@@ -6,11 +6,12 @@ A working trading platform built one component per sprint. Customers hold accoun
 
 This is a multi-sprint capstone project with the following sprint folders:
 
-| Sprint | Component | Folder |
-|---|---|---|
-| 3 | Trade database | `sprint-03-trade-database` |
-| 4 | Analytics ETL pipeline | `sprint-04-analytics-etl` |
-| 5 | Domain engine | `sprint-05-domain-engine` |
+| Sprint | Component              | Folder                     |
+| ------ | ---------------------- | -------------------------- |
+| 3      | Trade database         | `sprint-03-trade-database` |
+| 4      | Analytics ETL pipeline | `sprint-04-analytics-etl`  |
+| 5      | Domain engine          | `sprint-05-domain-engine`  |
+| 6      | Trade API              | `sprint-06-trade-api`      |
 
 Each sprint includes a README with component details, deliverables, and acceptance criteria. Work for that sprint goes in the corresponding folder.
 
@@ -29,13 +30,13 @@ Each sprint folder contains its own README with component reasoning, deliverable
 Prices come from Fauxnance, a REST API provided for the programme. You will
 receive a personal key. Send it in the `X-Api-Key` header.
 
-| Endpoint | Use |
-|---|---|
-| `GET /candles/{symbol}` | End-of-day OHLCV history. Sprint 4 analytics, Sprint 10 signals. |
-| `GET /quotes/{symbol}` | One delayed quote. The Trade Executor prices a fill with this. |
-| `GET /quotes?symbols=A,B,C` | Batch quotes, up to 25 symbols, counting as one request. |
-| `GET /usage` | Your own quota status. Check it before assuming a 429 is somebody else's fault. |
-| `GET /health` | No key required. Rules out "is it the API or is it me". |
+| Endpoint                    | Use                                                                             |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `GET /candles/{symbol}`     | End-of-day OHLCV history. Sprint 4 analytics, Sprint 10 signals.                |
+| `GET /quotes/{symbol}`      | One delayed quote. The Trade Executor prices a fill with this.                  |
+| `GET /quotes?symbols=A,B,C` | Batch quotes, up to 25 symbols, counting as one request.                        |
+| `GET /usage`                | Your own quota status. Check it before assuming a 429 is somebody else's fault. |
+| `GET /health`               | No key required. Rules out "is it the API or is it me".                         |
 
 The base URL is in `.env.example` and Swagger UI is at `/v1/docs` on that
 host.
