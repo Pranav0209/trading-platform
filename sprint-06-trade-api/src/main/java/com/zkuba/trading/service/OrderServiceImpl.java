@@ -19,9 +19,11 @@ import com.zkuba.trading.exception.InsufficientHoldingsException;
 import com.zkuba.trading.exception.InvalidOrderException;
 import com.zkuba.trading.exception.InvalidOrderTransitionException;
 import com.zkuba.trading.exception.OrderConflictException;
+import com.zkuba.trading.event.OrderPlacedEvent;
 import com.zkuba.trading.mapper.OrderMapper;
 import com.zkuba.trading.repository.OrderRepository;
 import com.zkuba.trading.repository.PositionRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.OffsetDateTime;
@@ -47,6 +49,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private PositionRepository positionRepository;
 
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
+
     @Override
     @Transactional
     public OrderResponse place(Long userId, PlaceOrderRequest request) {
@@ -56,8 +61,6 @@ public class OrderServiceImpl implements OrderService {
         }
 
         String symbol = request.symbol().trim().toUpperCase(Locale.ROOT);
-
-        BigDecimal marketPrice = marketDataService.getCurrentPrice(symbol);
 
         Account account;
         if (request.accountId() != null) {
@@ -75,45 +78,25 @@ public class OrderServiceImpl implements OrderService {
             account = requireActiveAccount(userId);
         }
 
-        boolean isMarket = request.orderType() == OrderType.MARKET;
-        boolean isExecutable = isMarket || (request.side() == OrderSide.BUY
-                ? request.limitPrice().compareTo(marketPrice) >= 0
-                : request.limitPrice().compareTo(marketPrice) <= 0);
-
-        if (isExecutable) {
-            if (request.side() == OrderSide.SELL) {
-                Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), symbol);
-                int currentQty = position != null ? position.getQuantity() : 0;
-                if (currentQty < request.quantity()) {
-                    throw new InsufficientHoldingsException(account.getId(), symbol);
+        Order order = buildNewOrder(account, request, symbol);
+        try {
+            int insertedRows = orderMapper.insert(order);
+            if (insertedRows == 0) {
+                throw new OrderConflictException("Order insert failed for account: " + account.getId());
+            }
+        } catch (DataIntegrityViolationException e) {
+            if (request.idempotencyKey() != null) {
+                Order existing = orderMapper.findByIdempotencyKey(request.idempotencyKey());
+                if (existing != null) {
+                    return response(existing, "Order already processed with idempotency key");
                 }
             }
-
-            BigDecimal executionPrice = isMarket
-                    ? marketPrice
-                    : request.limitPrice();
-            BigDecimal totalValue = executionPrice.multiply(BigDecimal.valueOf(request.quantity()));
-            BigDecimal newBalance = calculateNewBalance(account, request.side(), totalValue);
-
-            return processOrderPlacement(account, request, symbol, executionPrice, newBalance);
-        } else {
-            Order order = buildNewOrder(account, request, symbol);
-            try {
-                int insertedRows = orderMapper.insert(order);
-                if (insertedRows == 0) {
-                    throw new OrderConflictException("Order insert failed for account: " + account.getId());
-                }
-            } catch (DataIntegrityViolationException e) {
-                if (request.idempotencyKey() != null) {
-                    Order existing = orderMapper.findByIdempotencyKey(request.idempotencyKey());
-                    if (existing != null) {
-                        return response(existing, "Order already processed with idempotency key");
-                    }
-                }
-                throw e;
-            }
-            return response(order, "Limit order placed as NEW");
+            throw e;
         }
+
+        eventPublisher.publishEvent(new OrderPlacedEvent(order));
+
+        return response(order, "Order placed");
     }
 
     private OrderResponse processOrderPlacement(
