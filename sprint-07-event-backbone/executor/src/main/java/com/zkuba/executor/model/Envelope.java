@@ -1,4 +1,4 @@
-package com.fauxnance.executor.model;
+package com.zkuba.executor.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 

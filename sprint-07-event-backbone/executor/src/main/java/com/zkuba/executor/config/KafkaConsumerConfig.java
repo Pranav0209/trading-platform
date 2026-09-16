@@ -1,4 +1,4 @@
-package com.fauxnance.executor.config;
+package com.zkuba.executor.config;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
