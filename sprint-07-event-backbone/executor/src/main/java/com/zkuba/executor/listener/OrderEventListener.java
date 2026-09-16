@@ -1,6 +1,5 @@
 package com.zkuba.executor.listener;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zkuba.executor.event.Envelope;
@@ -33,33 +32,31 @@ public class OrderEventListener {
     private ObjectMapper objectMapper;
 
     @KafkaListener(topics = "orders", groupId = "${spring.kafka.consumer.group-id:trade-executor}")
-    public void onOrderPlaced(@Payload String message, Acknowledgment ack) {
-        try {
-            Envelope<OrderPlacedPayload> envelope = objectMapper.readValue(message, new TypeReference<>() {
-            });
-            OrderPlacedPayload payload = envelope.payload();
-            log.info("Received order: {}", payload.orderId());
+    public void onOrderPlaced(@Payload String message, Acknowledgment ack) throws Exception {
+        Envelope<OrderPlacedPayload> envelope = objectMapper.readValue(message, new TypeReference<>() {
+        });
 
-            Optional<TradeEventPayload> eventPayload = tradeExecutionService.executeOrder(payload.orderId());
-
-            if (eventPayload.isPresent()) {
-                publishTradeEvent(eventPayload.get());
-            } else {
-                log.info("Order {} was already executed or not in NEW state", payload.orderId());
-            }
-
-            // Acknowledge after publishing and committing
-            ack.acknowledge();
-
-        } catch (JsonProcessingException e) {
-            log.error("Failed to parse message (poison pill), dead-lettering", e);
-            // In a real app, send to DLT here
-            // We ack it to remove from queue
-            ack.acknowledge();
-        } catch (Exception e) {
-            log.error("Transient error executing order, will not ack (will retry)", e);
-            throw new RuntimeException(e);
+        if (!"ORDER_PLACED".equals(envelope.eventType())) {
+            throw new IllegalArgumentException("Unexpected event type: " + envelope.eventType());
         }
+
+        OrderPlacedPayload payload = envelope.payload();
+        if (payload == null || payload.orderId() == null) {
+            throw new IllegalArgumentException("Missing order identifier");
+        }
+
+        log.info("Received order: {}", payload.orderId());
+
+        Optional<TradeEventPayload> eventPayload = tradeExecutionService.executeOrder(payload.orderId());
+
+        if (eventPayload.isPresent()) {
+            publishTradeEvent(eventPayload.get());
+        } else {
+            log.info("Order {} was already executed or not in NEW state", payload.orderId());
+        }
+
+        // Acknowledge after publishing and committing
+        ack.acknowledge();
     }
 
     private void publishTradeEvent(TradeEventPayload payload) {
