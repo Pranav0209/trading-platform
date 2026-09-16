@@ -80,25 +80,20 @@ public class TradeExecutionService {
 
         Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol()).orElse(null);
 
-        if (order.getSide() == OrderSide.BUY) {
-            if (account.getCashBalance().compareTo(totalValue) < 0) {
-                return Optional.of(rejectOrder(order, "INSUFFICIENT_FUNDS"));
-            }
-            BigDecimal newBalance = account.getCashBalance().subtract(totalValue);
-            updateAccount(account, newBalance);
-            updateBuyPosition(account.getId(), order.getSymbol(), order.getQuantity(), executedPrice, position);
-        } else {
+        // Pre-check for bounds to avoid filling an order that will immediately fail cash checks
+        if (order.getSide() == OrderSide.BUY && account.getCashBalance().compareTo(totalValue) < 0) {
+            return Optional.of(rejectOrder(order, "INSUFFICIENT_FUNDS"));
+        }
+        if (order.getSide() == OrderSide.SELL) {
             int currentQty = position != null ? position.getQuantity() : 0;
             if (currentQty < order.getQuantity()) {
                 return Optional.of(rejectOrder(order, "INSUFFICIENT_HOLDINGS"));
             }
-            BigDecimal newBalance = account.getCashBalance().add(totalValue);
-            updateAccount(account, newBalance);
-            updateSellPosition(position, order.getQuantity());
         }
 
-        // Guarded state transition
-        int updated = orderRepository.executeOrder(order.getId(), OrderStatus.FILLED, executedPrice);
+        // GUARDED STATE TRANSITION: Must be the FIRST write in the transaction
+        OffsetDateTime executedOn = OffsetDateTime.now();
+        int updated = orderRepository.executeOrder(order.getId(), OrderStatus.FILLED, executedPrice, executedOn);
         if (updated == 0) {
             // Another thread/delivery got here first
             throw new OptimisticLockException("Order already executed");
@@ -106,6 +101,17 @@ public class TradeExecutionService {
 
         order.setStatus(OrderStatus.FILLED);
         order.setExecutedPrice(executedPrice);
+        order.setExecutedOn(executedOn);
+
+        if (order.getSide() == OrderSide.BUY) {
+            BigDecimal newBalance = account.getCashBalance().subtract(totalValue);
+            updateAccount(account, newBalance);
+            updateBuyPosition(account.getId(), order.getSymbol(), order.getQuantity(), executedPrice, position);
+        } else {
+            BigDecimal newBalance = account.getCashBalance().add(totalValue);
+            updateAccount(account, newBalance);
+            updateSellPosition(position, order.getQuantity());
+        }
 
         return Optional.of(buildFilledEvent(order, account.getCashBalance(), position));
     }
@@ -145,11 +151,13 @@ public class TradeExecutionService {
     }
 
     private TradeEventPayload rejectOrder(Order order, String reason) {
-        int updated = orderRepository.executeOrder(order.getId(), OrderStatus.REJECTED, null);
+        OffsetDateTime executedOn = OffsetDateTime.now();
+        int updated = orderRepository.executeOrder(order.getId(), OrderStatus.REJECTED, null, executedOn);
         if (updated == 0) {
             throw new OptimisticLockException("Order already executed");
         }
         order.setStatus(OrderStatus.REJECTED);
+        order.setExecutedOn(executedOn);
         
         Account account = accountRepository.findById(order.getAccountId()).orElseThrow();
         Position position = positionRepository.findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol()).orElse(null);

@@ -60,10 +60,10 @@ INSERT INTO watchlist_items (watchlist_id, symbol) VALUES
 ON CONFLICT (watchlist_id, symbol) DO NOTHING;
 
 -- Seed Sample Filled Orders
-INSERT INTO orders (id, account_id, symbol, side, order_type, quantity, limit_price, executed_price, status, idempotency_key) VALUES
-    ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 2, 'AAPL', 'BUY', 'MARKET', 15, NULL, 220.5000, 'FILLED', 'seed-order-john-aapl-1'),
-    ('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 2, 'NVDA', 'BUY', 'MARKET', 25, NULL, 165.0000, 'FILLED', 'seed-order-john-nvda-1'),
-    ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 3, 'MSFT', 'BUY', 'MARKET', 10, NULL, 495.2500, 'FILLED', 'seed-order-jane-msft-1')
+INSERT INTO orders (id, account_id, symbol, side, order_type, quantity, limit_price, executed_price, executed_on, status, idempotency_key) VALUES
+    ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 2, 'AAPL', 'BUY', 'MARKET', 15, NULL, 220.5000, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-john-aapl-1'),
+    ('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 2, 'NVDA', 'BUY', 'MARKET', 25, NULL, 165.0000, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-john-nvda-1'),
+    ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 3, 'MSFT', 'BUY', 'MARKET', 10, NULL, 495.2500, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-jane-msft-1')
 ON CONFLICT (id) DO NOTHING;
 
 COMMIT;

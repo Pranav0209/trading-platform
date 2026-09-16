@@ -43,6 +43,9 @@ public class Order {
     @Column(name = "executed_price")
     private BigDecimal executedPrice;
 
+    @Column(name = "executed_on")
+    private OffsetDateTime executedOn;
+
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
@@ -119,6 +122,14 @@ public class Order {
 
     public void setExecutedPrice(BigDecimal executedPrice) {
         this.executedPrice = executedPrice;
+    }
+
+    public OffsetDateTime getExecutedOn() {
+        return executedOn;
+    }
+
+    public void setExecutedOn(OffsetDateTime executedOn) {
+        this.executedOn = executedOn;
     }
 
     public OrderStatus getStatus() {

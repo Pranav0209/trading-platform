@@ -1,21 +1,33 @@
 package com.zkuba.executor.repository;
 
 import com.zkuba.executor.domain.entity.Order;
-import org.springframework.data.jpa.repository.JpaRepository;
-import java.util.UUID;
+import com.zkuba.executor.domain.enums.OrderStatus;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
+
     Optional<Order> findByIdAndAccountId(UUID id, Long accountId);
-    
-    @org.springframework.data.jpa.repository.Modifying
-    @org.springframework.data.jpa.repository.Query(
-        "UPDATE Order o SET o.status = :newStatus, o.executedPrice = :executedPrice " +
-        "WHERE o.id = :id AND o.status = 'NEW'"
-    )
+
+    @Modifying
+    @Query("""
+            UPDATE Order o
+            SET o.status = :newStatus,
+                o.executedPrice = :executedPrice,
+                o.executedOn = :executedOn
+            WHERE o.id = :id
+              AND o.status = 'NEW'
+            """)
     int executeOrder(
-        @org.springframework.data.repository.query.Param("id") UUID id, 
-        @org.springframework.data.repository.query.Param("newStatus") com.zkuba.executor.domain.enums.OrderStatus newStatus, 
-        @org.springframework.data.repository.query.Param("executedPrice") java.math.BigDecimal executedPrice
-    );
+            @Param("id") UUID id,
+            @Param("newStatus") OrderStatus newStatus,
+            @Param("executedPrice") BigDecimal executedPrice,
+            @Param("executedOn") OffsetDateTime executedOn);
 }
