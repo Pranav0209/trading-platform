@@ -1,85 +1,103 @@
 # Sprint 7: Incremental Trade Load ETL
 
-Incremental ETL pipeline for loading trade data from PostgreSQL into a star schema analytics warehouse (DuckDB).
+A modular, reliable Python ETL pipeline extracting operational trade and account data from **PostgreSQL** (Sprint 6 Trade API) and loading it into an analytical **DuckDB** star schema (conforming to [`contracts/analytics-schema.sql`](file:///c:/Users/krish/training/chennai-capstone-SE1-team4/contracts/analytics-schema.sql)).
 
-## Acceptance Criteria
+---
 
-✅ **Incremental load with watermarking:** Orders are loaded incrementally based on `created_at` timestamp watermark. Subsequent runs only fetch new data.
+## Directory Structure
 
-✅ **Idempotent loads:** Upsert on `order_id` prevents double-counting. Re-running doesn't add duplicates.
+```
+sprint-07-event-backbone/etl/
+├── README.md               # Main documentation & architecture overview
+├── pyproject.toml          # Package configuration & dependencies
+├── verify_warehouse.py     # Standalone analytical verification runner
+│
+├── docs/                   # Organized documentation guides
+│   ├── ARCHITECTURE.md     # Dimensional model, SCD Type 2 & design decisions
+│   ├── COMMANDS.md         # Complete CLI command reference
+│   └── QUICK_START.md      # 5-minute setup and verification walkthrough
+│
+├── src/
+│   └── sprint_07_event_backbone_etl/
+│       ├── __init__.py     # Package exports
+│       ├── __main__.py     # Entry point for python -m
+│       ├── extract.py      # Extract layer: PostgreSQL connections & watermark queries
+│       ├── transform.py    # Transform layer: 11 validations, pricing & calculations
+│       ├── load.py         # Load layer: DuckDB upserts, dimension management & DLQ
+│       ├── warehouse.py    # Warehouse DDL, surrogate keys & schema initialization
+│       ├── pipeline.py     # Orchestrator: connects Extract -> Transform -> Load
+│       ├── analytics.py    # Analytics runner: fill rates, venue reports & health checks
+│       └── cli.py          # Unified CLI: init, dimensions, trades, all, verify
+│
+└── tests/
+    └── test_incremental_load.py  # Comprehensive test suite
+```
 
-✅ **Dead-lettering (not silent drop):** Failed rows are recorded in `dead_letter_queue` with batch ID, reason, and full row data—never silently dropped.
+---
 
-✅ **Load order:** Dimensions (dim_date → dim_instrument → dim_account) then facts (fact_trades).
+## ETL Architecture Layers
 
-✅ **All order statuses:** Loads NEW, FILLED, CANCELLED, REJECTED orders (needed for fill rate computation).
+```
+  PostgreSQL (trading)
+          │
+  ┌───────▼────────────────┐
+  │ extract.py             │  Queries orders WHERE updated_at > watermark
+  └───────┬────────────────┘
+          │
+  ┌───────▼────────────────┐
+  │ transform.py           │  11 validations, exchange derivation, trade value
+  └───────┬────────────────┘
+          │
+  ┌───────▼────────────────┐
+  │ load.py                │  Type 1 instruments, Type 2 accounts, idempotent fact upserts
+  └───────┬────────────────┘
+          │
+  DuckDB (analytics.duckdb)
+```
 
-✅ **Merge on natural key:** Upsert on `order_id` (natural key from source).
+1. **`extract.py` (Extraction)**:
+   Connects to PostgreSQL. Extracts `instruments`, `accounts` (joined with `users` for `holder_name`), and `orders` filtered by `updated_at > watermark` so no order state transitions are missed.
+2. **`transform.py` (Transformation & Quality)**:
+   Applies an 11-point validation gate (types, UUID handling, positive quantities, valid statuses, non-null prices). Computes `trade_value` and integer `YYYYMMDD` `date_key`, and derives `exchange` from ticker format.
+3. **`load.py` (Loading & Idempotency)**:
+   Writes to DuckDB. Implements Type 1 SCD for instruments, Type 2 SCD for accounts (`effective_date`, `end_date`, `is_current`), and idempotent natural-key upserts (`ON CONFLICT (source_order_id)`) for trades. Quarantines invalid records into `dead_letter_queue`.
+4. **`warehouse.py` (Schema & Watermarks)**:
+   Provides ANSI SQL schema definitions, surrogate key helpers (without sequences), and records `load_watermarks`.
+5. **`analytics.py` (Verification & Reporting)**:
+   Runs integrity audits and business analytics queries (fill rate, volume by venue, account summaries).
 
-✅ **Validation checks:** Runs 11 checks before fact table:
-  - Null and type mismatches
-  - Side validation (BUY/SELL)
-  - Status validation (NEW/FILLED/CANCELLED/REJECTED)
-  - Positive quantity and price
-  - Referential integrity (dimensions must exist)
-  - Trade value computation
+---
 
-✅ **Three pipeline commands:** `load-dimensions`, `load-trades`, `load-all`
+## Quick Usage
 
-✅ **Unit test scenarios:** Incremental load, no-new-data idempotency, null/type handling, dead-lettering
-
-## Setup
-
-### Install
-
-```bash
-cd sprint-07-event-backbone/etl
+### 1. Setup Environment
+```powershell
 python -m venv .venv
-.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.venv\Scripts\activate
+pip install -e ".[dev]"
 ```
 
-### Environment
-
-Create `.env` in repository root (optional, or use `--postgres-url` flag):
-
-```
-POSTGRES_URL=postgresql://user:password@host:5432/zkuba
+### 2. Run Tests
+```powershell
+pytest tests/ -v
 ```
 
-## Quick Start
+### 3. Initialize Warehouse & Run Pipeline
+```powershell
+# Initialize star schema
+trade-etl init-warehouse
 
-### First run: Load all (dimensions + trades)
+# Ingest dimensions and trades
+trade-etl load-all --postgres-url "postgresql://postgres:postgres@localhost:5432/trading"
 
-```bash
-trade-etl load-all --postgres-url "postgresql://localhost/zkuba"
+# Ingest subsequent incremental trades
+trade-etl load-trades --postgres-url "postgresql://postgres:postgres@localhost:5432/trading"
 ```
 
-### Subsequent runs: Load only trades (incremental)
-
-```bash
-trade-etl load-trades --postgres-url "postgresql://localhost/zkuba"
+### 4. Verify & Inspect Analytics
+```powershell
+trade-etl verify
 ```
 
-### Load dimensions only (if needed)
+---
 
-```bash
-trade-etl load-dimensions --postgres-url "postgresql://localhost/zkuba"
-```
-
-## Tests
-
-```bash
-pytest tests/test_incremental_load.py -v
-```
-
-## Documentation
-
-- [QUICK_START.md](./QUICK_START.md) - 5-minute setup and usage
-- [PIPELINE_COMMANDS.md](./PIPELINE_COMMANDS.md) - Detailed command reference
-- [INCREMENTAL_LOAD_DESIGN.md](./INCREMENTAL_LOAD_DESIGN.md) - Architecture and design
-- [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - Maps code to acceptance criteria
-
-## Output Files
-
-- `analytics.duckdb` - DuckDB warehouse database (default location)
-- `tests/` - Unit tests with 24+ test scenarios
