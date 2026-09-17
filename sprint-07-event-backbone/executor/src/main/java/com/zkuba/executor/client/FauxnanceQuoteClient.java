@@ -16,10 +16,12 @@ public class FauxnanceQuoteClient {
 
     private final RestClient restClient;
 
+    // pulls url and api key from app properies or env
     public FauxnanceQuoteClient(
             @Value("${fauxnance.api.base-url}") String baseUrl,
             @Value("${fauxnance.api.key}") String apiKey) {
-        
+
+        // builds reusable HTTP client
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("X-Api-Key", apiKey)
@@ -27,11 +29,10 @@ public class FauxnanceQuoteClient {
                 .build();
     }
 
-    @Retryable(
-            retryFor = {RestClientException.class},
-            maxAttempts = 5,
-            backoff = @Backoff(delay = 1000, multiplier = 2.0)
-    )
+    // fetching single quote, get request to api and converts json to QuoteResponse
+    // will wait 1sec before retry, then 2, then 4, exponential backoff
+    @Retryable(retryFor = {
+            RestClientException.class }, maxAttempts = 5, backoff = @Backoff(delay = 1000, multiplier = 2.0))
     public QuoteResponse getQuote(String symbol) {
         try {
             return restClient.get()
@@ -43,11 +44,9 @@ public class FauxnanceQuoteClient {
         }
     }
 
-    @Retryable(
-            retryFor = {RestClientException.class},
-            maxAttempts = 5,
-            backoff = @Backoff(delay = 1000, multiplier = 2.0)
-    )
+    // fetching multiple quotes in single request, market poller
+    @Retryable(retryFor = {
+            RestClientException.class }, maxAttempts = 5, backoff = @Backoff(delay = 1000, multiplier = 2.0))
     public BatchQuoteResponse getBatchQuotes(List<String> symbols) {
         if (symbols == null || symbols.isEmpty()) {
             return new BatchQuoteResponse(new BatchQuoteResponse.Data(Collections.emptyList()), null);
