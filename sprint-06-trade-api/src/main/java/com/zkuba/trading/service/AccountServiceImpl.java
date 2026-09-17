@@ -9,6 +9,7 @@ import com.zkuba.trading.exception.AccountAlreadyExistsException;
 import com.zkuba.trading.exception.AccountNotActiveException;
 import com.zkuba.trading.exception.AccountNotFoundException;
 import com.zkuba.trading.exception.ForbiddenException;
+import com.zkuba.trading.exception.UserNotFoundException;
 import com.zkuba.trading.dto.request.CreateAccountRequest;
 import com.zkuba.trading.dto.response.AccountResponse;
 import com.zkuba.trading.dto.response.BalanceResponse;
@@ -144,7 +145,7 @@ public class AccountServiceImpl implements AccountService {
         String holderName;
         try {
             holderName = userService.get(account.getUserId()).getUsername();
-        } catch (com.zkuba.trading.exception.UserNotFoundException e) {
+        } catch (UserNotFoundException e) {
             // User was deleted or not found - use ID as fallback
             holderName = "User " + account.getUserId();
         }
