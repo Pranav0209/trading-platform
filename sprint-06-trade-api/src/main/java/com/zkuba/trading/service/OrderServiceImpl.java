@@ -3,7 +3,6 @@ package com.zkuba.trading.service;
 import com.zkuba.trading.domain.entity.Account;
 import com.zkuba.trading.domain.entity.Order;
 import com.zkuba.trading.domain.enums.AccountStatus;
-import com.zkuba.trading.domain.enums.OrderSide;
 import com.zkuba.trading.domain.enums.OrderStatus;
 import com.zkuba.trading.domain.enums.OrderType;
 import com.zkuba.trading.dto.request.PlaceOrderRequest;
@@ -17,11 +16,11 @@ import com.zkuba.trading.exception.InvalidOrderException;
 import com.zkuba.trading.exception.InvalidOrderTransitionException;
 import com.zkuba.trading.exception.OrderConflictException;
 import com.zkuba.trading.event.OrderPlacedEvent;
+import com.zkuba.trading.event.OrderUpdatedEvent;
 import com.zkuba.trading.mapper.OrderMapper;
 import com.zkuba.trading.repository.OrderRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.Locale;
 import java.util.UUID;
@@ -89,8 +88,6 @@ public class OrderServiceImpl implements OrderService {
         return response(order, "Order placed");
     }
 
-
-
     @Override
     @Transactional
     public OrderResponse cancel(Long userId, UUID orderId) {
@@ -138,8 +135,8 @@ public class OrderServiceImpl implements OrderService {
         order.setLimitPrice(newLimitPrice);
 
         orderRepository.save(order);
-        
-        eventPublisher.publishEvent(new com.zkuba.trading.event.OrderUpdatedEvent(order));
+
+        eventPublisher.publishEvent(new OrderUpdatedEvent(order));
 
         return response(order, "Order updated");
     }
@@ -170,8 +167,6 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-
-
     private Order buildNewOrder(Account account, PlaceOrderRequest request, String symbol) {
         Order order = new Order();
         order.setId(UUID.randomUUID());
@@ -187,8 +182,6 @@ public class OrderServiceImpl implements OrderService {
         order.setCreatedAt(OffsetDateTime.now());
         return order;
     }
-
-
 
     private OrderResponse response(Order order, String message) {
         return new OrderResponse(
