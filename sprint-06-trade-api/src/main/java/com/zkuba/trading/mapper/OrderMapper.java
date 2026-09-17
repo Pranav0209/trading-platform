@@ -15,10 +15,6 @@ public interface OrderMapper {
 
     Account findAccountById(@Param("id") Long id);
 
-    int updateAccountBalance(
-            @Param("accountId") Long accountId,
-            @Param("newBalance") BigDecimal newBalance,
-            @Param("expectedVersion") Integer expectedVersion);
 
     Order findByIdAndAccountId(@Param("orderId") UUID orderId, @Param("accountId") Long accountId);
 

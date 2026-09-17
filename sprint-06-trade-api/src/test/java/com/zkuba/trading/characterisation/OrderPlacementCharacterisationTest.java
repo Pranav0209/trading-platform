@@ -11,7 +11,7 @@ import com.zkuba.trading.dto.request.PlaceOrderRequest;
 import com.zkuba.trading.dto.response.OrderResponse;
 import com.zkuba.trading.exception.AccountNotActiveException;
 import com.zkuba.trading.exception.DuplicateOrderException;
-import com.zkuba.trading.exception.InsufficientFundsException;
+
 import com.zkuba.trading.mapper.OrderMapper;
 import com.zkuba.trading.repository.OrderRepository;
 import com.zkuba.trading.repository.PositionRepository;
