@@ -14,7 +14,6 @@ import org.springframework.data.repository.query.Param;
 
 public interface OrderRepository extends JpaRepository<Order, UUID> {
 
-    Optional<Order> findByIdAndAccountId(UUID id, Long accountId);
 
     @Modifying
     @Query("""

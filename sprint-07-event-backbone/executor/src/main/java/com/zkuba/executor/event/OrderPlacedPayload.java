@@ -1,17 +1,10 @@
 package com.zkuba.executor.event;
 
-import java.math.BigDecimal;
-import java.time.Instant;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.UUID;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public record OrderPlacedPayload(
-    UUID orderId,
-    Long accountId,
-    String symbol,
-    String side,
-    Integer quantity,
-    BigDecimal price,
-    String idempotencyKey,
-    Instant createdOn
+    UUID orderId
 ) {
 }

@@ -100,14 +100,7 @@ class TradeExecutionIntegrationTest {
 
                 // Create OrderPlaced event payload
                 OrderPlacedPayload payload = new OrderPlacedPayload(
-                                order.getId(),
-                                account.getId(),
-                                "AAPL",
-                                "BUY",
-                                10,
-                                null,
-                                "TEST-IDEMP-1",
-                                Instant.now());
+                                order.getId());
                 Envelope<OrderPlacedPayload> envelope = new Envelope<>(
                                 UUID.randomUUID().toString(),
                                 "ORDER_PLACED",
