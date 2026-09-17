@@ -44,16 +44,21 @@ public class TradeExecutionService {
     @Autowired
     private FillRuleEngine fillRuleEngine;
 
+    // if 2 threads try to update exact same account at same time, db wil throw
+    // OptimisticLockingException, if that happes we tell spring to not crash and
+    // just to wait 50ms and try upto 5 times
     @Retryable(retryFor = {
             OptimisticLockException.class }, maxAttempts = 5, backoff = @Backoff(delay = 50, multiplier = 2.0))
     @Transactional
     public Optional<TradeEventPayload> executeOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId).orElse(null);
+        // to handle cancelled orders
         if (order == null || order.getStatus() != OrderStatus.NEW) {
             // Already handled, do nothing (idempotency)
             return Optional.empty();
         }
 
+        // fetching "live" market data, if price is not available-> reject order
         QuoteResponse quoteResponse = null;
         try {
             quoteResponse = quoteClient.getQuote(order.getSymbol());
@@ -61,8 +66,11 @@ public class TradeExecutionService {
             return Optional.of(rejectOrder(order, "PRICING_UNAVAILABLE"));
         }
 
+        // checks if order can be filled
         FillDecision decision = fillRuleEngine.evaluate(order, quoteResponse.data());
 
+        // check decison, if price not met(limit case), we leave order status as new &
+        // come back later, for any other reason we reject directly
         if (!decision.isFilled()) {
             if ("PRICE_NOT_MET".equals(decision.rejectReason())) {
                 return Optional.empty();
@@ -70,6 +78,7 @@ public class TradeExecutionService {
             return Optional.of(rejectOrder(order, decision.rejectReason()));
         }
 
+        // validation
         Account account = accountRepository.findById(order.getAccountId()).orElseThrow();
         if (account.getStatus() != AccountStatus.ACTIVE) {
             return Optional.of(rejectOrder(order, "ACCOUNT_SUSPENDED"));
@@ -122,6 +131,7 @@ public class TradeExecutionService {
         account.setCashBalance(newBalance);
     }
 
+    // update position based on existing position if exists,else create new
     private void updateBuyPosition(Long accountId, String symbol, int quantity, BigDecimal executedPrice,
             Position position) {
         if (position == null) {
@@ -142,6 +152,7 @@ public class TradeExecutionService {
         positionRepository.save(position);
     }
 
+    // substract units from existing and update , remove if 0
     private void updateSellPosition(Position position, int quantity) {
         int remaining = position.getQuantity() - quantity;
         if (remaining == 0) {

@@ -33,6 +33,7 @@ public class OrderEventListener {
 
     @KafkaListener(topics = "orders", groupId = "${spring.kafka.consumer.group-id:trade-executor}")
     public void onOrderPlaced(@Payload String message, Acknowledgment ack) throws Exception {
+        // converts raw json back to Envelope java obj
         Envelope<OrderPlacedPayload> envelope = objectMapper.readValue(message, new TypeReference<>() {
         });
 
@@ -40,6 +41,7 @@ public class OrderEventListener {
             throw new IllegalArgumentException("Unexpected event type: " + envelope.eventType());
         }
 
+        // extract inner payload(order payload)
         OrderPlacedPayload payload = envelope.payload();
         if (payload == null || payload.orderId() == null) {
             throw new IllegalArgumentException("Missing order identifier");
@@ -47,6 +49,7 @@ public class OrderEventListener {
 
         log.info("Received order: {}", payload.orderId());
 
+        // handles trade execution
         Optional<TradeEventPayload> eventPayload = tradeExecutionService.executeOrder(payload.orderId());
 
         if (eventPayload.isPresent()) {
@@ -59,6 +62,8 @@ public class OrderEventListener {
         ack.acknowledge();
     }
 
+    // publishing receipt, creates new envelope to fire into trade-events(topic),
+    // not consumed as of now
     private void publishTradeEvent(TradeEventPayload payload) {
         String type = "ORDER_FILLED";
         if (payload.status().equals("REJECTED")) {

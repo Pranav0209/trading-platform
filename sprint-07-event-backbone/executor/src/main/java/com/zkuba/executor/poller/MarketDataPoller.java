@@ -44,8 +44,11 @@ public class MarketDataPoller {
      * seconds).
      * We set an absolute floor of 45 seconds to stay safe using SpEL Math.max.
      */
+
+    // runs on a loop forever, min delay of 45 sec
     @Scheduled(fixedDelayString = "#{T(java.lang.Math).max(${poll.interval.seconds:60}, 45) * 1000}")
     public void pollMarketData() {
+        // get list of symbols in users positions and watchlist
         List<String> symbols = positionRepository.findUniqueSymbolsOfInterest();
         if (symbols.isEmpty()) {
             log.debug("No symbols of interest found. Skipping market data poll.");
@@ -54,12 +57,14 @@ public class MarketDataPoller {
 
         log.info("Polling market data for {} symbols...", symbols.size());
 
+        // if user has more than 25, it batches them
         for (int i = 0; i < symbols.size(); i += BATCH_SIZE) {
             List<String> batch = symbols.subList(i, Math.min(symbols.size(), i + BATCH_SIZE));
             fetchAndPublishBatch(batch);
         }
     }
 
+    // broadcasting to market data topic, writes values as json
     private void fetchAndPublishBatch(List<String> batch) {
         try {
             BatchQuoteResponse response = quoteClient.getBatchQuotes(batch);
