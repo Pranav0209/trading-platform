@@ -21,6 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--to-date", default=None)
     parser.add_argument("--database", default="analytics.duckdb")
     parser.add_argument("--cache-dir", default=".cache")
+    parser.add_argument("--cache-ttl", type=int, default=86400, help="Cache TTL in seconds (default 24h). 0 to force fetch.")
     parser.add_argument("--base-url", default=None)
     parser.add_argument("--api-key", default=None)
     return parser
@@ -39,6 +40,7 @@ def main() -> None:
             api_key=args.api_key,
             base_url=args.base_url,
             cache_dir=Path(args.cache_dir),
+            cache_ttl=args.cache_ttl,
         )
         frames.append(transform_candles(raw))
 
