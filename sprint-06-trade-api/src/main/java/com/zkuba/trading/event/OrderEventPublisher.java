@@ -63,4 +63,42 @@ public class OrderEventPublisher {
                     }
                 });
     }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void handleOrderUpdated(OrderUpdatedEvent event) {
+        Order order = event.order();
+        
+        OrderPlacedPayload payload = new OrderPlacedPayload(
+                order.getId(),
+                order.getAccountId(),
+                order.getSymbol(),
+                order.getSide().name(),
+                order.getQuantity(),
+                order.getLimitPrice(),
+                order.getIdempotencyKey(),
+                order.getCreatedAt() != null ? order.getCreatedAt().toInstant() : Instant.now()
+        );
+
+        Envelope<OrderPlacedPayload> envelope = new Envelope<>(
+                UUID.randomUUID().toString(),
+                "ORDER_UPDATED",
+                Instant.now(),
+                SOURCE,
+                1,
+                payload
+        );
+
+        String key = String.valueOf(order.getAccountId());
+        
+        log.debug("Publishing ORDER_UPDATED event to orders topic for accountId={}", key);
+        
+        kafkaTemplate.send(TOPIC_ORDERS, key, envelope)
+                .whenComplete((result, ex) -> {
+                    if (ex != null) {
+                        log.error("Failed to publish ORDER_UPDATED event for orderId={}", order.getId(), ex);
+                    } else {
+                        log.debug("Successfully published ORDER_UPDATED event for orderId={}", order.getId());
+                    }
+                });
+    }
 }

@@ -36,7 +36,7 @@ public class OrderEventListener {
         Envelope<OrderPlacedPayload> envelope = objectMapper.readValue(message, new TypeReference<>() {
         });
 
-        if (!"ORDER_PLACED".equals(envelope.eventType())) {
+        if (!"ORDER_PLACED".equals(envelope.eventType()) && !"ORDER_UPDATED".equals(envelope.eventType())) {
             throw new IllegalArgumentException("Unexpected event type: " + envelope.eventType());
         }
 

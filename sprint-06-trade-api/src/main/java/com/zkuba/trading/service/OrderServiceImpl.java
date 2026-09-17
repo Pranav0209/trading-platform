@@ -2,7 +2,6 @@ package com.zkuba.trading.service;
 
 import com.zkuba.trading.domain.entity.Account;
 import com.zkuba.trading.domain.entity.Order;
-import com.zkuba.trading.domain.entity.Position;
 import com.zkuba.trading.domain.enums.AccountStatus;
 import com.zkuba.trading.domain.enums.OrderSide;
 import com.zkuba.trading.domain.enums.OrderStatus;
@@ -14,15 +13,12 @@ import com.zkuba.trading.exception.AccountNotActiveException;
 import com.zkuba.trading.exception.AccountNotFoundException;
 import com.zkuba.trading.exception.DuplicateOrderException;
 import com.zkuba.trading.exception.ForbiddenException;
-import com.zkuba.trading.exception.InsufficientFundsException;
-import com.zkuba.trading.exception.InsufficientHoldingsException;
 import com.zkuba.trading.exception.InvalidOrderException;
 import com.zkuba.trading.exception.InvalidOrderTransitionException;
 import com.zkuba.trading.exception.OrderConflictException;
 import com.zkuba.trading.event.OrderPlacedEvent;
 import com.zkuba.trading.mapper.OrderMapper;
 import com.zkuba.trading.repository.OrderRepository;
-import com.zkuba.trading.repository.PositionRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -42,12 +38,6 @@ public class OrderServiceImpl implements OrderService {
 
     @Autowired
     private OrderRepository orderRepository;
-
-    @Autowired
-    private MarketDataService marketDataService;
-
-    @Autowired
-    private PositionRepository positionRepository;
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -147,67 +137,11 @@ public class OrderServiceImpl implements OrderService {
         order.setQuantity(newQuantity);
         order.setLimitPrice(newLimitPrice);
 
-        BigDecimal marketPrice = marketDataService.getCurrentPrice(order.getSymbol());
-        boolean isExecutable = order.getSide() == OrderSide.BUY
-                ? newLimitPrice.compareTo(marketPrice) >= 0
-                : newLimitPrice.compareTo(marketPrice) <= 0;
+        orderRepository.save(order);
+        
+        eventPublisher.publishEvent(new com.zkuba.trading.event.OrderUpdatedEvent(order));
 
-        if (isExecutable) {
-            if (order.getSide() == OrderSide.SELL) {
-                Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol());
-                int currentQty = position != null ? position.getQuantity() : 0;
-                if (currentQty < newQuantity) {
-                    throw new InsufficientHoldingsException(account.getId(), order.getSymbol());
-                }
-            }
-
-            BigDecimal executionPrice = newLimitPrice;
-            BigDecimal totalValue = executionPrice.multiply(BigDecimal.valueOf(newQuantity));
-            BigDecimal newBalance = calculateNewBalance(account, order.getSide(), totalValue);
-
-            Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol());
-            if (order.getSide() == OrderSide.SELL) {
-                int currentQty = position != null ? position.getQuantity() : 0;
-                int remaining = currentQty - newQuantity;
-                if (remaining == 0) {
-                    positionRepository.delete(position);
-                } else {
-                    position.setQuantity(remaining);
-                    positionRepository.save(position);
-                }
-            } else if (order.getSide() == OrderSide.BUY) {
-                if (position == null) {
-                    position = new Position();
-                    position.setAccountId(account.getId());
-                    position.setSymbol(order.getSymbol());
-                    position.setQuantity(newQuantity);
-                    position.setAverageCost(executionPrice);
-                } else {
-                    int oldQty = position.getQuantity();
-                    int newQty = oldQty + newQuantity;
-                    BigDecimal totalCost = position.getAverageCost().multiply(BigDecimal.valueOf(oldQty))
-                            .add(executionPrice.multiply(BigDecimal.valueOf(newQuantity)));
-                    BigDecimal newAvgCost = totalCost.divide(BigDecimal.valueOf(newQty), 4, RoundingMode.HALF_UP);
-                    position.setQuantity(newQty);
-                    position.setAverageCost(newAvgCost);
-                }
-                positionRepository.save(position);
-            }
-
-            int updatedRows = orderMapper.updateAccountBalance(account.getId(), newBalance, account.getVersion());
-            if (updatedRows == 0) {
-                throw new OrderConflictException("Account update conflict for account: " + account.getId());
-            }
-
-            order.setExecutedPrice(executionPrice);
-            order.setStatus(OrderStatus.FILLED);
-            orderRepository.save(order);
-
-            return response(order, "Order updated and executed");
-        } else {
-            orderRepository.save(order);
-            return response(order, "Order updated");
-        }
+        return response(order, "Order updated");
     }
 
     private Account requireActiveAccount(Long userId) {
@@ -236,15 +170,7 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private BigDecimal calculateNewBalance(Account account, OrderSide side, BigDecimal totalValue) {
-        if (side == OrderSide.BUY) {
-            if (account.getCashBalance().compareTo(totalValue) < 0) {
-                throw new InsufficientFundsException(account.getId());
-            }
-            return account.getCashBalance().subtract(totalValue);
-        }
-        return account.getCashBalance().add(totalValue);
-    }
+
 
     private Order buildNewOrder(Account account, PlaceOrderRequest request, String symbol) {
         Order order = new Order();

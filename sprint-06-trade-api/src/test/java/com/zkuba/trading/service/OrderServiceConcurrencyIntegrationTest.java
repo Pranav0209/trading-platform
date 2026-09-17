@@ -58,16 +58,11 @@ class OrderServiceConcurrencyIntegrationTest {
     @SpyBean
     private OrderMapper orderMapper;
 
-    @MockBean
-    private MarketDataService marketDataService;
-
     @Test
     @DisplayName("two concurrent place calls on same account allow exactly one success and one conflict")
     void concurrentPlaceOrderProducesOneSuccessAndOneConflict() throws Exception {
         Long userId = createUserAndAccountWithBalance(new BigDecimal("1000.00"));
         String symbol = "AAPL";
-
-        when(marketDataService.getCurrentPrice(symbol)).thenReturn(new BigDecimal("600.00"));
 
         CountDownLatch bothReadsReached = new CountDownLatch(2);
         CountDownLatch releaseReads = new CountDownLatch(1);
