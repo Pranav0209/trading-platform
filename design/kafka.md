@@ -52,8 +52,22 @@ The local infrastructure (Kafka and PostgreSQL) and the topic creation script ar
    *Wait a few seconds for the Kafka broker to fully start up and elect a KRaft controller.*
 
 2. **Create the topics:**
-   The topic creation script is located at `infra/create-kafka-topics.sh` and contains the explicit commands to configure the topics on the broker.
    ```bash
    ./create-kafka-topics.sh
    ```
    *This will create the three main topics and their corresponding dead-letter topics (DLTs).*
+
+## 4. Market Data Poller Quota Arithmetic
+
+The Fauxnance API provides a quota of 2000 requests per day per key. The `TradeExecutor`'s scheduled poller batches up to 25 symbols per request.
+
+To stay within the 2000 requests/day quota, the polling interval was calculated as follows:
+- **Maximum API Requests / Day**: 2000
+- **Time per Request (at max frequency)**: 86,400 seconds / 2000 = **43.2 seconds**
+
+If we set our polling interval to exactly 43.2 seconds for a single batch (<= 25 symbols), we would precisely consume the daily quota. 
+To ensure a safety margin against clock drift or minor network retries, we enforce a strict minimum floor of **45 seconds** in the code.
+- **Configured default**: 60 seconds (1440 requests per day, leaving 560 for manual testing or scaling).
+- **Floor validation**: Using SpEL (`#{T(java.lang.Math).max(${poll.interval.seconds:60}, 45) * 1000}`), the application refuses to run polls faster than once every 45 seconds. 
+
+If the database ever exceeds 25 unique symbols of interest, requiring 2 or more requests per interval, this configured interval must be increased (e.g., 90 seconds for 2 batches).

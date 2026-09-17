@@ -43,7 +43,7 @@ public class Order {
     @Column(name = "executed_price")
     private BigDecimal executedPrice;
 
-    @Column(name = "executed_on")
+    @Column(name = "updated_at")
     private OffsetDateTime executedOn;
 
     @Enumerated(EnumType.STRING)

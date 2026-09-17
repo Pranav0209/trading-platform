@@ -1,0 +1,78 @@
+package com.zkuba.executor.poller;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.zkuba.executor.client.BatchQuoteResponse;
+import com.zkuba.executor.client.FauxnanceQuoteClient;
+import com.zkuba.executor.repository.PositionRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+@Component
+public class MarketDataPoller {
+
+    private static final Logger log = LoggerFactory.getLogger(MarketDataPoller.class);
+    private static final int BATCH_SIZE = 25;
+
+    private final FauxnanceQuoteClient quoteClient;
+    private final PositionRepository positionRepository;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
+
+    public MarketDataPoller(FauxnanceQuoteClient quoteClient,
+            PositionRepository positionRepository,
+            KafkaTemplate<String, String> kafkaTemplate,
+            ObjectMapper objectMapper) {
+        this.quoteClient = quoteClient;
+        this.positionRepository = positionRepository;
+        this.kafkaTemplate = kafkaTemplate;
+        this.objectMapper = objectMapper;
+        this.objectMapper.registerModule(new JavaTimeModule());
+        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    }
+
+    /**
+     * Enforces the interval floor in the code rather than documenting one.
+     * The Fauxnance quota is 2000 requests per day (approx 1 request per 43.2
+     * seconds).
+     * We set an absolute floor of 45 seconds to stay safe using SpEL Math.max.
+     */
+    @Scheduled(fixedDelayString = "#{T(java.lang.Math).max(${poll.interval.seconds:60}, 45) * 1000}")
+    public void pollMarketData() {
+        List<String> symbols = positionRepository.findUniqueSymbolsOfInterest();
+        if (symbols.isEmpty()) {
+            log.debug("No symbols of interest found. Skipping market data poll.");
+            return;
+        }
+
+        log.info("Polling market data for {} symbols...", symbols.size());
+
+        for (int i = 0; i < symbols.size(); i += BATCH_SIZE) {
+            List<String> batch = symbols.subList(i, Math.min(symbols.size(), i + BATCH_SIZE));
+            fetchAndPublishBatch(batch);
+        }
+    }
+
+    private void fetchAndPublishBatch(List<String> batch) {
+        try {
+            BatchQuoteResponse response = quoteClient.getBatchQuotes(batch);
+            if (response != null && response.data() != null && response.data().quotes() != null) {
+                for (BatchQuoteResponse.QuoteItem item : response.data().quotes()) {
+                    if (item.quote() != null) {
+                        String json = objectMapper.writeValueAsString(item.quote());
+                        kafkaTemplate.send("market-data", item.symbol(), json);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to fetch or publish market data for batch {}", batch, e);
+        }
+    }
+}

@@ -8,6 +8,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.util.Collections;
+import java.util.List;
+
 @Component
 public class FauxnanceQuoteClient {
 
@@ -37,6 +40,29 @@ public class FauxnanceQuoteClient {
                     .body(QuoteResponse.class);
         } catch (Exception e) {
             throw new PricingUnavailableException("Failed to fetch quote for " + symbol, e);
+        }
+    }
+
+    @Retryable(
+            retryFor = {RestClientException.class},
+            maxAttempts = 5,
+            backoff = @Backoff(delay = 1000, multiplier = 2.0)
+    )
+    public BatchQuoteResponse getBatchQuotes(List<String> symbols) {
+        if (symbols == null || symbols.isEmpty()) {
+            return new BatchQuoteResponse(new BatchQuoteResponse.Data(Collections.emptyList()), null);
+        }
+        String symbolsParam = String.join(",", symbols);
+        try {
+            return restClient.get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/quotes")
+                            .queryParam("symbols", symbolsParam)
+                            .build())
+                    .retrieve()
+                    .body(BatchQuoteResponse.class);
+        } catch (Exception e) {
+            throw new PricingUnavailableException("Failed to fetch batch quotes for " + symbolsParam, e);
         }
     }
 }

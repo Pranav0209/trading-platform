@@ -44,11 +44,8 @@ public class TradeExecutionService {
     @Autowired
     private FillRuleEngine fillRuleEngine;
 
-    @Retryable(
-            retryFor = {OptimisticLockException.class},
-            maxAttempts = 5,
-            backoff = @Backoff(delay = 50, multiplier = 2.0)
-    )
+    @Retryable(retryFor = {
+            OptimisticLockException.class }, maxAttempts = 5, backoff = @Backoff(delay = 50, multiplier = 2.0))
     @Transactional
     public Optional<TradeEventPayload> executeOrder(UUID orderId) {
         Order order = orderRepository.findById(orderId).orElse(null);
@@ -78,9 +75,11 @@ public class TradeExecutionService {
         BigDecimal executedPrice = decision.executedPrice();
         BigDecimal totalValue = executedPrice.multiply(BigDecimal.valueOf(order.getQuantity()));
 
-        Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol()).orElse(null);
+        Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol())
+                .orElse(null);
 
-        // Pre-check for bounds to avoid filling an order that will immediately fail cash checks
+        // Pre-check for bounds to avoid filling an order that will immediately fail
+        // cash checks
         if (order.getSide() == OrderSide.BUY && account.getCashBalance().compareTo(totalValue) < 0) {
             return Optional.of(rejectOrder(order, "INSUFFICIENT_FUNDS"));
         }
@@ -120,7 +119,8 @@ public class TradeExecutionService {
         account.setCashBalance(newBalance);
     }
 
-    private void updateBuyPosition(Long accountId, String symbol, int quantity, BigDecimal executedPrice, Position position) {
+    private void updateBuyPosition(Long accountId, String symbol, int quantity, BigDecimal executedPrice,
+            Position position) {
         if (position == null) {
             position = new Position();
             position.setAccountId(accountId);
@@ -158,20 +158,22 @@ public class TradeExecutionService {
         }
         order.setStatus(OrderStatus.REJECTED);
         order.setExecutedOn(executedOn);
-        
+
         Account account = accountRepository.findById(order.getAccountId()).orElseThrow();
-        Position position = positionRepository.findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol()).orElse(null);
+        Position position = positionRepository.findByAccountIdAndSymbol(order.getAccountId(), order.getSymbol())
+                .orElse(null);
 
         return buildRejectedEvent(order, reason, account.getCashBalance(), position);
     }
 
     private TradeEventPayload buildFilledEvent(Order order, BigDecimal newCashBalance, Position position) {
-        BigDecimal cashDelta = order.getSide() == OrderSide.BUY 
-            ? order.getExecutedPrice().multiply(BigDecimal.valueOf(order.getQuantity())).negate()
-            : order.getExecutedPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+        BigDecimal cashDelta = order.getSide() == OrderSide.BUY
+                ? order.getExecutedPrice().multiply(BigDecimal.valueOf(order.getQuantity())).negate()
+                : order.getExecutedPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
 
         int qtyAfter = position != null ? position.getQuantity() : 0;
-        BigDecimal avgCostAfter = position != null && position.getQuantity() > 0 ? position.getAverageCost() : BigDecimal.ZERO;
+        BigDecimal avgCostAfter = position != null && position.getQuantity() > 0 ? position.getAverageCost()
+                : BigDecimal.ZERO;
 
         return new TradeEventPayload(
                 order.getId(),
@@ -186,13 +188,14 @@ public class TradeExecutionService {
                 cashDelta,
                 qtyAfter,
                 avgCostAfter,
-                OffsetDateTime.now()
-        );
+                OffsetDateTime.now());
     }
 
-    private TradeEventPayload buildRejectedEvent(Order order, String reason, BigDecimal currentCashBalance, Position position) {
+    private TradeEventPayload buildRejectedEvent(Order order, String reason, BigDecimal currentCashBalance,
+            Position position) {
         int qtyAfter = position != null ? position.getQuantity() : 0;
-        BigDecimal avgCostAfter = position != null && position.getQuantity() > 0 ? position.getAverageCost() : BigDecimal.ZERO;
+        BigDecimal avgCostAfter = position != null && position.getQuantity() > 0 ? position.getAverageCost()
+                : BigDecimal.ZERO;
 
         return new TradeEventPayload(
                 order.getId(),
@@ -207,7 +210,6 @@ public class TradeExecutionService {
                 BigDecimal.ZERO,
                 qtyAfter,
                 avgCostAfter,
-                OffsetDateTime.now()
-        );
+                OffsetDateTime.now());
     }
 }
