@@ -47,6 +47,38 @@ is deliberately narrow this sprint and fits alongside the last day.
 | One incremental load into `FACT_TRADES` and its dimensions                               | `etl/`                                                                  |
 | A SonarQube gate passing on the executor and the pipeline                                | your local SonarQube                                                    |
 
+## Sprint 7 Components
+
+### Executor
+The Trade Executor is a Java service that:
+- Consumes orders from Kafka `orders` topic
+- Prices trades via Fauxnance API
+- Fills or rejects based on account balance and exchange rules
+- Publishes fills to `fills` topic, rejects to `rejects` topic
+- Handles at-least-once delivery (idempotent upsert on order_id)
+
+Located in `executor/` as a Maven project.
+
+### ETL Pipeline
+The incremental trade data ETL pipeline:
+- Extracts trade data from PostgreSQL (Sprint 6 Trade API database)
+- Validates comprehensively (11 checks) before loading
+- Loads into DuckDB star schema (fact_trades + 3 dimensions)
+- Enables idempotent loads via merge on order_id
+- Dead-letters invalid rows with batch ID and error reason
+- Supports incremental loads via watermarking on created_at
+
+Located in `etl/` as a Python project.
+
+**Quick start:**
+```powershell
+cd etl
+pip install -e ".[dev]"
+trade-etl load-all --postgres-url "postgresql://localhost/zkuba"
+```
+
+See `etl/QUICK_START.md` for 5-minute setup and `etl/README.md` for full details.
+
 No starter code, no project skeleton and no topic creation script ships.
 Deciding how the executor is decomposed, where the fill rule lives inside it
 and how the topics come to exist is most of what this sprint assesses.
