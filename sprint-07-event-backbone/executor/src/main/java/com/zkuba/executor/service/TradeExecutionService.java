@@ -64,6 +64,9 @@ public class TradeExecutionService {
         FillDecision decision = fillRuleEngine.evaluate(order, quoteResponse.data());
 
         if (!decision.isFilled()) {
+            if ("PRICE_NOT_MET".equals(decision.rejectReason())) {
+                return Optional.empty();
+            }
             return Optional.of(rejectOrder(order, decision.rejectReason()));
         }
 
