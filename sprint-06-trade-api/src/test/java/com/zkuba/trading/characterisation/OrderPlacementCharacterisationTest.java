@@ -1,212 +1,219 @@
 package com.zkuba.trading.characterisation;
 
-import com.zkuba.trading.domain.entity.Account;
-import com.zkuba.trading.domain.entity.Order;
-import com.zkuba.trading.domain.entity.Position;
-import com.zkuba.trading.domain.enums.AccountStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zkuba.trading.domain.enums.OrderSide;
-import com.zkuba.trading.domain.enums.OrderStatus;
 import com.zkuba.trading.domain.enums.OrderType;
 import com.zkuba.trading.dto.request.PlaceOrderRequest;
-import com.zkuba.trading.dto.response.OrderResponse;
-import com.zkuba.trading.exception.AccountNotActiveException;
-import com.zkuba.trading.exception.DuplicateOrderException;
-
-import com.zkuba.trading.mapper.OrderMapper;
-import com.zkuba.trading.repository.OrderRepository;
-import com.zkuba.trading.repository.PositionRepository;
-import com.zkuba.trading.service.OrderServiceImpl;
-import java.math.BigDecimal;
-import java.util.UUID;
+import com.zkuba.trading.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Characterisation tests pinning Sprint 6 order placement behavior
- * field-by-field.
- * Package: com.zkuba.trading.characterisation
+ * Characterisation tests pinning order placement behavior.
+ * Focused on database state (the source of truth) using actual JDBC validation via REST APIs.
  */
-@Disabled("Waiting for MarketDataService implementation")
-@ExtendWith(MockitoExtension.class)
+@SpringBootTest
+@Testcontainers
+@AutoConfigureMockMvc
 public class OrderPlacementCharacterisationTest {
 
-        @Mock
-        private OrderMapper orderMapper;
+    @Container
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
 
-        @Mock
-        private OrderRepository orderRepository;
+    @DynamicPropertySource
+    static void configureDatasource(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES::getUsername);
+        registry.add("spring.datasource.password", POSTGRES::getPassword);
+    }
 
-        @Mock
-        private PositionRepository positionRepository;
+    @Autowired
+    private MockMvc mockMvc;
 
-        @InjectMocks
-        private OrderServiceImpl orderService;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
-        private Account activeAccount;
-        private Account suspendedAccount;
+    @Autowired
+    private ObjectMapper objectMapper;
 
-        @BeforeEach
-        void setUp() {
-                activeAccount = new Account();
-                activeAccount.setId(100L);
-                activeAccount.setUserId(1L);
-                activeAccount.setCashBalance(new BigDecimal("5000.00"));
-                activeAccount.setStatus(AccountStatus.ACTIVE);
-                activeAccount.setVersion(1);
+    @Autowired
+    private JwtService jwtService;
 
-                suspendedAccount = new Account();
-                suspendedAccount.setId(200L);
-                suspendedAccount.setUserId(2L);
-                suspendedAccount.setCashBalance(new BigDecimal("5000.00"));
-                suspendedAccount.setStatus(AccountStatus.SUSPENDED);
-                suspendedAccount.setVersion(1);
-        }
+    private String validToken(Long userId) {
+        return jwtService.generate(userId, "testuser", "ROLE_USER");
+    }
 
-        /*
-        @Test
-        @DisplayName("Pin Sprint 6: Affordable BUY order fills synchronously, updating cash, position and order row")
-        void pinAffordableBuyOrderPlacement() {
-                PlaceOrderRequest request = new PlaceOrderRequest(
-                                100L, "AAPL", OrderSide.BUY, OrderType.LIMIT, 10, new BigDecimal("150.00"),
-                                "idem-key-100");
+    @BeforeEach
+    void setUp() {
+        jdbcTemplate.execute("DELETE FROM orders");
+        jdbcTemplate.execute("DELETE FROM positions");
+        jdbcTemplate.execute("DELETE FROM accounts");
+        jdbcTemplate.execute("DELETE FROM users");
 
-                when(orderMapper.findAccountById(100L)).thenReturn(activeAccount);
-                when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("145.00"));
-                when(orderMapper.updateAccountBalance(eq(100L), eq(new BigDecimal("3500.00")), eq(1))).thenReturn(1);
-                when(orderMapper.insert(any(Order.class))).thenReturn(1);
-                when(positionRepository.findByAccountIdAndSymbol(100L, "AAPL")).thenReturn(null);
+        // Insert test users
+        jdbcTemplate.update(
+            "INSERT INTO users (id, username, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?, ?)",
+            1L, "testuser1", "test1@example.com", "hash", "ROLE_USER", "ACTIVE"
+        );
+        jdbcTemplate.update(
+            "INSERT INTO users (id, username, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?, ?)",
+            2L, "testuser2", "test2@example.com", "hash", "ROLE_USER", "ACTIVE"
+        );
 
-                OrderResponse response = orderService.place(1L, request);
+        // Insert accounts
+        jdbcTemplate.update(
+            "INSERT INTO accounts (id, account_number, user_id, cash_balance, currency, status) VALUES (?, ?, ?, ?, ?, ?)",
+            100L, "ACC-100", 1L, new BigDecimal("5000.00"), "USD", "ACTIVE"
+        );
+        jdbcTemplate.update(
+            "INSERT INTO accounts (id, account_number, user_id, cash_balance, currency, status) VALUES (?, ?, ?, ?, ?, ?)",
+            200L, "ACC-200", 2L, new BigDecimal("5000.00"), "USD", "SUSPENDED"
+        );
+    }
 
-                // Pin Response Fields
-                assertThat(response.orderId()).startsWith("ORD-");
-                assertThat(response.status()).isEqualTo("FILLED");
-                assertThat(response.symbol()).isEqualTo("AAPL");
-                assertThat(response.side()).isEqualTo("BUY");
-                assertThat(response.orderType()).isEqualTo("LIMIT");
-                assertThat(response.quantity()).isEqualTo(10);
-                assertThat(response.limitPrice()).isEqualByComparingTo("150.00");
-                assertThat(response.executedPrice()).isEqualByComparingTo("150.00");
-                assertThat(response.message()).isEqualTo("Order executed");
+    @Test
+    @DisplayName("Pin Sprint 7: Valid order placement persists to database with NEW status")
+    void pinValidOrderPlacement() throws Exception {
+        PlaceOrderRequest request = new PlaceOrderRequest(
+                100L, "AAPL", OrderSide.BUY, OrderType.LIMIT, 10, new BigDecimal("150.00"),
+                "idem-key-100");
 
-                // Pin Cash Balance Update
-                verify(orderMapper).updateAccountBalance(100L, new BigDecimal("3500.00"), 1);
+        mockMvc.perform(post("/api/v1/orders")
+                        .header("Authorization", "Bearer " + validToken(1L))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.orderId", startsWith("ORD-")))
+                .andExpect(jsonPath("$.status", is("NEW")))
+                .andExpect(jsonPath("$.symbol", is("AAPL")))
+                .andExpect(jsonPath("$.side", is("BUY")))
+                .andExpect(jsonPath("$.orderType", is("LIMIT")))
+                .andExpect(jsonPath("$.quantity", is(10)))
+                .andExpect(jsonPath("$.limitPrice", is(150.0)))
+                .andExpect(jsonPath("$.message", is("Order placed")));
 
-                // Pin Position Creation
-                ArgumentCaptor<Position> positionCaptor = ArgumentCaptor.forClass(Position.class);
-                verify(positionRepository).save(positionCaptor.capture());
-                Position savedPosition = positionCaptor.getValue();
-                assertThat(savedPosition.getAccountId()).isEqualTo(100L);
-                assertThat(savedPosition.getSymbol()).isEqualTo("AAPL");
-                assertThat(savedPosition.getQuantity()).isEqualTo(10);
-                assertThat(savedPosition.getAverageCost()).isEqualByComparingTo("150.00");
+        // Verify DB State (the source of truth) using JDBC calls
+        List<Map<String, Object>> orders = jdbcTemplate.queryForList("SELECT * FROM orders WHERE idempotency_key = ?", "idem-key-100");
+        assertThat(orders).hasSize(1);
+        
+        Map<String, Object> orderRow = orders.get(0);
+        assertThat(orderRow.get("account_id")).isEqualTo(100L);
+        assertThat(orderRow.get("symbol")).isEqualTo("AAPL");
+        assertThat(orderRow.get("side")).isEqualTo("BUY");
+        assertThat(orderRow.get("order_type")).isEqualTo("LIMIT");
+        assertThat(orderRow.get("quantity")).isEqualTo(10);
+        assertThat(orderRow.get("status")).isEqualTo("NEW");
+        assertThat(new BigDecimal(orderRow.get("limit_price").toString())).isEqualByComparingTo("150.00");
+        assertThat(orderRow.get("executed_price")).isNull();
+    }
 
-                // Pin Order Persistence
-                ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-                verify(orderMapper).insert(orderCaptor.capture());
-                Order savedOrder = orderCaptor.getValue();
-                assertThat(savedOrder.getAccountId()).isEqualTo(100L);
-                assertThat(savedOrder.getSymbol()).isEqualTo("AAPL");
-                assertThat(savedOrder.getSide()).isEqualTo(OrderSide.BUY);
-                assertThat(savedOrder.getOrderType()).isEqualTo(OrderType.LIMIT);
-                assertThat(savedOrder.getQuantity()).isEqualTo(10);
-                assertThat(savedOrder.getStatus()).isEqualTo(OrderStatus.FILLED);
-                assertThat(savedOrder.getExecutedPrice()).isEqualByComparingTo("150.00");
-                assertThat(savedOrder.getIdempotencyKey()).isEqualTo("idem-key-100");
-        }
-        */
+    @Test
+    @DisplayName("Pin: Reused idempotency key throws DuplicateOrderException (mapped to 409)")
+    void pinReusedIdempotencyKeyThrowsDuplicateOrderException() throws Exception {
+        PlaceOrderRequest request = new PlaceOrderRequest(
+                100L, "AAPL", OrderSide.BUY, OrderType.LIMIT, 5, new BigDecimal("100.00"),
+                "reused-key");
+                
+        // First successful placement
+        mockMvc.perform(post("/api/v1/orders")
+                        .header("Authorization", "Bearer " + validToken(1L))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
 
-        /*
-        @Test
-        @DisplayName("Pin Sprint 6: Reused idempotency key throws DuplicateOrderException")
-        void pinReusedIdempotencyKeyThrowsDuplicateOrderException() {
-                PlaceOrderRequest request = new PlaceOrderRequest(
-                                100L, "AAPL", OrderSide.BUY, OrderType.LIMIT, 5, new BigDecimal("100.00"),
-                                "reused-key");
+        // Second placement returns 409 Conflict
+        mockMvc.perform(post("/api/v1/orders")
+                        .header("Authorization", "Bearer " + validToken(1L))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value("ORD-409"))
+                .andExpect(jsonPath("$.message").value("Duplicate order with idempotency key: reused-key"));
 
-                Order existingOrder = new Order();
-                existingOrder.setId(UUID.randomUUID());
-                existingOrder.setIdempotencyKey("reused-key");
+        // Verify only one order was written
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM orders WHERE idempotency_key = 'reused-key'", Integer.class);
+        assertThat(count).isEqualTo(1);
+    }
 
-                when(orderMapper.findByIdempotencyKey("reused-key")).thenReturn(existingOrder);
+    @Test
+    @DisplayName("Pin: Non-ACTIVE (SUSPENDED) account order placement throws AccountNotActiveException (mapped to 403)")
+    void pinSuspendedAccountThrowsAccountNotActiveException() throws Exception {
+        PlaceOrderRequest request = new PlaceOrderRequest(
+                200L, "AAPL", OrderSide.BUY, OrderType.LIMIT, 1, new BigDecimal("100.00"),
+                "suspended-acc-key");
 
-                assertThatThrownBy(() -> orderService.place(1L, request))
-                                .isInstanceOf(DuplicateOrderException.class);
+        mockMvc.perform(post("/api/v1/orders")
+                        .header("Authorization", "Bearer " + validToken(2L))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("ACC-403"))
+                .andExpect(jsonPath("$.message").value("Account not active: 200"));
 
-                verify(marketDataService, never()).getCurrentPrice(any());
-                verify(orderMapper, never()).insert(any());
-        }
-        */
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM orders WHERE account_id = 200", Integer.class);
+        assertThat(count).isEqualTo(0);
+    }
 
-        /*
-        @Test
-        @DisplayName("Pin Sprint 6: Unaffordable BUY order throws InsufficientFundsException")
-        void pinUnaffordableBuyOrderThrowsInsufficientFunds() {
-                PlaceOrderRequest request = new PlaceOrderRequest(
-                                100L, "AAPL", OrderSide.BUY, OrderType.LIMIT, 100, new BigDecimal("100.00"),
-                                "unaffordable-key");
+    @Test
+    @DisplayName("Pin Sprint 7: Unaffordable BUY order is now accepted asynchronously as NEW")
+    void pinUnaffordableBuyOrderIsNowAcceptedAsynchronously() throws Exception {
+        PlaceOrderRequest request = new PlaceOrderRequest(
+                100L, "AAPL", OrderSide.BUY, OrderType.LIMIT, 100, new BigDecimal("100.00"), // Needs 10k, account has 5k
+                "unaffordable-key");
 
-                activeAccount.setCashBalance(new BigDecimal("500.00")); // Needs 10,000.00
+        mockMvc.perform(post("/api/v1/orders")
+                        .header("Authorization", "Bearer " + validToken(1L))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status", is("NEW")));
 
-                when(orderMapper.findAccountById(100L)).thenReturn(activeAccount);
-                when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("90.00"));
+        // Verify DB State
+        List<Map<String, Object>> orders = jdbcTemplate.queryForList("SELECT * FROM orders WHERE idempotency_key = ?", "unaffordable-key");
+        assertThat(orders).hasSize(1);
+        assertThat(orders.get(0).get("status")).isEqualTo("NEW");
+    }
 
-                assertThatThrownBy(() -> orderService.place(1L, request))
-                                .isInstanceOf(InsufficientFundsException.class);
+    @Test
+    @DisplayName("Pin Sprint 7: Unknown symbol order causes DataIntegrityViolationException (mapped to 500 or 409)")
+    void pinUnknownSymbolPropagatesDatabaseException() throws Exception {
+        PlaceOrderRequest request = new PlaceOrderRequest(
+                100L, "UNKNOWN_SYM", OrderSide.BUY, OrderType.LIMIT, 1, new BigDecimal("10.00"),
+                "unknown-sym-key");
 
-                verify(orderMapper, never()).insert(any());
-        }
-        */
+        // The unknown symbol causes a foreign key constraint violation on the instruments table.
+        // Postgres aborts the transaction, which throws an exception mapping to SYS-500.
+        mockMvc.perform(post("/api/v1/orders")
+                        .header("Authorization", "Bearer " + validToken(1L))
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.error").value("SYS-500"));
 
-        /*
-        @Test
-        @DisplayName("Pin Sprint 6: Unknown symbol pricing error propagates exception")
-        void pinUnknownSymbolThrowsException() {
-                PlaceOrderRequest request = new PlaceOrderRequest(
-                                100L, "UNKNOWN_SYM", OrderSide.BUY, OrderType.LIMIT, 1, new BigDecimal("10.00"),
-                                "unknown-sym-key");
-
-                when(marketDataService.getCurrentPrice("UNKNOWN_SYM"))
-                                .thenThrow(new IllegalArgumentException("Unknown symbol: UNKNOWN_SYM"));
-
-                assertThatThrownBy(() -> orderService.place(1L, request))
-                                .isInstanceOf(IllegalArgumentException.class)
-                                .hasMessageContaining("Unknown symbol: UNKNOWN_SYM");
-
-                verify(orderMapper, never()).insert(any());
-        }
-        */
-
-        /*
-        @Test
-        @DisplayName("Pin Sprint 6: Non-ACTIVE (SUSPENDED) account order placement throws AccountNotActiveException")
-        void pinSuspendedAccountThrowsAccountNotActiveException() {
-                PlaceOrderRequest request = new PlaceOrderRequest(
-                                200L, "AAPL", OrderSide.BUY, OrderType.LIMIT, 1, new BigDecimal("100.00"),
-                                "suspended-acc-key");
-
-                when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("90.00"));
-                when(orderMapper.findAccountById(200L)).thenReturn(suspendedAccount);
-
-                assertThatThrownBy(() -> orderService.place(2L, request))
-                                .isInstanceOf(AccountNotActiveException.class);
-
-                verify(orderMapper, never()).insert(any());
-        }
-        */
+        // Verify no order created
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM orders WHERE idempotency_key = 'unknown-sym-key'", Integer.class);
+        assertThat(count).isEqualTo(0);
+    }
 }
