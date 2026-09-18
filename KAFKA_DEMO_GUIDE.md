@@ -67,7 +67,7 @@ Open **Terminal 3** and run:
 
 ```bash
 cd sprint-07-event-backbone/executor
-FAUXNANCE_API_KEY=fnx_dev_TpAsTLybaZBxjNc30DqZemvTc93Hk3tM \
+FAUXNANCE_API_KEY=put here \
 mvn spring-boot:run
 ```
 
