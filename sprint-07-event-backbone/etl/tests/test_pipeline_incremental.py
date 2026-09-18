@@ -1,4 +1,4 @@
-"""Unit tests for incremental dimension pipeline loading."""
+"""Unit tests for incremental trade pipeline loading."""
 
 from __future__ import annotations
 
@@ -8,9 +8,11 @@ from unittest.mock import MagicMock, patch
 import tempfile
 
 import pytest
-import duckdb
 
-from sprint_07_event_backbone_etl.warehouse import initialize_warehouse, get_last_watermark
+from sprint_07_event_backbone_etl.warehouse import (
+    get_last_watermark,
+    initialize_warehouse,
+)
 from sprint_07_event_backbone_etl.pipeline import IncrementalTradePipeline
 
 
@@ -26,51 +28,15 @@ class TestLoadDimensionsIncremental:
             yield db_path
 
     @patch("sprint_07_event_backbone_etl.pipeline.PostgresExtractor")
-    def test_load_dimensions_incremental_instruments_only(self, mock_extractor_class, pipeline_db):
-        """Test loading new instruments incrementally."""
+    def test_load_dimensions_incremental_accounts_only(
+        self,
+        mock_extractor_class,
+        pipeline_db,
+    ):
+        """Test that incremental dimension loading handles accounts only."""
         mock_extractor = MagicMock()
         mock_extractor_class.return_value = mock_extractor
 
-        # Mock incremental instrument extraction
-        mock_extractor.extract_instruments_incremental.return_value = [
-            {
-                "symbol": "INFY.NS",
-                "display_name": "Infosys",
-                "asset_class": "EQUITY",
-                "currency": "INR",
-                "tradable": True,
-                "updated_at": datetime(2026, 9, 17, 11, 0, 0),
-            }
-        ]
-
-        # Mock empty accounts
-        mock_extractor.extract_accounts_incremental.return_value = []
-
-        pipeline = IncrementalTradePipeline(
-            postgres_conn_string="postgresql://test",
-            warehouse_path=pipeline_db,
-        )
-
-        result = pipeline.load_dimensions_incremental()
-
-        assert result["status"] == "success"
-        assert pipeline.stats["dim_instrument_loaded"] == 1
-        assert pipeline.stats["dim_instrument_updated"] == 0
-
-        # Verify watermark was recorded
-        watermark = get_last_watermark("dim_instrument_incremental", pipeline_db)
-        assert watermark is not None
-
-    @patch("sprint_07_event_backbone_etl.pipeline.PostgresExtractor")
-    def test_load_dimensions_incremental_accounts_only(self, mock_extractor_class, pipeline_db):
-        """Test loading new accounts incrementally."""
-        mock_extractor = MagicMock()
-        mock_extractor_class.return_value = mock_extractor
-
-        # Mock empty instruments
-        mock_extractor.extract_instruments_incremental.return_value = []
-
-        # Mock incremental account extraction
         mock_extractor.extract_accounts_incremental.return_value = [
             {
                 "source_id": 1,
@@ -90,39 +56,50 @@ class TestLoadDimensionsIncremental:
         result = pipeline.load_dimensions_incremental()
 
         assert result["status"] == "success"
+
         assert pipeline.stats["dim_account_loaded"] == 1
         assert pipeline.stats["dim_account_updated"] == 0
 
-        # Verify watermark was recorded
-        watermark = get_last_watermark("dim_account_incremental", pipeline_db)
+        # Instruments must NOT be loaded by the incremental path.
+        mock_extractor.extract_instruments.assert_not_called()
+
+        # Accounts must be loaded incrementally.
+        mock_extractor.extract_accounts_incremental.assert_called_once()
+
+        watermark = get_last_watermark(
+            "dim_account_incremental",
+            pipeline_db,
+        )
+
         assert watermark is not None
 
     @patch("sprint_07_event_backbone_etl.pipeline.PostgresExtractor")
-    def test_load_dimensions_incremental_both(self, mock_extractor_class, pipeline_db):
-        """Test loading both instruments and accounts incrementally."""
+    def test_load_dimensions_incremental_multiple_accounts(
+        self,
+        mock_extractor_class,
+        pipeline_db,
+    ):
+        """Test incremental loading of multiple accounts."""
         mock_extractor = MagicMock()
         mock_extractor_class.return_value = mock_extractor
 
-        mock_extractor.extract_instruments_incremental.return_value = [
-            {
-                "symbol": "TCS.NS",
-                "display_name": "TCS",
-                "asset_class": "EQUITY",
-                "currency": "INR",
-                "tradable": True,
-                "updated_at": datetime(2026, 9, 17, 11, 0, 0),
-            }
-        ]
-
         mock_extractor.extract_accounts_incremental.return_value = [
+            {
+                "source_id": 1,
+                "account_id": "ACC001",
+                "holder_name": "John Doe",
+                "status": "ACTIVE",
+                "effective_date": datetime(2026, 9, 1).date(),
+                "updated_at": datetime(2026, 9, 17, 10, 0, 0),
+            },
             {
                 "source_id": 2,
                 "account_id": "ACC002",
                 "holder_name": "Jane Smith",
                 "status": "ACTIVE",
                 "effective_date": datetime(2026, 9, 1).date(),
-                "updated_at": datetime(2026, 9, 17, 11, 30, 0),
-            }
+                "updated_at": datetime(2026, 9, 17, 11, 0, 0),
+            },
         ]
 
         pipeline = IncrementalTradePipeline(
@@ -133,22 +110,23 @@ class TestLoadDimensionsIncremental:
         result = pipeline.load_dimensions_incremental()
 
         assert result["status"] == "success"
-        assert pipeline.stats["dim_instrument_loaded"] == 1
-        assert pipeline.stats["dim_account_loaded"] == 1
 
-        # Verify both watermarks were recorded
-        inst_wm = get_last_watermark("dim_instrument_incremental", pipeline_db)
-        acc_wm = get_last_watermark("dim_account_incremental", pipeline_db)
-        assert inst_wm is not None
-        assert acc_wm is not None
+        assert pipeline.stats["dim_account_loaded"] == 2
+        assert pipeline.stats["dim_account_updated"] == 0
+
+        mock_extractor.extract_instruments.assert_not_called()
+        mock_extractor.extract_accounts_incremental.assert_called_once()
 
     @patch("sprint_07_event_backbone_etl.pipeline.PostgresExtractor")
-    def test_load_dimensions_incremental_no_changes(self, mock_extractor_class, pipeline_db):
-        """Test incremental load when no dimensions have changed."""
+    def test_load_dimensions_incremental_no_changes(
+        self,
+        mock_extractor_class,
+        pipeline_db,
+    ):
+        """Test incremental dimension loading when no accounts changed."""
         mock_extractor = MagicMock()
         mock_extractor_class.return_value = mock_extractor
 
-        mock_extractor.extract_instruments_incremental.return_value = []
         mock_extractor.extract_accounts_incremental.return_value = []
 
         pipeline = IncrementalTradePipeline(
@@ -159,75 +137,61 @@ class TestLoadDimensionsIncremental:
         result = pipeline.load_dimensions_incremental()
 
         assert result["status"] == "success"
-        assert pipeline.stats["dim_instrument_loaded"] == 0
-        assert pipeline.stats["dim_instrument_updated"] == 0
+
         assert pipeline.stats["dim_account_loaded"] == 0
         assert pipeline.stats["dim_account_updated"] == 0
 
-    @patch("sprint_07_event_backbone_etl.pipeline.PostgresExtractor")
-    def test_load_dimensions_incremental_respects_previous_watermark(self, mock_extractor_class, pipeline_db):
-        """Test that incremental load respects previously recorded watermark."""
-        # Pre-populate instruments
-        with duckdb.connect(str(pipeline_db)) as conn:
-            conn.execute("""
-                INSERT INTO dim_instrument 
-                (instrument_key, symbol, name, asset_class, currency, exchange, tradable, loaded_at)
-                VALUES (1, 'INFY.NS', 'Infosys', 'EQUITY', 'INR', 'NSE', TRUE, NOW())
-            """)
-            conn.commit()
+        # No instrument loading in incremental path.
+        mock_extractor.extract_instruments.assert_not_called()
 
+        mock_extractor.extract_accounts_incremental.assert_called_once()
+
+        # No account watermark should be created when nothing was loaded.
+        assert (
+            get_last_watermark(
+                "dim_account_incremental",
+                pipeline_db,
+            )
+            is None
+        )
+
+    @patch("sprint_07_event_backbone_etl.pipeline.PostgresExtractor")
+    def test_load_dimensions_incremental_does_not_create_instrument_watermark(
+        self,
+        mock_extractor_class,
+        pipeline_db,
+    ):
+        """
+        Verify that instruments have no incremental watermark.
+
+        Instruments are full-loaded through load_dimensions().
+        """
         mock_extractor = MagicMock()
         mock_extractor_class.return_value = mock_extractor
 
-        # First call: extract and load initial instruments
-        mock_extractor.extract_instruments_incremental.return_value = [
-            {
-                "symbol": "INFY.NS",
-                "display_name": "Infosys",
-                "asset_class": "EQUITY",
-                "currency": "INR",
-                "tradable": True,
-                "updated_at": datetime(2026, 9, 17, 10, 0, 0),
-            }
-        ]
         mock_extractor.extract_accounts_incremental.return_value = []
 
-        pipeline1 = IncrementalTradePipeline(
+        pipeline = IncrementalTradePipeline(
             postgres_conn_string="postgresql://test",
             warehouse_path=pipeline_db,
         )
-        pipeline1.load_dimensions_incremental()
 
-        # Verify watermark was recorded
-        wm1 = get_last_watermark("dim_instrument_incremental", pipeline_db)
-        assert wm1 == datetime(2026, 9, 17, 10, 0, 0)
+        pipeline.load_dimensions_incremental()
 
-        # Second call: extract instruments after previous watermark
-        mock_extractor.extract_instruments_incremental.reset_mock()
-        mock_extractor.extract_instruments_incremental.return_value = [
-            {
-                "symbol": "TCS.NS",
-                "display_name": "TCS",
-                "asset_class": "EQUITY",
-                "currency": "INR",
-                "tradable": True,
-                "updated_at": datetime(2026, 9, 17, 11, 0, 0),
-            }
-        ]
+        mock_extractor.extract_instruments.assert_not_called()
 
-        pipeline2 = IncrementalTradePipeline(
-            postgres_conn_string="postgresql://test",
-            warehouse_path=pipeline_db,
+        # There must never be an instrument incremental watermark.
+        assert (
+            get_last_watermark(
+                "dim_instrument_incremental",
+                pipeline_db,
+            )
+            is None
         )
-        pipeline2.load_dimensions_incremental()
-
-        # Verify extractor was called with previous watermark
-        call_args = mock_extractor.extract_instruments_incremental.call_args
-        assert call_args[1]["since"] == wm1
 
 
-class TestLoadTradesCallsDimensionsIncremental:
-    """Tests for load_trades_incremental calling load_dimensions_incremental."""
+class TestLoadDimensionsFull:
+    """Tests for the full dimension loading path."""
 
     @pytest.fixture
     def pipeline_db(self):
@@ -238,22 +202,88 @@ class TestLoadTradesCallsDimensionsIncremental:
             yield db_path
 
     @patch("sprint_07_event_backbone_etl.pipeline.PostgresExtractor")
-    def test_load_trades_incremental_calls_dimensions_first(self, mock_extractor_class, pipeline_db):
-        """Test that load_trades_incremental loads dimensions before trades."""
+    def test_load_dimensions_full_loads_instruments_and_accounts(
+        self,
+        mock_extractor_class,
+        pipeline_db,
+    ):
+        """
+        Verify that the full dimension load handles both dimensions.
+
+        Instruments belong to this path.
+        """
         mock_extractor = MagicMock()
         mock_extractor_class.return_value = mock_extractor
 
-        # Mock dimension extractions
-        mock_extractor.extract_instruments_incremental.return_value = [
+        mock_extractor.extract_instruments.return_value = [
             {
                 "symbol": "INFY.NS",
                 "display_name": "Infosys",
                 "asset_class": "EQUITY",
                 "currency": "INR",
                 "tradable": True,
-                "updated_at": datetime(2026, 9, 17, 10, 0, 0),
             }
         ]
+
+        mock_extractor.extract_accounts.return_value = [
+            {
+                "source_id": 1,
+                "account_id": "ACC001",
+                "holder_name": "John Doe",
+                "status": "ACTIVE",
+                "effective_date": datetime(2026, 9, 1).date(),
+                "updated_at": datetime(2026, 9, 17, 11, 0, 0),
+            }
+        ]
+
+        pipeline = IncrementalTradePipeline(
+            postgres_conn_string="postgresql://test",
+            warehouse_path=pipeline_db,
+        )
+
+        result = pipeline.load_dimensions()
+
+        assert result["status"] == "success"
+
+        assert pipeline.stats["dim_instrument_loaded"] == 1
+        assert pipeline.stats["dim_account_loaded"] == 1
+
+        # Full dimension load DOES load instruments.
+        mock_extractor.extract_instruments.assert_called_once()
+
+        # Full dimension load also loads accounts.
+        mock_extractor.extract_accounts.assert_called_once()
+
+        # Incremental account extraction is not part of load_dimensions().
+        mock_extractor.extract_accounts_incremental.assert_not_called()
+
+
+class TestLoadTradesCallsDimensions:
+    """Tests for load_trades_incremental calling incremental dimensions first."""
+
+    @pytest.fixture
+    def pipeline_db(self):
+        """Create temporary DuckDB for pipeline tests."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = Path(tmpdir) / "test.duckdb"
+            initialize_warehouse(db_path)
+            yield db_path
+
+    @patch("sprint_07_event_backbone_etl.pipeline.PostgresExtractor")
+    def test_load_trades_incremental_calls_account_dimensions_first(
+        self,
+        mock_extractor_class,
+        pipeline_db,
+    ):
+        """
+        Test that account dimensions are loaded before trades.
+
+        Instruments are intentionally not loaded here because they belong
+        to the full dimension load.
+        """
+        mock_extractor = MagicMock()
+        mock_extractor_class.return_value = mock_extractor
+
         mock_extractor.extract_accounts_incremental.return_value = [
             {
                 "source_id": 1,
@@ -265,7 +295,6 @@ class TestLoadTradesCallsDimensionsIncremental:
             }
         ]
 
-        # Mock trade extraction - empty for this test
         mock_extractor.extract_orders.return_value = []
 
         pipeline = IncrementalTradePipeline(
@@ -275,28 +304,31 @@ class TestLoadTradesCallsDimensionsIncremental:
 
         pipeline.load_trades_incremental()
 
-        # Verify dimensions were loaded before trades
-        assert pipeline.stats["dim_instrument_loaded"] > 0 or pipeline.stats["dim_instrument_updated"] > 0
-        assert mock_extractor.extract_instruments_incremental.called
-        assert mock_extractor.extract_accounts_incremental.called
+        # Accounts are loaded by the incremental trade path.
+        assert pipeline.stats["dim_account_loaded"] == 1
+
+        mock_extractor.extract_accounts_incremental.assert_called_once()
+
+        # Instruments must NOT be loaded here.
+        mock_extractor.extract_instruments.assert_not_called()
+
+        # No trade extraction result means no trade rows.
+        mock_extractor.extract_orders.assert_called_once()
 
     @patch("sprint_07_event_backbone_etl.pipeline.PostgresExtractor")
-    def test_load_trades_incremental_ensures_referential_integrity(self, mock_extractor_class, pipeline_db):
-        """Test that dimensions are loaded before trades to ensure referential integrity."""
+    def test_load_trades_incremental_does_not_load_instruments(
+        self,
+        mock_extractor_class,
+        pipeline_db,
+    ):
+        """
+        Verify that trade incremental loading does not load instruments.
+
+        Instrument loading belongs exclusively to load_dimensions().
+        """
         mock_extractor = MagicMock()
         mock_extractor_class.return_value = mock_extractor
 
-        # Mock dimension with new instrument
-        mock_extractor.extract_instruments_incremental.return_value = [
-            {
-                "symbol": "NEWSTOCK.NS",
-                "display_name": "New Stock",
-                "asset_class": "EQUITY",
-                "currency": "INR",
-                "tradable": True,
-                "updated_at": datetime(2026, 9, 17, 9, 0, 0),
-            }
-        ]
         mock_extractor.extract_accounts_incremental.return_value = [
             {
                 "source_id": 1,
@@ -308,7 +340,50 @@ class TestLoadTradesCallsDimensionsIncremental:
             }
         ]
 
-        # Mock trade that references the new instrument
+        mock_extractor.extract_orders.return_value = []
+
+        pipeline = IncrementalTradePipeline(
+            postgres_conn_string="postgresql://test",
+            warehouse_path=pipeline_db,
+        )
+
+        pipeline.load_trades_incremental()
+
+        # Incremental trade path loads accounts.
+        assert pipeline.stats["dim_account_loaded"] == 1
+
+        # But never instruments.
+        mock_extractor.extract_instruments.assert_not_called()
+
+        # No instrument incremental stats should exist.
+        assert "dim_instrument_updated" not in pipeline.stats
+
+    @patch("sprint_07_event_backbone_etl.pipeline.PostgresExtractor")
+    def test_load_trades_incremental_processes_trade(
+        self,
+        mock_extractor_class,
+        pipeline_db,
+    ):
+        """
+        Test that an incremental trade is extracted and transformed.
+
+        The test assumes the required instrument already exists in the
+        warehouse because instruments are loaded by load_dimensions().
+        """
+        mock_extractor = MagicMock()
+        mock_extractor_class.return_value = mock_extractor
+
+        mock_extractor.extract_accounts_incremental.return_value = [
+            {
+                "source_id": 1,
+                "account_id": "ACC001",
+                "holder_name": "John",
+                "status": "ACTIVE",
+                "effective_date": datetime(2026, 9, 1).date(),
+                "updated_at": datetime(2026, 9, 17, 9, 0, 0),
+            }
+        ]
+
         mock_extractor.extract_orders.return_value = [
             {
                 "id": "order-1",
@@ -330,10 +405,13 @@ class TestLoadTradesCallsDimensionsIncremental:
             warehouse_path=pipeline_db,
         )
 
-        # Mock the transform to validate the trade
-        with patch("sprint_07_event_backbone_etl.pipeline.TradeTransformer") as mock_transformer_class:
+        with patch(
+            "sprint_07_event_backbone_etl.pipeline.TradeTransformer"
+        ) as mock_transformer_class:
+
             mock_transformer = MagicMock()
             mock_transformer_class.return_value = mock_transformer
+
             mock_transformer.transform_order.return_value = {
                 "source_order_id": "order-1",
                 "account_id": 1,
@@ -349,81 +427,33 @@ class TestLoadTradesCallsDimensionsIncremental:
                 "executed_on": datetime(2026, 9, 17, 10, 0, 0),
             }
 
-            pipeline.load_trades_incremental()
+            # Mock the actual trade upsert.
+            with patch.object(
+                pipeline.loader,
+                "upsert_trades",
+                return_value=(1, 0),
+            ) as mock_upsert:
 
-            # Verify dimension calls happened before trade processing
-            assert mock_extractor.extract_instruments_incremental.called
-            assert mock_extractor.extract_accounts_incremental.called
+                pipeline.load_trades_incremental()
 
-            # Dimension loading should succeed, providing the new instrument
-            # when TradeTransformer validates the trade
-            assert pipeline.stats["dim_instrument_loaded"] + pipeline.stats["dim_instrument_updated"] > 0
+                # Account dimension was loaded first.
+                mock_extractor.extract_accounts_incremental.assert_called_once()
 
+                # Instruments are NOT loaded by this path.
+                mock_extractor.extract_instruments.assert_not_called()
 
-class TestDimensionWatermarkPersistence:
-    """Tests for dimension watermark persistence across pipeline runs."""
+                # Orders were extracted.
+                mock_extractor.extract_orders.assert_called_once()
 
-    @pytest.fixture
-    def pipeline_db(self):
-        """Create temporary DuckDB for pipeline tests."""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            db_path = Path(tmpdir) / "test.duckdb"
-            initialize_warehouse(db_path)
-            yield db_path
+                # Order was transformed.
+                mock_transformer.transform_order.assert_called_once()
 
-    @patch("sprint_07_event_backbone_etl.pipeline.PostgresExtractor")
-    def test_dimension_watermarks_persist_across_runs(self, mock_extractor_class, pipeline_db):
-        """Test that dimension watermarks are independent and persistent."""
-        mock_extractor = MagicMock()
-        mock_extractor_class.return_value = mock_extractor
+                # Transformed trade was sent to the loader.
+                mock_upsert.assert_called_once()
 
-        time1 = datetime(2026, 9, 17, 10, 0, 0)
-        time2 = datetime(2026, 9, 17, 11, 0, 0)
+                # One trade was inserted.
+                assert pipeline.stats["fact_trades_loaded"] == 1
+                assert pipeline.stats["fact_trades_updated"] == 0
 
-        # First run: load instruments at time1
-        mock_extractor.extract_instruments_incremental.return_value = [
-            {
-                "symbol": "INFY.NS",
-                "display_name": "Infosys",
-                "asset_class": "EQUITY",
-                "currency": "INR",
-                "tradable": True,
-                "updated_at": time1,
-            }
-        ]
-        mock_extractor.extract_accounts_incremental.return_value = []
-
-        pipeline1 = IncrementalTradePipeline(
-            postgres_conn_string="postgresql://test",
-            warehouse_path=pipeline_db,
-        )
-        pipeline1.load_dimensions_incremental()
-
-        inst_wm_1 = get_last_watermark("dim_instrument_incremental", pipeline_db)
-        assert inst_wm_1 == time1
-
-        # Second run: load accounts at time2
-        mock_extractor.extract_instruments_incremental.return_value = []
-        mock_extractor.extract_accounts_incremental.return_value = [
-            {
-                "source_id": 1,
-                "account_id": "ACC001",
-                "holder_name": "John",
-                "status": "ACTIVE",
-                "effective_date": datetime(2026, 9, 1).date(),
-                "updated_at": time2,
-            }
-        ]
-
-        pipeline2 = IncrementalTradePipeline(
-            postgres_conn_string="postgresql://test",
-            warehouse_path=pipeline_db,
-        )
-        pipeline2.load_dimensions_incremental()
-
-        # Verify both watermarks are independent
-        inst_wm_2 = get_last_watermark("dim_instrument_incremental", pipeline_db)
-        acc_wm = get_last_watermark("dim_account_incremental", pipeline_db)
-
-        assert inst_wm_2 == time1  # Unchanged
-        assert acc_wm == time2  # Newly recorded
+                # Instrument incremental stat does not exist.
+                assert "dim_instrument_updated" not in pipeline.stats

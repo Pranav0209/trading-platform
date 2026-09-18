@@ -30,48 +30,47 @@ class PostgresExtractor:
                         display_name,
                         asset_class,
                         currency,
-                        tradable,
-                        updated_at
+                        tradable
                     FROM instruments
                     ORDER BY symbol
                 """)
                 rows = cursor.fetchall()
                 return [dict(row) for row in rows]
 
-    def extract_instruments_incremental(self, since: Optional[datetime] = None) -> list[dict[str, Any]]:
-        """Extract instruments incrementally based on updated_at watermark."""
-        with psycopg2.connect(self.conn_string) as conn:
-            with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
-                if since is not None:
-                    query = """
-                        SELECT 
-                            symbol,
-                            display_name,
-                            asset_class,
-                            currency,
-                            tradable,
-                            updated_at
-                        FROM instruments
-                        WHERE updated_at > %s
-                        ORDER BY updated_at ASC
-                    """
-                    cursor.execute(query, (since,))
-                else:
-                    query = """
-                        SELECT 
-                            symbol,
-                            display_name,
-                            asset_class,
-                            currency,
-                            tradable,
-                            updated_at
-                        FROM instruments
-                        ORDER BY updated_at ASC
-                    """
-                    cursor.execute(query)
+    # def extract_instruments_incremental(self, since: Optional[datetime] = None) -> list[dict[str, Any]]:
+    #     """Extract instruments incrementally based on updated_at watermark."""
+    #     with psycopg2.connect(self.conn_string) as conn:
+    #         with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cursor:
+    #             if since is not None:
+    #                 query = """
+    #                     SELECT 
+    #                         symbol,
+    #                         display_name,
+    #                         asset_class,
+    #                         currency,
+    #                         tradable,
+    #                         updated_at
+    #                     FROM instruments
+    #                     WHERE updated_at > %s
+    #                     ORDER BY updated_at ASC
+    #                 """
+    #                 cursor.execute(query, (since,))
+    #             else:
+    #                 query = """
+    #                     SELECT 
+    #                         symbol,
+    #                         display_name,
+    #                         asset_class,
+    #                         currency,
+    #                         tradable,
+    #                         updated_at
+    #                     FROM instruments
+    #                     ORDER BY updated_at ASC
+    #                 """
+    #                 cursor.execute(query)
 
-                rows = cursor.fetchall()
-                return [dict(row) for row in rows]
+    #             rows = cursor.fetchall()
+    #             return [dict(row) for row in rows]
 
     def extract_accounts(self) -> list[dict[str, Any]]:
         """Extract accounts joined with users to capture business account number and holder name."""
