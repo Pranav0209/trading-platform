@@ -59,6 +59,9 @@ class OrderServiceTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private InstrumentService instrumentService;
+
     @InjectMocks
     private OrderServiceImpl orderService;
 

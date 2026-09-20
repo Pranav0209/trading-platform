@@ -41,6 +41,9 @@ public class OrderServiceImpl implements OrderService {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
+    @Autowired
+    private InstrumentService instrumentService;
+
     @Override
     @Transactional
     public OrderResponse place(Long userId, PlaceOrderRequest request) {
@@ -50,6 +53,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         String symbol = request.symbol().trim().toUpperCase(Locale.ROOT);
+        instrumentService.get(symbol);
 
         Account account;
         if (request.accountId() != null) {

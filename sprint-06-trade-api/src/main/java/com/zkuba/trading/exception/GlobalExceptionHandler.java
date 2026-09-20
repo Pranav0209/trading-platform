@@ -13,11 +13,9 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
-import java.util.List;
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(GlobalException.class)
@@ -25,14 +23,12 @@ public class GlobalExceptionHandler {
             GlobalException exception,
             HttpServletRequest request) {
         logger.warn("Global exception occurred: {} - {}", exception.getCode(), exception.getMessage());
-        
+
         ErrorResponse response = ErrorResponse.of(
-            exception.getStatus().value(),
-            exception.getCode(),
-            exception.getMessage(),
-            request.getRequestURI()
-        );
-        
+                exception.getStatus().value(),
+                exception.getCode(),
+                exception.getMessage());
+
         return ResponseEntity.status(exception.getStatus()).body(response);
     }
 
@@ -40,15 +36,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleValidationException(
             MethodArgumentNotValidException exception,
             HttpServletRequest request) {
-        
-        List<ErrorResponse.FieldError> fieldErrors = exception.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .map(error -> new ErrorResponse.FieldError(
-                    error.getField(),
-                    error.getDefaultMessage()
-                ))
-                .toList();
 
         String message = exception.getBindingResult()
                 .getFieldErrors()
@@ -59,13 +46,10 @@ public class GlobalExceptionHandler {
 
         logger.debug("Validation error: {}", message);
 
-        ErrorResponse response = ErrorResponse.withFieldErrors(
-            HttpStatus.UNPROCESSABLE_ENTITY.value(),
-            "VAL-422",
-            message,
-            request.getRequestURI(),
-            fieldErrors
-        );
+        ErrorResponse response = ErrorResponse.of(
+                HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                "VAL-422",
+                message);
 
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
     }
@@ -74,16 +58,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleConstraintViolation(
             ConstraintViolationException exception,
             HttpServletRequest request) {
-        
+
         logger.warn("Constraint violation: {}", exception.getMessage());
-        
+
         ErrorResponse response = ErrorResponse.of(
-            HttpStatus.UNPROCESSABLE_ENTITY.value(),
-            "VAL-422",
-            exception.getMessage(),
-            request.getRequestURI()
-        );
-        
+                HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                "VAL-422",
+                exception.getMessage());
+
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
     }
 
@@ -91,18 +73,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleTypeMismatch(
             MethodArgumentTypeMismatchException exception,
             HttpServletRequest request) {
-        
-        String message = "Invalid parameter: " + exception.getName() + 
-                        ". Expected type: " + exception.getRequiredType().getSimpleName();
+
+        String message = "Invalid parameter: " + exception.getName() +
+                ". Expected type: " + exception.getRequiredType().getSimpleName();
         logger.warn("Type mismatch: {}", message);
-        
+
         ErrorResponse response = ErrorResponse.of(
-            HttpStatus.UNPROCESSABLE_ENTITY.value(),
-            "VAL-422",
-            message,
-            request.getRequestURI()
-        );
-        
+                HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                "VAL-422",
+                message);
+
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
     }
 
@@ -110,16 +90,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
             DataIntegrityViolationException exception,
             HttpServletRequest request) {
-        
+
         logger.error("Data integrity violation: {}", exception.getMessage(), exception);
-        
+
         ErrorResponse response = ErrorResponse.of(
-            HttpStatus.CONFLICT.value(),
-            "ORD-409",
-            "Data conflict occurred. Unable to process request due to database constraint violation.",
-            request.getRequestURI()
-        );
-        
+                HttpStatus.CONFLICT.value(),
+                "ORD-409",
+                "Data conflict occurred. Unable to process request due to database constraint violation.");
+
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
@@ -127,16 +105,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnexpectedException(
             Exception exception,
             HttpServletRequest request) {
-        
+
         logger.error("Unexpected exception occurred", exception);
-        
+
         ErrorResponse response = ErrorResponse.of(
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            "SYS-500",
-            "Internal server error. Please contact support if the problem persists.",
-            request.getRequestURI()
-        );
-        
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "SYS-500",
+                "Internal server error. Please contact support if the problem persists.");
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }

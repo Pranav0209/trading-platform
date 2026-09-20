@@ -86,8 +86,7 @@ class AuthControllerTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422))
                 .andExpect(jsonPath("$.error").value("VAL-422"))
-                .andExpect(jsonPath("$.fieldErrors[0].field")
-                        .value("username"));
+                .andExpect(jsonPath("$.message").isString());
     }
 
 
@@ -106,8 +105,7 @@ class AuthControllerTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422))
                 .andExpect(jsonPath("$.error").value("VAL-422"))
-                .andExpect(jsonPath("$.fieldErrors[0].field")
-                        .value("password"));
+                .andExpect(jsonPath("$.message").isString());
     }
 
 
@@ -126,8 +124,7 @@ class AuthControllerTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422))
                 .andExpect(jsonPath("$.error").value("VAL-422"))
-                .andExpect(jsonPath("$.fieldErrors").isArray())
-                .andExpect(jsonPath("$.fieldErrors.length()").value(2));
+                .andExpect(jsonPath("$.message").isString());
     }
 
 
@@ -149,8 +146,7 @@ class AuthControllerTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422))
                 .andExpect(jsonPath("$.error").value("VAL-422"))
-                .andExpect(jsonPath("$.fieldErrors[0].field")
-                        .value("username"));
+                .andExpect(jsonPath("$.message").isString());
     }
 
 
@@ -172,8 +168,7 @@ class AuthControllerTest {
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.status").value(422))
                 .andExpect(jsonPath("$.error").value("VAL-422"))
-                .andExpect(jsonPath("$.fieldErrors[0].field")
-                        .value("password"));
+                .andExpect(jsonPath("$.message").isString());
     }
 
 

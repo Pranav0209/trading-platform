@@ -107,6 +107,11 @@ class AccountServiceTest {
         when(userService.get(1L)).thenReturn(user);
         when(accounts.findByUserId(1L))
                 .thenReturn(Optional.empty());
+        when(accounts.save(any(Account.class))).thenAnswer(i -> {
+            Account a = i.getArgument(0);
+            a.setId(100L);
+            return a;
+        });
 
         AccountResponse response =
                 accountService.create(request);
@@ -135,6 +140,11 @@ class AccountServiceTest {
         when(userService.get(1L)).thenReturn(user);
         when(accounts.findByUserId(1L))
                 .thenReturn(Optional.empty());
+        when(accounts.save(any(Account.class))).thenAnswer(i -> {
+            Account a = i.getArgument(0);
+            a.setId(100L);
+            return a;
+        });
 
         AccountResponse response =
                 accountService.create(request);

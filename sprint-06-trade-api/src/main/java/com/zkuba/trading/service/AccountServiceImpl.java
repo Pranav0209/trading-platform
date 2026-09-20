@@ -59,8 +59,7 @@ public class AccountServiceImpl implements AccountService {
         account.setCashBalance(defaultBalance);
         account.setCurrency(request.currency() == null ? "USD" : request.currency());
         account.setStatus(AccountStatus.ACTIVE);
-        account.setVersion(0);
-        accounts.save(account);
+        account = accounts.save(account);
         return response(account);
     }
 
