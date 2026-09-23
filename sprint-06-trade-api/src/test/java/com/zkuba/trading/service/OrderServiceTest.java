@@ -7,37 +7,45 @@ import com.zkuba.trading.domain.enums.OrderSide;
 import com.zkuba.trading.domain.enums.OrderStatus;
 import com.zkuba.trading.domain.enums.OrderType;
 import com.zkuba.trading.dto.request.PlaceOrderRequest;
+import com.zkuba.trading.dto.request.UpdateOrderRequest;
 import com.zkuba.trading.dto.response.OrderResponse;
-import com.zkuba.trading.exception.InsufficientFundsException;
+import com.zkuba.trading.event.OrderPlacedEvent;
+import com.zkuba.trading.event.OrderUpdatedEvent;
+import com.zkuba.trading.exception.AccountNotActiveException;
+import com.zkuba.trading.exception.AccountNotFoundException;
+import com.zkuba.trading.exception.DuplicateOrderException;
+import com.zkuba.trading.exception.ForbiddenException;
+import com.zkuba.trading.exception.InvalidOrderException;
+import com.zkuba.trading.exception.InvalidOrderTransitionException;
 import com.zkuba.trading.exception.OrderConflictException;
 import com.zkuba.trading.mapper.OrderMapper;
+import com.zkuba.trading.repository.OrderRepository;
+
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.UUID;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import com.zkuba.trading.domain.entity.Position;
-import com.zkuba.trading.exception.DuplicateOrderException;
-import com.zkuba.trading.dto.request.UpdateOrderRequest;
-import com.zkuba.trading.exception.InsufficientHoldingsException;
-import com.zkuba.trading.exception.InvalidOrderTransitionException;
-import com.zkuba.trading.repository.OrderRepository;
-import com.zkuba.trading.repository.PositionRepository;
-import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -49,10 +57,10 @@ class OrderServiceTest {
     private OrderRepository orderRepository;
 
     @Mock
-    private MarketDataService marketDataService;
+    private ApplicationEventPublisher eventPublisher;
 
     @Mock
-    private PositionRepository positionRepository;
+    private InstrumentService instrumentService;
 
     @InjectMocks
     private OrderServiceImpl orderService;
@@ -69,302 +77,1057 @@ class OrderServiceTest {
         activeAccount.setVersion(5);
     }
 
-    @Test
-    @DisplayName("placing an order updates balance and inserts order with expected computed values")
-    void placeOrder_success_updatesBalanceAndInsertsOrder() {
-        PlaceOrderRequest request = new PlaceOrderRequest(null, "aapl", OrderSide.BUY, OrderType.MARKET, 2, null,
-                "key-1");
-        BigDecimal price = new BigDecimal("100.00");
-        BigDecimal expectedBalance = new BigDecimal("800.00");
-
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(marketDataService.getCurrentPrice("AAPL")).thenReturn(price);
-        when(orderMapper.updateAccountBalance(10L, expectedBalance, 5)).thenReturn(1);
-        when(orderMapper.insert(any(Order.class))).thenReturn(1);
-
-        OrderResponse response = orderService.place(1L, request);
-
-        assertThat(response.status()).isEqualTo("FILLED");
-        assertThat(response.symbol()).isEqualTo("AAPL");
-        assertThat(response.executedPrice()).isEqualByComparingTo("100.00");
-
-        verify(orderMapper).updateAccountBalance(10L, expectedBalance, 5);
-        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-        verify(orderMapper).insert(orderCaptor.capture());
-
-        Order insertedOrder = orderCaptor.getValue();
-        assertThat(insertedOrder.getSymbol()).isEqualTo("AAPL");
-        assertThat(insertedOrder.getAccountId()).isEqualTo(10L);
-        assertThat(insertedOrder.getStatus()).isEqualTo(OrderStatus.FILLED);
-        assertThat(insertedOrder.getExecutedPrice()).isEqualByComparingTo("100.00");
-    }
+    // =========================================================
+    // PLACE - VALID ORDERS
+    // =========================================================
 
     @Test
-    @DisplayName("insufficient funds throws before any mapper write")
-    void placeOrder_insufficientFunds_throwsBeforeWrite() {
-        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.BUY, OrderType.MARKET, 2, null,
-                "key-2");
+    @DisplayName("place accepts valid market order using user's active account")
+    void placeOrder_validMarketOrder_success() {
 
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("600.00"));
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        " AAPL ",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        2,
+                        null,
+                        "key-1"
+                );
 
-        assertThatThrownBy(() -> orderService.place(1L, request))
-                .isInstanceOf(InsufficientFundsException.class);
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
 
-        verify(orderMapper, never()).updateAccountBalance(any(), any(), any());
-        verify(orderMapper, never()).insert(any(Order.class));
-    }
-
-    @Test
-    @DisplayName("balance update affected rows 0 throws conflict and prevents insert")
-    void placeOrder_optimisticLockFailure_throwsConflict() {
-        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.BUY, OrderType.MARKET, 1, null,
-                "key-3");
-
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("100.00"));
-        when(orderMapper.updateAccountBalance(eq(10L), any(BigDecimal.class), eq(5))).thenReturn(0);
-
-        assertThatThrownBy(() -> orderService.place(1L, request))
-                .isInstanceOf(OrderConflictException.class);
-
-        verify(orderMapper, never()).insert(any(Order.class));
-    }
-
-    @Test
-    @DisplayName("cancel affected rows 0 throws conflict")
-    void cancelOrder_affectedRowsZero_throwsConflict() {
-        UUID orderId = UUID.randomUUID();
-        Order existing = new Order();
-        existing.setId(orderId);
-        existing.setAccountId(10L);
-        existing.setStatus(OrderStatus.NEW);
-
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(orderMapper.findByIdAndAccountId(orderId, 10L)).thenReturn(existing);
-        when(orderMapper.cancelOrderConditionally(orderId, 10L, "NEW")).thenReturn(0);
-
-        assertThatThrownBy(() -> orderService.cancel(1L, orderId))
-                .isInstanceOf(OrderConflictException.class);
-    }
-
-    @Test
-    @DisplayName("cancel order in non-NEW status throws InvalidOrderTransitionException")
-    void cancelOrder_invalidStatus_throwsInvalidOrderTransitionException() {
-        UUID orderId = UUID.randomUUID();
-        Order existing = new Order();
-        existing.setId(orderId);
-        existing.setAccountId(10L);
-        existing.setStatus(OrderStatus.FILLED);
-
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(orderMapper.findByIdAndAccountId(orderId, 10L)).thenReturn(existing);
-
-        assertThatThrownBy(() -> orderService.cancel(1L, orderId))
-                .isInstanceOf(InvalidOrderTransitionException.class);
-    }
-
-    @Test
-    @DisplayName("placing order with duplicate idempotencyKey throws DuplicateOrderException")
-    void placeOrder_duplicateKey_throwsDuplicateOrderException() {
-        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.BUY, OrderType.MARKET, 2, null,
-                "key-dup");
-        Order existing = new Order();
-
-        when(orderMapper.findByIdempotencyKey("key-dup")).thenReturn(existing);
-
-        assertThatThrownBy(() -> orderService.place(1L, request))
-                .isInstanceOf(DuplicateOrderException.class);
-    }
-
-    @Test
-    @DisplayName("sell order without enough holdings throws InsufficientHoldingsException")
-    void placeOrder_sell_insufficientHoldings_throwsException() {
-        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.SELL, OrderType.LIMIT, 10,
-                new BigDecimal("150.00"), "key-sell-1");
-
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("150.00"));
-        when(positionRepository.findByAccountIdAndSymbol(10L, "AAPL")).thenReturn(null);
-
-        assertThatThrownBy(() -> orderService.place(1L, request))
-                .isInstanceOf(InsufficientHoldingsException.class);
-    }
-
-    @Test
-    @DisplayName("sell order with sufficient holdings succeeds and reduces position quantity")
-    void placeOrder_sell_success_updatesPosition() {
-        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.SELL, OrderType.LIMIT, 5,
-                new BigDecimal("150.00"), "key-sell-2");
-        Position position = new Position();
-        position.setAccountId(10L);
-        position.setSymbol("AAPL");
-        position.setQuantity(20);
-        position.setAverageCost(new BigDecimal("100.00"));
-
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("150.00"));
-        when(positionRepository.findByAccountIdAndSymbol(10L, "AAPL")).thenReturn(position);
-        when(orderMapper.updateAccountBalance(eq(10L), any(BigDecimal.class), eq(5))).thenReturn(1);
-        when(orderMapper.insert(any(Order.class))).thenReturn(1);
-
-        OrderResponse response = orderService.place(1L, request);
-
-        assertThat(response.status()).isEqualTo("FILLED");
-        assertThat(response.side()).isEqualTo("SELL");
-        assertThat(position.getQuantity()).isEqualTo(15);
-        verify(positionRepository).save(position);
-    }
-
-    @Test
-    @DisplayName("unexecutable limit buy order is saved with status NEW without updating balance or positions")
-    void placeOrder_limitBuyUnexecutable_placedAsNew() {
-        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.BUY, OrderType.LIMIT, 5,
-                new BigDecimal("90.00"), "key-limit-new");
-
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("100.00"));
-        when(orderMapper.insert(any(Order.class))).thenReturn(1);
-
-        OrderResponse response = orderService.place(1L, request);
-
-        assertThat(response.status()).isEqualTo("NEW");
-        assertThat(response.executedPrice()).isNull();
-        verify(orderMapper, never()).updateAccountBalance(any(), any(), any());
-        verify(positionRepository, never()).save(any());
-
-        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
-        verify(orderMapper).insert(orderCaptor.capture());
-        assertThat(orderCaptor.getValue().getStatus()).isEqualTo(OrderStatus.NEW);
-    }
-
-    @Test
-    @DisplayName("cancel order in NEW status succeeds and transitions status to CANCELLED")
-    void cancelOrder_statusNew_success() {
-        UUID orderId = UUID.randomUUID();
-        Order existing = new Order();
-        existing.setId(orderId);
-        existing.setAccountId(10L);
-        existing.setSymbol("AAPL");
-        existing.setSide(OrderSide.BUY);
-        existing.setOrderType(OrderType.LIMIT);
-        existing.setQuantity(5);
-        existing.setLimitPrice(new BigDecimal("90.00"));
-        existing.setStatus(OrderStatus.NEW);
-
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(orderMapper.findByIdAndAccountId(orderId, 10L)).thenReturn(existing);
-        when(orderMapper.cancelOrderConditionally(orderId, 10L, "NEW")).thenReturn(1);
-
-        OrderResponse response = orderService.cancel(1L, orderId);
-
-        assertThat(response.status()).isEqualTo("CANCELLED");
-        verify(orderMapper).cancelOrderConditionally(orderId, 10L, "NEW");
-    }
-
-    @Test
-    @DisplayName("data integrity violation on insert returns existing order when idempotency key exists")
-    void placeOrder_dbDataIntegrityViolation_returnsExistingOrder() {
-        PlaceOrderRequest request = new PlaceOrderRequest(null, "AAPL", OrderSide.BUY, OrderType.MARKET, 2, null,
-                "key-conflict");
-        BigDecimal price = new BigDecimal("100.00");
-        BigDecimal expectedBalance = new BigDecimal("800.00");
-
-        Order existingOrder = new Order();
-        existingOrder.setId(UUID.randomUUID());
-        existingOrder.setAccountId(10L);
-        existingOrder.setSymbol("AAPL");
-        existingOrder.setSide(OrderSide.BUY);
-        existingOrder.setOrderType(OrderType.MARKET);
-        existingOrder.setQuantity(2);
-        existingOrder.setExecutedPrice(price);
-        existingOrder.setStatus(OrderStatus.FILLED);
-        existingOrder.setIdempotencyKey("key-conflict");
-
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(marketDataService.getCurrentPrice("AAPL")).thenReturn(price);
-        when(orderMapper.updateAccountBalance(10L, expectedBalance, 5)).thenReturn(1);
         when(orderMapper.insert(any(Order.class)))
-                .thenThrow(new org.springframework.dao.DataIntegrityViolationException("Duplicate key constraint"));
-        when(orderMapper.findByIdempotencyKey("key-conflict")).thenReturn(null, existingOrder);
+                .thenReturn(1);
 
-        OrderResponse response = orderService.place(1L, request);
+        OrderResponse response =
+                orderService.place(1L, request);
 
-        assertThat(response.status()).isEqualTo("FILLED");
-        assertThat(response.message()).contains("already processed");
+        assertThat(response.status())
+                .isEqualTo("NEW");
+
+        assertThat(response.symbol())
+                .isEqualTo("AAPL");
+
+        assertThat(response.executedPrice())
+                .isNull();
+
+        ArgumentCaptor<Order> captor =
+                ArgumentCaptor.forClass(Order.class);
+
+        verify(orderMapper).insert(captor.capture());
+
+        Order savedOrder = captor.getValue();
+
+        assertThat(savedOrder.getAccountId())
+                .isEqualTo(10L);
+
+        assertThat(savedOrder.getSymbol())
+                .isEqualTo("AAPL");
+
+        assertThat(savedOrder.getStatus())
+                .isEqualTo(OrderStatus.NEW);
+
+        assertThat(savedOrder.getOrderType())
+                .isEqualTo(OrderType.MARKET);
+
+        verify(eventPublisher)
+                .publishEvent(any(OrderPlacedEvent.class));
     }
 
     @Test
-    @DisplayName("updating pending limit order that remains unexecutable stays NEW")
-    void updateOrder_unexecutableLimit_remainsNew() {
-        UUID orderId = UUID.randomUUID();
-        Order existing = new Order();
-        existing.setId(orderId);
-        existing.setAccountId(10L);
-        existing.setSymbol("AAPL");
-        existing.setSide(OrderSide.BUY);
-        existing.setOrderType(OrderType.LIMIT);
-        existing.setQuantity(5);
-        existing.setLimitPrice(new BigDecimal("90.00"));
-        existing.setStatus(OrderStatus.NEW);
+    @DisplayName("place accepts valid order when explicit accountId is supplied")
+    void placeOrder_explicitAccount_success() {
 
-        UpdateOrderRequest updateReq = new UpdateOrderRequest(10, new BigDecimal("95.00"));
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        10L,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        2,
+                        null,
+                        "key-explicit"
+                );
 
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(orderRepository.findByIdAndAccountId(orderId, 10L)).thenReturn(Optional.of(existing));
-        when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("100.00"));
+        when(orderMapper.findAccountById(10L))
+                .thenReturn(activeAccount);
 
-        OrderResponse response = orderService.update(1L, orderId, updateReq);
+        when(orderMapper.insert(any(Order.class)))
+                .thenReturn(1);
 
-        assertThat(response.status()).isEqualTo("NEW");
-        assertThat(response.quantity()).isEqualTo(10);
-        assertThat(response.limitPrice()).isEqualByComparingTo("95.00");
-        verify(orderRepository).save(existing);
+        OrderResponse response =
+                orderService.place(1L, request);
+
+        assertThat(response.status())
+                .isEqualTo("NEW");
+
+        verify(orderMapper).findAccountById(10L);
+        verify(orderMapper).insert(any(Order.class));
+        verify(eventPublisher)
+                .publishEvent(any(OrderPlacedEvent.class));
     }
 
     @Test
-    @DisplayName("updating pending limit order such that it becomes executable executes to FILLED")
-    void updateOrder_becomesExecutable_executesToFilled() {
-        UUID orderId = UUID.randomUUID();
-        Order existing = new Order();
-        existing.setId(orderId);
-        existing.setAccountId(10L);
-        existing.setSymbol("AAPL");
-        existing.setSide(OrderSide.BUY);
-        existing.setOrderType(OrderType.LIMIT);
-        existing.setQuantity(2);
-        existing.setLimitPrice(new BigDecimal("90.00"));
-        existing.setStatus(OrderStatus.NEW);
+    @DisplayName("place accepts valid limit order with limit price")
+    void placeOrder_limitOrder_success() {
 
-        UpdateOrderRequest updateReq = new UpdateOrderRequest(2, new BigDecimal("105.00"));
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.LIMIT,
+                        5,
+                        new BigDecimal("150.00"),
+                        "limit-1"
+                );
 
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(orderRepository.findByIdAndAccountId(orderId, 10L)).thenReturn(Optional.of(existing));
-        when(marketDataService.getCurrentPrice("AAPL")).thenReturn(new BigDecimal("100.00"));
-        when(orderMapper.updateAccountBalance(eq(10L), any(BigDecimal.class), eq(5))).thenReturn(1);
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
 
-        OrderResponse response = orderService.update(1L, orderId, updateReq);
+        when(orderMapper.insert(any(Order.class)))
+                .thenReturn(1);
 
-        assertThat(response.status()).isEqualTo("FILLED");
-        assertThat(response.executedPrice()).isEqualByComparingTo("105.00");
-        verify(orderRepository).save(existing);
+        OrderResponse response =
+                orderService.place(1L, request);
+
+        assertThat(response.status())
+                .isEqualTo("NEW");
+
+        assertThat(response.limitPrice())
+                .isEqualByComparingTo("150.00");
+    }
+
+    // =========================================================
+    // PLACE - IDEMPOTENCY
+    // =========================================================
+
+    @Test
+    @DisplayName("place rejects duplicate idempotency key before account lookup")
+    void placeOrder_duplicateKey_throwsException() {
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        2,
+                        null,
+                        "key-dup"
+                );
+
+        when(orderMapper.findByIdempotencyKey("key-dup"))
+                .thenReturn(new Order());
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(DuplicateOrderException.class);
+
+        verify(orderMapper, never())
+                .findAccountByUserId(1L);
+
+        verify(orderMapper, never())
+                .insert(any(Order.class));
+
+        verify(eventPublisher, never())
+                .publishEvent(any());
+    }
+
+    // =========================================================
+    // PLACE - EXPLICIT ACCOUNT BRANCHES
+    // =========================================================
+
+    @Test
+    @DisplayName("place throws when explicit account does not exist")
+    void placeOrder_explicitAccountNotFound() {
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        99L,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        2,
+                        null,
+                        "key-2"
+                );
+
+        when(orderMapper.findAccountById(99L))
+                .thenReturn(null);
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(AccountNotFoundException.class);
+
+        verify(orderMapper, never())
+                .insert(any(Order.class));
     }
 
     @Test
-    @DisplayName("updating non-NEW order throws InvalidOrderTransitionException")
-    void updateOrder_nonNewStatus_throwsException() {
+    @DisplayName("place rejects explicit account belonging to another user")
+    void placeOrder_explicitAccountWrongUser() {
+
+        activeAccount.setUserId(999L);
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        10L,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        2,
+                        null,
+                        "key-3"
+                );
+
+        when(orderMapper.findAccountById(10L))
+                .thenReturn(activeAccount);
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(ForbiddenException.class);
+
+        verify(orderMapper, never())
+                .insert(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("place rejects explicit inactive account")
+    void placeOrder_explicitAccountInactive() {
+
+        activeAccount.setStatus(AccountStatus.SUSPENDED);
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        10L,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        2,
+                        null,
+                        "key-4"
+                );
+
+        when(orderMapper.findAccountById(10L))
+                .thenReturn(activeAccount);
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(AccountNotActiveException.class);
+
+        verify(orderMapper, never())
+                .insert(any(Order.class));
+    }
+
+    // =========================================================
+    // PLACE - requireActiveAccount()
+    // =========================================================
+
+    @Test
+    @DisplayName("place throws when user has no active account")
+    void placeOrder_noAccount() {
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        2,
+                        null,
+                        "key-5"
+                );
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(null);
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(AccountNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("place rejects user's inactive account")
+    void placeOrder_userAccountInactive() {
+
+        activeAccount.setStatus(AccountStatus.SUSPENDED);
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        2,
+                        null,
+                        "key-6"
+                );
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(AccountNotActiveException.class);
+    }
+
+    // =========================================================
+    // PLACE - VALIDATION
+    // =========================================================
+
+    @Test
+    @DisplayName("place rejects zero quantity")
+    void placeOrder_zeroQuantity() {
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        0,
+                        null,
+                        "key-7"
+                );
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(InvalidOrderException.class);
+
+        verifyNoOrderCreated();
+    }
+
+    @Test
+    @DisplayName("place rejects negative quantity")
+    void placeOrder_negativeQuantity() {
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        -1,
+                        null,
+                        "key-8"
+                );
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(InvalidOrderException.class);
+
+        verifyNoOrderCreated();
+    }
+
+    @Test
+    @DisplayName("place rejects limit order without limit price")
+    void placeOrder_limitWithoutPrice() {
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.LIMIT,
+                        2,
+                        null,
+                        "key-9"
+                );
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(InvalidOrderException.class);
+
+        verifyNoOrderCreated();
+    }
+
+    @Test
+    @DisplayName("place rejects market order with limit price")
+    void placeOrder_marketWithLimitPrice() {
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        2,
+                        new BigDecimal("100.00"),
+                        "key-10"
+                );
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(InvalidOrderException.class);
+
+        verifyNoOrderCreated();
+    }
+
+    @Test
+    @DisplayName("place rejects zero limit price")
+    void placeOrder_zeroLimitPrice() {
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.LIMIT,
+                        2,
+                        BigDecimal.ZERO,
+                        "key-11"
+                );
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(InvalidOrderException.class);
+
+        verifyNoOrderCreated();
+    }
+
+    @Test
+    @DisplayName("place rejects negative limit price")
+    void placeOrder_negativeLimitPrice() {
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.LIMIT,
+                        2,
+                        new BigDecimal("-1.00"),
+                        "key-12"
+                );
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(InvalidOrderException.class);
+
+        verifyNoOrderCreated();
+    }
+
+    // =========================================================
+    // PLACE - INSERT RESULTS
+    // =========================================================
+
+    @Test
+    @DisplayName("place throws conflict when insert affects zero rows")
+    void placeOrder_insertReturnsZero() {
+
+        PlaceOrderRequest request =
+                new PlaceOrderRequest(
+                        null,
+                        "AAPL",
+                        OrderSide.BUY,
+                        OrderType.MARKET,
+                        2,
+                        null,
+                        "key-13"
+                );
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        when(orderMapper.insert(any(Order.class)))
+                .thenReturn(0);
+
+        assertThatThrownBy(
+                () -> orderService.place(1L, request)
+        )
+                .isInstanceOf(OrderConflictException.class);
+
+        verify(eventPublisher, never())
+                .publishEvent(any());
+    }
+
+@Test
+@DisplayName("place handles DB conflict when existing order is found after insert failure")
+void placeOrder_dbConflict_existingOrder() {
+
+    String idempotencyKey = "key-conflict";
+
+    Order existingOrder = createOrder();
+    existingOrder.setIdempotencyKey(idempotencyKey);
+
+    // IMPORTANT:
+    // 1st call happens before insert -> must return null
+    // 2nd call happens inside DataIntegrityViolationException catch -> existing order
+    when(orderMapper.findByIdempotencyKey(idempotencyKey))
+            .thenReturn(null)
+            .thenReturn(existingOrder);
+
+    when(orderMapper.findAccountByUserId(1L))
+            .thenReturn(activeAccount);
+
+    when(orderMapper.insert(any(Order.class)))
+            .thenThrow(new DataIntegrityViolationException("duplicate"));
+
+    PlaceOrderRequest request = new PlaceOrderRequest(
+            null,
+            "AAPL",
+            OrderSide.BUY,
+            OrderType.MARKET,
+            10,
+            null,
+            idempotencyKey
+    );
+
+    OrderResponse response =
+            orderService.place(1L, request);
+
+    assertThat(response).isNotNull();
+    assertThat(response.message())
+            .isEqualTo("Order already processed with idempotency key");
+
+    verify(orderMapper, times(2))
+            .findByIdempotencyKey(idempotencyKey);
+
+    verify(orderMapper)
+            .insert(any(Order.class));
+
+    verify(eventPublisher, never())
+            .publishEvent(any());
+}
+
+
+
+    // =========================================================
+    // CANCEL
+    // =========================================================
+
+    @Test
+    @DisplayName("cancel throws when user has no account")
+    void cancelOrder_noAccount() {
+
         UUID orderId = UUID.randomUUID();
-        Order existing = new Order();
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(null);
+
+        assertThatThrownBy(
+                () -> orderService.cancel(1L, orderId)
+        )
+                .isInstanceOf(AccountNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("cancel throws when account is inactive")
+    void cancelOrder_inactiveAccount() {
+
+        UUID orderId = UUID.randomUUID();
+
+        activeAccount.setStatus(AccountStatus.SUSPENDED);
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        assertThatThrownBy(
+                () -> orderService.cancel(1L, orderId)
+        )
+                .isInstanceOf(AccountNotActiveException.class);
+    }
+
+    @Test
+    @DisplayName("cancel throws conflict when order does not exist")
+    void cancelOrder_orderNotFound() {
+
+        UUID orderId = UUID.randomUUID();
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        when(orderMapper.findByIdAndAccountId(
+                orderId,
+                10L
+        )).thenReturn(null);
+
+        assertThatThrownBy(
+                () -> orderService.cancel(1L, orderId)
+        )
+                .isInstanceOf(OrderConflictException.class);
+    }
+
+    @Test
+    @DisplayName("cancel rejects non-NEW order")
+    void cancelOrder_invalidStatus() {
+
+        UUID orderId = UUID.randomUUID();
+
+        Order existing = createOrder();
         existing.setId(orderId);
-        existing.setAccountId(10L);
         existing.setStatus(OrderStatus.FILLED);
 
-        UpdateOrderRequest updateReq = new UpdateOrderRequest(10, new BigDecimal("105.00"));
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
 
-        when(orderMapper.findAccountByUserId(1L)).thenReturn(activeAccount);
-        when(orderRepository.findByIdAndAccountId(orderId, 10L)).thenReturn(Optional.of(existing));
+        when(orderMapper.findByIdAndAccountId(
+                orderId,
+                10L
+        )).thenReturn(existing);
 
-        assertThatThrownBy(() -> orderService.update(1L, orderId, updateReq))
-                .isInstanceOf(InvalidOrderTransitionException.class);
+        assertThatThrownBy(
+                () -> orderService.cancel(1L, orderId)
+        )
+                .isInstanceOf(
+                        InvalidOrderTransitionException.class
+                );
+
+        verify(orderMapper, never())
+                .cancelOrderConditionally(
+                        any(),
+                        any(),
+                        any()
+                );
+    }
+
+    @Test
+    @DisplayName("cancel throws conflict when conditional update affects zero rows")
+    void cancelOrder_affectedRowsZero() {
+
+        UUID orderId = UUID.randomUUID();
+
+        Order existing = createOrder();
+        existing.setId(orderId);
+        existing.setStatus(OrderStatus.NEW);
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        when(orderMapper.findByIdAndAccountId(
+                orderId,
+                10L
+        )).thenReturn(existing);
+
+        when(orderMapper.cancelOrderConditionally(
+                orderId,
+                10L,
+                "NEW"
+        )).thenReturn(0);
+
+        assertThatThrownBy(
+                () -> orderService.cancel(1L, orderId)
+        )
+                .isInstanceOf(OrderConflictException.class);
+    }
+
+    @Test
+    @DisplayName("cancel successfully changes NEW order to CANCELLED")
+    void cancelOrder_success() {
+
+        UUID orderId = UUID.randomUUID();
+
+        Order existing = createOrder();
+        existing.setId(orderId);
+        existing.setStatus(OrderStatus.NEW);
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        when(orderMapper.findByIdAndAccountId(
+                orderId,
+                10L
+        )).thenReturn(existing);
+
+        when(orderMapper.cancelOrderConditionally(
+                orderId,
+                10L,
+                "NEW"
+        )).thenReturn(1);
+
+        OrderResponse response =
+                orderService.cancel(1L, orderId);
+
+        assertThat(response.status())
+                .isEqualTo("CANCELLED");
+
+        assertThat(existing.getStatus())
+                .isEqualTo(OrderStatus.CANCELLED);
+
+        verify(orderMapper).cancelOrderConditionally(
+                orderId,
+                10L,
+                "NEW"
+        );
+    }
+
+    // =========================================================
+    // UPDATE
+    // =========================================================
+
+    @Test
+    @DisplayName("update throws when user has no account")
+    void updateOrder_noAccount() {
+
+        UUID orderId = UUID.randomUUID();
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(null);
+
+        UpdateOrderRequest request =
+                new UpdateOrderRequest(
+                        10,
+                        new BigDecimal("95.00")
+                );
+
+        assertThatThrownBy(
+                () -> orderService.update(
+                        1L,
+                        orderId,
+                        request
+                )
+        )
+                .isInstanceOf(AccountNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("update rejects inactive account")
+    void updateOrder_inactiveAccount() {
+
+        UUID orderId = UUID.randomUUID();
+
+        activeAccount.setStatus(AccountStatus.SUSPENDED);
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        UpdateOrderRequest request =
+                new UpdateOrderRequest(
+                        10,
+                        new BigDecimal("95.00")
+                );
+
+        assertThatThrownBy(
+                () -> orderService.update(
+                        1L,
+                        orderId,
+                        request
+                )
+        )
+                .isInstanceOf(AccountNotActiveException.class);
+    }
+
+    @Test
+    @DisplayName("update throws conflict when order does not exist")
+    void updateOrder_orderNotFound() {
+
+        UUID orderId = UUID.randomUUID();
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        when(orderRepository.findByIdAndAccountId(
+                orderId,
+                10L
+        )).thenReturn(Optional.empty());
+
+        UpdateOrderRequest request =
+                new UpdateOrderRequest(
+                        10,
+                        new BigDecimal("95.00")
+                );
+
+        assertThatThrownBy(
+                () -> orderService.update(
+                        1L,
+                        orderId,
+                        request
+                )
+        )
+                .isInstanceOf(OrderConflictException.class);
+    }
+
+    @Test
+    @DisplayName("update rejects non-NEW order")
+    void updateOrder_nonNewStatus() {
+
+        UUID orderId = UUID.randomUUID();
+
+        Order existing = createOrder();
+        existing.setId(orderId);
+        existing.setStatus(OrderStatus.FILLED);
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        when(orderRepository.findByIdAndAccountId(
+                orderId,
+                10L
+        )).thenReturn(Optional.of(existing));
+
+        UpdateOrderRequest request =
+                new UpdateOrderRequest(
+                        10,
+                        new BigDecimal("105.00")
+                );
+
+        assertThatThrownBy(
+                () -> orderService.update(
+                        1L,
+                        orderId,
+                        request
+                )
+        )
+                .isInstanceOf(
+                        InvalidOrderTransitionException.class
+                );
+    }
+
+    @Test
+    @DisplayName("update rejects request when neither quantity nor price is provided")
+    void updateOrder_noFieldsProvided() {
+
+        UUID orderId = UUID.randomUUID();
+
+        Order existing = createOrder();
+        existing.setId(orderId);
+        existing.setStatus(OrderStatus.NEW);
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        when(orderRepository.findByIdAndAccountId(
+                orderId,
+                10L
+        )).thenReturn(Optional.of(existing));
+
+        UpdateOrderRequest request =
+                new UpdateOrderRequest(null, null);
+
+        assertThatThrownBy(
+                () -> orderService.update(
+                        1L,
+                        orderId,
+                        request
+                )
+        )
+                .isInstanceOf(InvalidOrderException.class);
+
+        verify(orderRepository, never())
+                .save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("update rejects non-positive limit price")
+    void updateOrder_invalidLimitPrice() {
+
+        UUID orderId = UUID.randomUUID();
+
+        Order existing = createOrder();
+        existing.setId(orderId);
+        existing.setStatus(OrderStatus.NEW);
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        when(orderRepository.findByIdAndAccountId(
+                orderId,
+                10L
+        )).thenReturn(Optional.of(existing));
+
+        UpdateOrderRequest request =
+                new UpdateOrderRequest(
+                        null,
+                        BigDecimal.ZERO
+                );
+
+        assertThatThrownBy(
+                () -> orderService.update(
+                        1L,
+                        orderId,
+                        request
+                )
+        )
+                .isInstanceOf(InvalidOrderException.class);
+
+        verify(orderRepository, never())
+                .save(any(Order.class));
+    }
+
+    @Test
+    @DisplayName("update changes only quantity when price is omitted")
+    void updateOrder_onlyQuantity() {
+
+        UUID orderId = UUID.randomUUID();
+
+        Order existing = createOrder();
+        existing.setId(orderId);
+        existing.setStatus(OrderStatus.NEW);
+        existing.setQuantity(5);
+        existing.setLimitPrice(
+                new BigDecimal("90.00")
+        );
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        when(orderRepository.findByIdAndAccountId(
+                orderId,
+                10L
+        )).thenReturn(Optional.of(existing));
+
+        UpdateOrderRequest request =
+                new UpdateOrderRequest(10, null);
+
+        OrderResponse response =
+                orderService.update(
+                        1L,
+                        orderId,
+                        request
+                );
+
+        assertThat(response.quantity())
+                .isEqualTo(10);
+
+        assertThat(response.limitPrice())
+                .isEqualByComparingTo("90.00");
+
+        verify(orderRepository).save(existing);
+        verify(eventPublisher)
+                .publishEvent(any(OrderUpdatedEvent.class));
+    }
+
+    @Test
+    @DisplayName("update changes only limit price when quantity is omitted")
+    void updateOrder_onlyLimitPrice() {
+
+        UUID orderId = UUID.randomUUID();
+
+        Order existing = createOrder();
+        existing.setId(orderId);
+        existing.setStatus(OrderStatus.NEW);
+        existing.setQuantity(5);
+        existing.setLimitPrice(
+                new BigDecimal("90.00")
+        );
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        when(orderRepository.findByIdAndAccountId(
+                orderId,
+                10L
+        )).thenReturn(Optional.of(existing));
+
+        UpdateOrderRequest request =
+                new UpdateOrderRequest(
+                        null,
+                        new BigDecimal("95.00")
+                );
+
+        OrderResponse response =
+                orderService.update(
+                        1L,
+                        orderId,
+                        request
+                );
+
+        assertThat(response.quantity())
+                .isEqualTo(5);
+
+        assertThat(response.limitPrice())
+                .isEqualByComparingTo("95.00");
+
+        verify(orderRepository).save(existing);
+        verify(eventPublisher)
+                .publishEvent(any(OrderUpdatedEvent.class));
+    }
+
+    @Test
+    @DisplayName("update changes both quantity and limit price")
+    void updateOrder_quantityAndPrice() {
+
+        UUID orderId = UUID.randomUUID();
+
+        Order existing = createOrder();
+        existing.setId(orderId);
+        existing.setStatus(OrderStatus.NEW);
+
+        when(orderMapper.findAccountByUserId(1L))
+                .thenReturn(activeAccount);
+
+        when(orderRepository.findByIdAndAccountId(
+                orderId,
+                10L
+        )).thenReturn(Optional.of(existing));
+
+        UpdateOrderRequest request =
+                new UpdateOrderRequest(
+                        20,
+                        new BigDecimal("95.00")
+                );
+
+        OrderResponse response =
+                orderService.update(
+                        1L,
+                        orderId,
+                        request
+                );
+
+        assertThat(response.quantity())
+                .isEqualTo(20);
+
+        assertThat(response.limitPrice())
+                .isEqualByComparingTo("95.00");
+
+        assertThat(existing.getQuantity())
+                .isEqualTo(20);
+
+        assertThat(existing.getLimitPrice())
+                .isEqualByComparingTo("95.00");
+
+        verify(orderRepository).save(existing);
+
+        verify(eventPublisher)
+                .publishEvent(any(OrderUpdatedEvent.class));
+    }
+
+    // =========================================================
+    // HELPERS
+    // =========================================================
+
+    private Order createOrder() {
+
+        Order order = new Order();
+
+        order.setId(UUID.randomUUID());
+        order.setAccountId(10L);
+        order.setSymbol("AAPL");
+        order.setSide(OrderSide.BUY);
+        order.setOrderType(OrderType.LIMIT);
+        order.setQuantity(5);
+        order.setLimitPrice(
+                new BigDecimal("90.00")
+        );
+        order.setExecutedPrice(null);
+        order.setStatus(OrderStatus.NEW);
+        order.setIdempotencyKey("test-key");
+
+        return order;
+    }
+
+    private void verifyNoOrderCreated() {
+
+        verify(orderMapper, never())
+                .insert(any(Order.class));
+
+        verify(eventPublisher, never())
+                .publishEvent(any());
     }
 }

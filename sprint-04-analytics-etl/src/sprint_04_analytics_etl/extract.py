@@ -123,13 +123,15 @@ def _load_or_fetch_candles(
     api_key: str | None,
     base_url: str | None,
     cache_dir: str | Path,
+    cache_ttl: int | None = 86400,
     session: requests.Session | None,
 ) -> dict[str, Any]:
     cache_path = _cache_path(Path(cache_dir), symbol, from_date, to_date)
     cache_path.parent.mkdir(parents=True, exist_ok=True)
 
     if cache_path.exists():
-        return json.loads(cache_path.read_text(encoding="utf-8"))
+        if cache_ttl is None or (time.time() - cache_path.stat().st_mtime) < cache_ttl:
+            return json.loads(cache_path.read_text(encoding="utf-8"))
 
     resolved_api_key = api_key or os.environ.get("FAUXNANCE_API_KEY")
     if not resolved_api_key:
@@ -151,6 +153,7 @@ def extract_candles(
     api_key: str | None = None,
     base_url: str | None = None,
     cache_dir: str | Path = ".cache",
+    cache_ttl: int | None = 86400,
     session: requests.Session | None = None,
 ) -> dict[str, Any]:
     return _load_or_fetch_candles(
@@ -160,6 +163,7 @@ def extract_candles(
         api_key=api_key,
         base_url=base_url,
         cache_dir=cache_dir,
+        cache_ttl=cache_ttl,
         session=session,
     )
 

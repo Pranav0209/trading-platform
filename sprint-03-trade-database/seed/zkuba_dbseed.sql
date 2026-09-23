@@ -1,73 +1,69 @@
 BEGIN;
 
-INSERT INTO users (user_id,username,email,password_hash,status) VALUES
-(1,'pranav','pranav@example.com','$2b$12$seedhash_user_001','ACTIVE'),
-(2,'rahul','rahul@example.com','$2b$12$seedhash_user_002','ACTIVE'),
-(3,'ananya','ananya@example.com','$2b$12$seedhash_user_003','ACTIVE'),
-(4,'vikram','vikram@example.com','$2b$12$seedhash_user_004','ACTIVE'),
-(5,'meera','meera@example.com','$2b$12$seedhash_user_005','ACTIVE');
+-- Seed Additional Tradable Instruments
+INSERT INTO instruments (symbol, display_name, asset_class, currency, tradable) VALUES
+    ('GOOGL', 'Alphabet Inc.', 'EQUITY', 'USD', TRUE),
+    ('AMZN', 'Amazon.com Inc.', 'EQUITY', 'USD', TRUE),
+    ('META', 'Meta Platforms Inc.', 'EQUITY', 'USD', TRUE),
+    ('ACME', 'Acme Corporation', 'EQUITY', 'USD', TRUE),
+    ('INFY.NS', 'Infosys Limited', 'EQUITY', 'INR', TRUE)
+ON CONFLICT (symbol) DO NOTHING;
 
-INSERT INTO accounts (account_id,user_id,account_number,cash_balance,status,version) VALUES
-(101,1,'TRD000101',250000,'ACTIVE',3),
-(102,2,'TRD000102',175000,'ACTIVE',2),
-(103,3,'TRD000103',500000,'ACTIVE',5),
-(104,4,'TRD000104',125000,'ACTIVE',1),
-(105,5,'TRD000105',300000,'ACTIVE',4);
+-- Seed Sample Users (Password for all seeded users is: password123)
+-- BCrypt hash for 'password123': $2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy
+INSERT INTO users (id, username, email, password_hash, role, status) VALUES
+    (1, 'admin', 'admin@trading.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'ROLE_ADMIN', 'ACTIVE'),
+    (2, 'john_doe', 'john@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'ROLE_USER', 'ACTIVE'),
+    (3, 'jane_smith', 'jane@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'ROLE_USER', 'ACTIVE')
+ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO instruments (instrument_id,symbol,isin,company_name,asset_class,exchange,currency,status) VALUES
-(1001,'RELIANCE','INE002A01018','Reliance Industries Limited','EQUITY','NSE','INR','ACTIVE'),
-(1002,'TCS','INE467B01029','Tata Consultancy Services Limited','EQUITY','NSE','INR','ACTIVE'),
-(1003,'INFY','INE009A01021','Infosys Limited','EQUITY','NSE','INR','ACTIVE'),
-(1004,'HDFCBANK','INE040A01034','HDFC Bank Limited','EQUITY','NSE','INR','ACTIVE'),
-(1005,'ICICIBANK','INE090A01021','ICICI Bank Limited','EQUITY','NSE','INR','ACTIVE');
+-- Reset sequence for users table so new registrations start after seeded IDs
+SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
 
-INSERT INTO orders
-(order_id,account_id,instrument_id,order_type,order_side,quantity,filled_quantity,limit_price,executed_price,status,brokerage_amount,idempotency_key,placed_at,updated_at,completed_at,cancelled_at,version)
-VALUES
-(5001,101,1001,'LIMIT','BUY',100,100,1400,1398.50,'FILLED',20,'idem-5001','2026-08-18 09:30:00','2026-08-18 09:30:08','2026-08-18 09:30:08',NULL,1),
-(5002,101,1002,'MARKET','BUY',50,50,NULL,3250,'FILLED',20,'idem-5002','2026-08-18 10:15:00','2026-08-18 10:15:03','2026-08-18 10:15:03',NULL,1),
-(5003,102,1003,'LIMIT','BUY',75,75,1850,1845,'FILLED',20,'idem-5003','2026-08-19 09:45:00','2026-08-19 09:45:06','2026-08-19 09:45:06',NULL,1),
-(5004,103,1004,'MARKET','SELL',40,40,NULL,1780,'FILLED',20,'idem-5004','2026-08-19 11:20:00','2026-08-19 11:20:04','2026-08-19 11:20:04',NULL,1),
-(5005,104,1005,'LIMIT','BUY',100,0,1050,NULL,'NEW',0,'idem-5005','2026-08-20 10:00:00','2026-08-20 10:00:00',NULL,NULL,0);
+-- Seed Trading Accounts
+INSERT INTO accounts (id, account_number, user_id, cash_balance, currency, status, version) VALUES
+    (1, 'ACC-USD-ADMIN', 1, 1000000.00, 'USD', 'ACTIVE', 0),
+    (2, 'ACC-USD-JOHN01', 2, 45000.00, 'USD', 'ACTIVE', 0),
+    (3, 'ACC-USD-JANE02', 3, 28000.00, 'USD', 'ACTIVE', 0)
+ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO positions (account_id,instrument_id,quantity,average_buy_price,version) VALUES
-(101,1001,100,1398.50,1),
-(101,1002,50,3250,1),
-(102,1003,75,1845,1),
-(103,1004,20,1700,2),
-(105,1005,80,1025,1);
+-- Reset sequence for accounts table
+SELECT setval('accounts_id_seq', (SELECT MAX(id) FROM accounts));
 
-INSERT INTO holdings (account_id,instrument_id,quantity,average_buy_price,version) VALUES
-(101,1001,200,1350,4),
-(101,1002,100,3100,2),
-(102,1003,150,1780,3),
-(103,1004,60,1700,2),
-(105,1005,80,1025,1);
+-- Seed User Positions
+INSERT INTO positions (id, account_id, symbol, quantity, average_cost, version) VALUES
+    (1, 2, 'AAPL', 15, 220.5000, 0),
+    (2, 2, 'NVDA', 25, 165.0000, 0),
+    (3, 3, 'MSFT', 10, 495.2500, 0)
+ON CONFLICT (account_id, symbol) DO NOTHING;
 
-INSERT INTO pnl
-(pnl_id,account_id,instrument_id,sell_order_id,quantity,buy_price,sell_price,gross_pnl,brokerage,net_pnl,realized_at)
-VALUES
-(7001,103,1004,5004,40,1700,1780,3200,20,3180,'2026-08-19 11:20:04');
+-- Reset sequence for positions table
+SELECT setval('positions_id_seq', (SELECT MAX(id) FROM positions));
 
-INSERT INTO watchlists (watchlist_id,user_id,name) VALUES
-(8001,1,'My Stocks'),
-(8002,1,'Tech Stocks'),
-(8003,1,'Banking'),
-(8004,2,'Long Term'),
-(8005,3,'My Watchlist');
+-- Seed User Watchlists
+INSERT INTO watchlists (id, user_id, name) VALUES
+    (1, 2, 'Tech Leaders'),
+    (2, 3, 'AI & Growth')
+ON CONFLICT (user_id, name) DO NOTHING;
 
-INSERT INTO watchlist_instruments (watchlist_id,instrument_id) VALUES
-(8001,1001),(8001,1002),(8001,1004),
-(8002,1002),(8002,1003),
-(8003,1004),(8003,1005),
-(8004,1001),(8004,1005),
-(8005,1003),(8005,1004);
+-- Reset sequence for watchlists table
+SELECT setval('watchlists_id_seq', (SELECT MAX(id) FROM watchlists));
 
-SELECT setval(pg_get_serial_sequence('users','user_id'), COALESCE((SELECT MAX(user_id) FROM users),1));
-SELECT setval(pg_get_serial_sequence('accounts','account_id'), COALESCE((SELECT MAX(account_id) FROM accounts),1));
-SELECT setval(pg_get_serial_sequence('instruments','instrument_id'), COALESCE((SELECT MAX(instrument_id) FROM instruments),1));
-SELECT setval(pg_get_serial_sequence('orders','order_id'), COALESCE((SELECT MAX(order_id) FROM orders),1));
-SELECT setval(pg_get_serial_sequence('pnl','pnl_id'), COALESCE((SELECT MAX(pnl_id) FROM pnl),1));
-SELECT setval(pg_get_serial_sequence('watchlists','watchlist_id'), COALESCE((SELECT MAX(watchlist_id) FROM watchlists),1));
+-- Seed Watchlist Items
+INSERT INTO watchlist_items (watchlist_id, symbol) VALUES
+    (1, 'AAPL'),
+    (1, 'MSFT'),
+    (1, 'NVDA'),
+    (2, 'NVDA'),
+    (2, 'TSLA'),
+    (2, 'AMZN')
+ON CONFLICT (watchlist_id, symbol) DO NOTHING;
+
+-- Seed Sample Filled Orders
+INSERT INTO orders (id, account_id, symbol, side, order_type, quantity, limit_price, executed_price, executed_on, status, idempotency_key) VALUES
+    ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 2, 'AAPL', 'BUY', 'MARKET', 15, NULL, 220.5000, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-john-aapl-1'),
+    ('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 2, 'NVDA', 'BUY', 'MARKET', 25, NULL, 165.0000, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-john-nvda-1'),
+    ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 3, 'MSFT', 'BUY', 'MARKET', 10, NULL, 495.2500, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-jane-msft-1')
+ON CONFLICT (id) DO NOTHING;
 
 COMMIT;

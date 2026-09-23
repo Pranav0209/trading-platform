@@ -2,6 +2,8 @@ package com.zkuba.trading.controller;
 
 import com.zkuba.trading.dto.request.PlaceOrderRequest;
 import com.zkuba.trading.dto.response.OrderResponse;
+import com.zkuba.trading.dto.request.UpdateOrderRequest;
+import com.zkuba.trading.exception.InvalidOrderException;
 import com.zkuba.trading.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.zkuba.trading.service.OrderService;
 import jakarta.validation.Valid;
@@ -36,15 +38,15 @@ public class OrderController {
     public OrderResponse update(
             @AuthenticationPrincipal AuthenticatedUser user,
             @PathVariable String id,
-            @Valid @RequestBody com.zkuba.trading.dto.request.UpdateOrderRequest request) {
+            @Valid @RequestBody UpdateOrderRequest request) {
         if (id != null && id.startsWith("ORD-")) {
-            throw new com.zkuba.trading.exception.InvalidOrderException(
+            throw new InvalidOrderException(
                     "Order ID must be a raw UUID without 'ORD-' prefix: " + id);
         }
         try {
             return orderService.update(user.userId(), UUID.fromString(id), request);
         } catch (IllegalArgumentException e) {
-            throw new com.zkuba.trading.exception.InvalidOrderException("Invalid order ID format: " + id);
+            throw new InvalidOrderException("Invalid order ID format: " + id);
         }
     }
 
@@ -57,13 +59,13 @@ public class OrderController {
 
     private OrderResponse handleCancel(AuthenticatedUser user, String id) {
         if (id != null && id.startsWith("ORD-")) {
-            throw new com.zkuba.trading.exception.InvalidOrderException(
+            throw new InvalidOrderException(
                     "Order ID must be a raw UUID without 'ORD-' prefix: " + id);
         }
         try {
             return orderService.cancel(user.userId(), UUID.fromString(id));
         } catch (IllegalArgumentException e) {
-            throw new com.zkuba.trading.exception.InvalidOrderException("Invalid order ID format: " + id);
+            throw new InvalidOrderException("Invalid order ID format: " + id);
         }
     }
 }

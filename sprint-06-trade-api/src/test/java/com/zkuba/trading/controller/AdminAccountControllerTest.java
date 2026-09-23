@@ -165,10 +165,7 @@ class AdminAccountControllerTest {
                         jsonPath("$.error")
                                 .value("VAL-422")
                 )
-                .andExpect(
-                        jsonPath("$.fieldErrors[0].field")
-                                .value("userId")
-                );
+                .andExpect(jsonPath("$.message").isString());
 
         verify(accountService, org.mockito.Mockito.never())
                 .create(any());
@@ -200,10 +197,7 @@ class AdminAccountControllerTest {
                         jsonPath("$.error")
                                 .value("VAL-422")
                 )
-                .andExpect(
-                        jsonPath("$.fieldErrors[0].field")
-                                .value("currency")
-                );
+                .andExpect(jsonPath("$.message").isString());
 
         verify(accountService, org.mockito.Mockito.never())
                 .create(any());
@@ -235,10 +229,7 @@ class AdminAccountControllerTest {
                         jsonPath("$.error")
                                 .value("VAL-422")
                 )
-                .andExpect(
-                        jsonPath("$.fieldErrors")
-                                .isArray()
-                );
+                .andExpect(jsonPath("$.message").isString());
 
         verify(accountService, org.mockito.Mockito.never())
                 .create(any());

@@ -38,13 +38,7 @@
     WHERE id = #{id}
   </select>
 
-  <update id="updateAccountBalance">
-    UPDATE accounts
-    SET cash_balance = #{newBalance},
-        version = version + 1,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = #{accountId} AND version = #{expectedVersion}
-  </update>
+
 
   <select id="findByIdAndAccountId" resultMap="OrderResultMap">
     SELECT id, account_id, symbol, side, order_type, quantity, limit_price, executed_price, status, idempotency_key, created_at
