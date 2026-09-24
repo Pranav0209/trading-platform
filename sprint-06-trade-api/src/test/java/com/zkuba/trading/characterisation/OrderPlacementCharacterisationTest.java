@@ -4,7 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zkuba.trading.domain.enums.OrderSide;
 import com.zkuba.trading.domain.enums.OrderType;
 import com.zkuba.trading.dto.request.PlaceOrderRequest;
-import com.zkuba.trading.security.JwtService;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,7 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Characterisation tests pinning order placement behavior.
- * Focused on database state (the source of truth) using actual JDBC validation via REST APIs.
+ * Focused on database state (the source of truth) using actual JDBC validation
+ * via REST APIs.
  */
 @SpringBootTest
 @Testcontainers
@@ -58,11 +63,20 @@ public class OrderPlacementCharacterisationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Autowired
-    private JwtService jwtService;
+    @org.springframework.beans.factory.annotation.Value("${jwt.secret}")
+    private String jwtSecret;
 
     private String validToken(Long userId) {
-        return jwtService.generate(userId, "testuser", "ROLE_USER");
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        Date now = new Date();
+        return Jwts.builder()
+                .subject("testuser")
+                .claim("userId", userId)
+                .claim("role", "ROLE_USER")
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + 3600000))
+                .signWith(key)
+                .compact();
     }
 
     @BeforeEach
@@ -74,23 +88,19 @@ public class OrderPlacementCharacterisationTest {
 
         // Insert test users
         jdbcTemplate.update(
-            "INSERT INTO users (id, username, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?, ?)",
-            1L, "testuser1", "test1@example.com", "hash", "ROLE_USER", "ACTIVE"
-        );
+                "INSERT INTO users (id, username, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?, ?)",
+                1L, "testuser1", "test1@example.com", "hash", "ROLE_USER", "ACTIVE");
         jdbcTemplate.update(
-            "INSERT INTO users (id, username, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?, ?)",
-            2L, "testuser2", "test2@example.com", "hash", "ROLE_USER", "ACTIVE"
-        );
+                "INSERT INTO users (id, username, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?, ?)",
+                2L, "testuser2", "test2@example.com", "hash", "ROLE_USER", "ACTIVE");
 
         // Insert accounts
         jdbcTemplate.update(
-            "INSERT INTO accounts (id, account_number, user_id, cash_balance, currency, status) VALUES (?, ?, ?, ?, ?, ?)",
-            100L, "ACC-100", 1L, new BigDecimal("5000.00"), "USD", "ACTIVE"
-        );
+                "INSERT INTO accounts (id, account_number, user_id, cash_balance, currency, status) VALUES (?, ?, ?, ?, ?, ?)",
+                100L, "ACC-100", 1L, new BigDecimal("5000.00"), "USD", "ACTIVE");
         jdbcTemplate.update(
-            "INSERT INTO accounts (id, account_number, user_id, cash_balance, currency, status) VALUES (?, ?, ?, ?, ?, ?)",
-            200L, "ACC-200", 2L, new BigDecimal("5000.00"), "USD", "SUSPENDED"
-        );
+                "INSERT INTO accounts (id, account_number, user_id, cash_balance, currency, status) VALUES (?, ?, ?, ?, ?, ?)",
+                200L, "ACC-200", 2L, new BigDecimal("5000.00"), "USD", "SUSPENDED");
     }
 
     @Test
@@ -101,9 +111,9 @@ public class OrderPlacementCharacterisationTest {
                 "idem-key-100");
 
         mockMvc.perform(post("/api/v1/orders")
-                        .header("Authorization", "Bearer " + validToken(1L))
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(request)))
+                .header("Authorization", "Bearer " + validToken(1L))
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.orderId", startsWith("ORD-")))
                 .andExpect(jsonPath("$.status", is("NEW")))
@@ -115,9 +125,10 @@ public class OrderPlacementCharacterisationTest {
                 .andExpect(jsonPath("$.message", is("Order placed")));
 
         // Verify DB State (the source of truth) using JDBC calls
-        List<Map<String, Object>> orders = jdbcTemplate.queryForList("SELECT * FROM orders WHERE idempotency_key = ?", "idem-key-100");
+        List<Map<String, Object>> orders = jdbcTemplate.queryForList("SELECT * FROM orders WHERE idempotency_key = ?",
+                "idem-key-100");
         assertThat(orders).hasSize(1);
-        
+
         Map<String, Object> orderRow = orders.get(0);
         assertThat(orderRow.get("account_id")).isEqualTo(100L);
         assertThat(orderRow.get("symbol")).isEqualTo("AAPL");
@@ -135,25 +146,26 @@ public class OrderPlacementCharacterisationTest {
         PlaceOrderRequest request = new PlaceOrderRequest(
                 100L, "AAPL", OrderSide.BUY, OrderType.LIMIT, 5, new BigDecimal("100.00"),
                 "reused-key");
-                
+
         // First successful placement
         mockMvc.perform(post("/api/v1/orders")
-                        .header("Authorization", "Bearer " + validToken(1L))
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(request)))
+                .header("Authorization", "Bearer " + validToken(1L))
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
 
         // Second placement returns 409 Conflict
         mockMvc.perform(post("/api/v1/orders")
-                        .header("Authorization", "Bearer " + validToken(1L))
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(request)))
+                .header("Authorization", "Bearer " + validToken(1L))
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("ORD-409"))
                 .andExpect(jsonPath("$.message").value("Duplicate order with idempotency key: reused-key"));
 
         // Verify only one order was written
-        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM orders WHERE idempotency_key = 'reused-key'", Integer.class);
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM orders WHERE idempotency_key = 'reused-key'",
+                Integer.class);
         assertThat(count).isEqualTo(1);
     }
 
@@ -165,14 +177,15 @@ public class OrderPlacementCharacterisationTest {
                 "suspended-acc-key");
 
         mockMvc.perform(post("/api/v1/orders")
-                        .header("Authorization", "Bearer " + validToken(2L))
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(request)))
+                .header("Authorization", "Bearer " + validToken(2L))
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("ACC-403"))
                 .andExpect(jsonPath("$.message").value("Account not active: 200"));
 
-        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM orders WHERE account_id = 200", Integer.class);
+        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM orders WHERE account_id = 200",
+                Integer.class);
         assertThat(count).isEqualTo(0);
     }
 
@@ -180,18 +193,20 @@ public class OrderPlacementCharacterisationTest {
     @DisplayName("Pin Sprint 7: Unaffordable BUY order is now accepted asynchronously as NEW")
     void pinUnaffordableBuyOrderIsNowAcceptedAsynchronously() throws Exception {
         PlaceOrderRequest request = new PlaceOrderRequest(
-                100L, "AAPL", OrderSide.BUY, OrderType.LIMIT, 100, new BigDecimal("100.00"), // Needs 10k, account has 5k
+                100L, "AAPL", OrderSide.BUY, OrderType.LIMIT, 100, new BigDecimal("100.00"), // Needs 10k, account has
+                                                                                             // 5k
                 "unaffordable-key");
 
         mockMvc.perform(post("/api/v1/orders")
-                        .header("Authorization", "Bearer " + validToken(1L))
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(request)))
+                .header("Authorization", "Bearer " + validToken(1L))
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status", is("NEW")));
 
         // Verify DB State
-        List<Map<String, Object>> orders = jdbcTemplate.queryForList("SELECT * FROM orders WHERE idempotency_key = ?", "unaffordable-key");
+        List<Map<String, Object>> orders = jdbcTemplate.queryForList("SELECT * FROM orders WHERE idempotency_key = ?",
+                "unaffordable-key");
         assertThat(orders).hasSize(1);
         assertThat(orders.get(0).get("status")).isEqualTo("NEW");
     }
@@ -203,17 +218,20 @@ public class OrderPlacementCharacterisationTest {
                 100L, "UNKNOWN_SYM", OrderSide.BUY, OrderType.LIMIT, 1, new BigDecimal("10.00"),
                 "unknown-sym-key");
 
-        // The unknown symbol causes a foreign key constraint violation on the instruments table.
-        // Postgres aborts the transaction, which throws an exception mapping to SYS-500.
+        // The unknown symbol causes a foreign key constraint violation on the
+        // instruments table.
+        // Postgres aborts the transaction, which throws an exception mapping to
+        // SYS-500.
         mockMvc.perform(post("/api/v1/orders")
-                        .header("Authorization", "Bearer " + validToken(1L))
-                        .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(request)))
+                .header("Authorization", "Bearer " + validToken(1L))
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.error").value("SYS-500"));
 
         // Verify no order created
-        Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM orders WHERE idempotency_key = 'unknown-sym-key'", Integer.class);
+        Integer count = jdbcTemplate
+                .queryForObject("SELECT COUNT(*) FROM orders WHERE idempotency_key = 'unknown-sym-key'", Integer.class);
         assertThat(count).isEqualTo(0);
     }
 }

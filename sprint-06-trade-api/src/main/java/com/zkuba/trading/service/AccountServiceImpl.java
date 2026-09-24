@@ -9,7 +9,6 @@ import com.zkuba.trading.exception.AccountAlreadyExistsException;
 import com.zkuba.trading.exception.AccountNotActiveException;
 import com.zkuba.trading.exception.AccountNotFoundException;
 import com.zkuba.trading.exception.ForbiddenException;
-import com.zkuba.trading.exception.UserNotFoundException;
 import com.zkuba.trading.dto.request.CreateAccountRequest;
 import com.zkuba.trading.dto.response.AccountResponse;
 import com.zkuba.trading.dto.response.BalanceResponse;
@@ -37,8 +36,6 @@ public class AccountServiceImpl implements AccountService {
     @Autowired
     private PositionRepository positionRepository;
 
-    @Autowired
-    private UserService userService;
 
     @Autowired
     private OrderMapper orderMapper;
@@ -49,7 +46,7 @@ public class AccountServiceImpl implements AccountService {
     @Override
     @Transactional
     public AccountResponse create(CreateAccountRequest request) {
-        userService.get(request.userId());
+
         if (accounts.findByUserId(request.userId()).isPresent()) {
             throw new AccountAlreadyExistsException(request.userId());
         }
@@ -141,13 +138,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     private AccountResponse response(Account account) {
-        String holderName;
-        try {
-            holderName = userService.get(account.getUserId()).getUsername();
-        } catch (UserNotFoundException e) {
-            // User was deleted or not found - use ID as fallback
-            holderName = "User " + account.getUserId();
-        }
+        String holderName = "User " + account.getUserId();
         return new AccountResponse(
                 account.getId(),
                 account.getAccountNumber(),
