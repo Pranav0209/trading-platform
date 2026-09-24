@@ -21,6 +21,7 @@ import { ConfigService } from '@nestjs/config';
 export class AuthService {
   private readonly logger = new Logger('AuthService');
   private readonly BCRYPT_COST = 12;
+  private readonly ACCESS_TOKEN_TTL_SECONDS = 900;
 
   constructor(
     private usersService: UsersService,
@@ -184,20 +185,43 @@ export class AuthService {
   }
 
   private async generateTokens(user: any, accountId: number | null) {
-    // Create JWT payload according to contract
+    const secret = this.configService.get<string>('JWT_SECRET');
+    const issuer = this.configService.get<string>('JWT_ISSUER') || 'auth-service';
+
+    if (!secret) {
+      throw new UnauthorizedException({
+        errorCode: 'AUTH-401',
+        message: 'Unauthorised',
+      });
+    }
+
+    const numericAccountId =
+      typeof accountId === 'string' ? Number(accountId) : accountId;
+
+    if (!Number.isInteger(numericAccountId)) {
+      throw new UnauthorizedException({
+        errorCode: 'AUTH-401',
+        message: 'Unauthorised',
+      });
+    }
+
+    // Use one timestamp source so exp is exactly 15 minutes after iat.
+    const issuedAt = Math.floor(Date.now() / 1000);
+
+    // Create JWT payload with exactly the claims required by contract.
     const payload = {
       sub: user.id, // UUID
-      accountId: accountId,
+      accountId: numericAccountId,
       roles: user.roles,
-      iss: 'auth-service',
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 900, // 15 minutes
+      iat: issuedAt,
+      exp: issuedAt + this.ACCESS_TOKEN_TTL_SECONDS,
+      iss: issuer,
     };
 
-    const secret = this.configService.get<string>('JWT_SECRET');
     const accessToken = this.jwtService.sign(payload, {
       secret,
-      expiresIn: '15m',
+      algorithm: 'HS256',
+      noTimestamp: true,
     });
 
     // Generate new refresh token
@@ -221,7 +245,7 @@ export class AuthService {
       accessToken,
       refreshToken: rawRefreshToken,
       tokenType: 'Bearer',
-      expiresIn: 900,
+      expiresIn: this.ACCESS_TOKEN_TTL_SECONDS,
     };
   }
 }

@@ -43,6 +43,11 @@ export class UsersService {
     // Query the trade database to get the account linked to this user
     const query = `SELECT id FROM public.accounts WHERE user_id = $1 LIMIT 1`;
     const result = await this.dataSource.query(query, [userId]);
-    return result.length > 0 ? result[0].id : null;
+    if (result.length === 0) {
+      return null;
+    }
+
+    const accountId = Number(result[0].id);
+    return Number.isInteger(accountId) ? accountId : null;
   }
 }

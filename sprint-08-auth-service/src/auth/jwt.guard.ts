@@ -36,18 +36,31 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const secret = this.configService.get<string>('JWT_SECRET');
-      const payload = this.jwtService.verify(token, { secret });
+      const expectedIssuer = this.configService.get<string>('JWT_ISSUER');
+      const payload = this.jwtService.verify(token, {
+        secret,
+        algorithms: ['HS256'],
+      });
 
-      // Validate required claims
-      if (!payload.sub || !payload.accountId || !payload.iss || !payload.roles) {
+      const hasValidClaims =
+        typeof payload.sub === 'string' &&
+        Number.isInteger(payload.accountId) &&
+        Array.isArray(payload.roles) &&
+        payload.roles.length > 0 &&
+        payload.roles.every((role: unknown) => typeof role === 'string') &&
+        typeof payload.iss === 'string' &&
+        typeof payload.iat === 'number' &&
+        typeof payload.exp === 'number';
+
+      if (!hasValidClaims) {
         throw new UnauthorizedException({
           errorCode: 'AUTH-401',
           message: 'Unauthorised',
         });
       }
 
-      // Validate issuer
-      if (payload.iss !== 'auth-service') {
+      // Validate issuer only when the environment pins one.
+      if (expectedIssuer && payload.iss !== expectedIssuer) {
         throw new UnauthorizedException({
           errorCode: 'AUTH-401',
           message: 'Unauthorised',
