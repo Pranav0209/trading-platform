@@ -1,12 +1,7 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-  BadRequestException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
+import { LoginThrottleService } from './login-throttle.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -15,221 +10,131 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefreshToken } from './refresh-token.entity';
 import * as crypto from 'crypto';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger('AuthService');
-  private readonly BCRYPT_COST = 12;
-  private readonly ACCESS_TOKEN_TTL_SECONDS = 900;
-
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    private configService: ConfigService,
+    private loginThrottleService: LoginThrottleService,
     @InjectRepository(RefreshToken)
     private refreshTokenRepository: Repository<RefreshToken>,
   ) {}
 
   async register(registerDto: RegisterDto) {
-    // Check if username already exists
-    const existingUser = await this.usersService.findOneByUsername(
-      registerDto.username,
-    );
-    if (existingUser) {
-      throw new ConflictException({
-        errorCode: 'AUTH-409',
-        message: 'Registration failed',
-      });
+    const existingUser = await this.usersService.findOneByUsername(registerDto.username);
+    const existingEmail = await this.usersService.findOneByEmail(registerDto.email);
+    if (existingUser || existingEmail) {
+      throw new ConflictException({ errorCode: 'AUTH-409', message: 'Registration failed' });
     }
 
-    // Validate that the account exists
-    const accountExists = await this.usersService.validateAccountExists(
-      registerDto.accountId,
-    );
-    if (!accountExists) {
-      throw new BadRequestException({
-        errorCode: 'VAL-422',
-        message: 'Invalid input',
-      });
-    }
+    const salt = await bcrypt.genSalt(12);
+    const passwordHash = await bcrypt.hash(registerDto.password, salt);
 
-    // Hash password with bcrypt cost 12
-    const passwordHash = await bcrypt.hash(
-      registerDto.password,
-      this.BCRYPT_COST,
-    );
-
-    // Determine roles - default to CUSTOMER, only allow ADMIN if specified and valid
-    const roles = registerDto.roles || ['CUSTOMER'];
-
-    // Create user in auth schema
-    const newUser = await this.usersService.create(
-      registerDto.username,
+    const newUser = await this.usersService.create({
+      username: registerDto.username,
+      email: registerDto.email,
       passwordHash,
-      roles,
-    );
+      role: 'ROLE_USER',
+      status: 'ACTIVE',
+    });
 
-    this.logger.log(`User registered: ${registerDto.username}`);
-
-    // Return user response without tokens
     return {
-      id: newUser.id,
+      id: newUser.id.toString(),
       username: newUser.username,
-      accountId: registerDto.accountId,
-      roles: newUser.roles,
-      createdOn: newUser.createdAt.toISOString(),
+      email: newUser.email,
+      roles: [newUser.role.replace('ROLE_', '')],
+      createdOn: newUser.createdAt,
     };
   }
 
-  async login(loginDto: LoginDto) {
-    const user = await this.usersService.findOneByUsername(
+  async login(loginDto: LoginDto, ipAddress: string = '0.0.0.0') {
+    // Check if this user+IP combination is currently throttled
+    const isThrottled = await this.loginThrottleService.isThrottled(
       loginDto.username,
+      ipAddress,
     );
 
+    // Always attempt to find the user and verify password
+    // This ensures both unknown user and wrong password take comparable time
+    const user = await this.usersService.findOneByUsername(loginDto.username);
     let isPasswordMatch = false;
 
     if (user) {
-      isPasswordMatch = await bcrypt.compare(
-        loginDto.password,
-        user.passwordHash,
-      );
+      isPasswordMatch = await bcrypt.compare(loginDto.password, user.passwordHash);
     } else {
       // Dummy compare to prevent timing attacks
-      // Use a realistic bcrypt hash format
-      const dummyHash =
-        '$2a$12$dummyhashdummyhashdummyhashdummyhashdummyhashdummyhash';
-      await bcrypt.compare(loginDto.password, dummyHash).catch(() => {
+      await bcrypt.compare(loginDto.password, '$2a$12$dummyhashdummyhashdummyhashdummyhashdummyhashdummyhash').catch(() => {
         // Ignore errors during dummy comparison
       });
     }
 
-    if (!user || !isPasswordMatch) {
-      // Same response for unknown user and wrong password
-      throw new UnauthorizedException({
-        errorCode: 'AUTH-401',
-        message: 'Unauthorised',
-      });
+    // Determine if login should succeed
+    const loginSuccessful = !isThrottled && user && isPasswordMatch;
+
+    if (!loginSuccessful) {
+      // Record failed attempt
+      await this.loginThrottleService.recordFailedAttempt(
+        loginDto.username,
+        ipAddress,
+      );
+
+      // Return identical response regardless of failure reason
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Unauthorised' });
     }
 
-    // Get the account ID for this user from the trade database
-    const accountId = await this.usersService.getAccountIdForUser(user.id);
+    // Record successful login
+    await this.loginThrottleService.recordSuccessfulAttempt(
+      loginDto.username,
+      ipAddress,
+    );
 
-    return this.generateTokens(user, accountId);
+    return this.generateTokens(user);
   }
 
   async refresh(refreshDto: RefreshDto) {
-    // Hash the presented token
-    const hashedPresentedToken = crypto
-      .createHash('sha256')
-      .update(refreshDto.refreshToken)
-      .digest('hex');
-
+    const hashedPresentedToken = crypto.createHash('sha256').update(refreshDto.refreshToken).digest('hex');
     const storedToken = await this.refreshTokenRepository.findOne({
       where: { tokenHash: hashedPresentedToken },
       relations: ['user'],
     });
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
-      throw new UnauthorizedException({
-        errorCode: 'AUTH-401',
-        message: 'Unauthorised',
-      });
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Unauthorised' });
     }
 
     if (storedToken.revoked) {
       // Token theft detected! Revoke all tokens for this user.
-      await this.refreshTokenRepository.update(
-        { userId: storedToken.userId },
-        { revoked: true },
-      );
-      this.logger.warn(
-        `Token theft detected for user ${storedToken.userId}, all tokens revoked`,
-      );
-      throw new UnauthorizedException({
-        errorCode: 'AUTH-401',
-        message: 'Unauthorised',
-      });
+      await this.refreshTokenRepository.update({ userId: storedToken.userId }, { revoked: true });
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Unauthorised' });
     }
 
     // Revoke the presented token
     storedToken.revoked = true;
     await this.refreshTokenRepository.save(storedToken);
 
-    const accountId = await this.usersService.getAccountIdForUser(
-      storedToken.user.id,
-    );
-
-    return this.generateTokens(storedToken.user, accountId);
+    return this.generateTokens(storedToken.user);
   }
 
-  async me(userId: string) {
-    const user = await this.usersService.findOneById(userId);
+  private async generateTokens(user: any) {
+    // Attempt to get accountId if they have an account
+    const accounts = await this.refreshTokenRepository.query('SELECT id FROM accounts WHERE user_id = $1 LIMIT 1', [user.id]);
+    const accountId = accounts && accounts.length > 0 ? parseInt(accounts[0].id, 10) : null;
 
-    if (!user) {
-      throw new UnauthorizedException({
-        errorCode: 'AUTH-401',
-        message: 'Unauthorised',
-      });
-    }
-
-    const accountId = await this.usersService.getAccountIdForUser(user.id);
-
-    return {
-      id: user.id,
-      username: user.username,
-      accountId,
-      roles: user.roles,
-      createdOn: user.createdAt.toISOString(),
-    };
-  }
-
-  private async generateTokens(user: any, accountId: number | null) {
-    const secret = this.configService.get<string>('JWT_SECRET');
-    const issuer = this.configService.get<string>('JWT_ISSUER') || 'auth-service';
-
-    if (!secret) {
-      throw new UnauthorizedException({
-        errorCode: 'AUTH-401',
-        message: 'Unauthorised',
-      });
-    }
-
-    const numericAccountId =
-      typeof accountId === 'string' ? Number(accountId) : accountId;
-
-    if (!Number.isInteger(numericAccountId)) {
-      throw new UnauthorizedException({
-        errorCode: 'AUTH-401',
-        message: 'Unauthorised',
-      });
-    }
-
-    // Use one timestamp source so exp is exactly 15 minutes after iat.
-    const issuedAt = Math.floor(Date.now() / 1000);
-
-    // Create JWT payload with exactly the claims required by contract.
     const payload = {
-      sub: user.id, // UUID
-      accountId: numericAccountId,
-      roles: user.roles,
-      iat: issuedAt,
-      exp: issuedAt + this.ACCESS_TOKEN_TTL_SECONDS,
-      iss: issuer,
+      sub: user.username, // Sprint 6 expects username in sub
+      userId: Number(user.id), // Sprint 6 expects userId as Number
+      role: user.role, // Sprint 6 expects role as String
+      accountId: accountId, // Sprint 8 requirement
+      roles: [user.role.replace('ROLE_', '')], // Sprint 8 requirement
+      iss: 'auth-service'
     };
 
-    const accessToken = this.jwtService.sign(payload, {
-      secret,
-      algorithm: 'HS256',
-      noTimestamp: true,
-    });
-
+    const accessToken = await this.jwtService.signAsync(payload);
+    
     // Generate new refresh token
     const rawRefreshToken = crypto.randomBytes(32).toString('hex');
-    const hashedRefreshToken = crypto
-      .createHash('sha256')
-      .update(rawRefreshToken)
-      .digest('hex');
+    const hashedRefreshToken = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
 
     const refreshTokenEntity = this.refreshTokenRepository.create({
       userId: user.id,
@@ -239,13 +144,28 @@ export class AuthService {
     });
     await this.refreshTokenRepository.save(refreshTokenEntity);
 
-    this.logger.log(`Tokens generated for user ${user.id}`);
-
     return {
       accessToken,
       refreshToken: rawRefreshToken,
       tokenType: 'Bearer',
-      expiresIn: this.ACCESS_TOKEN_TTL_SECONDS,
+      expiresIn: 900,
+    };
+  }
+
+  async me(userId: number) {
+    const user = await this.usersService.findOneById(userId);
+    if (!user) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Unauthorised' });
+    }
+    const accounts = await this.refreshTokenRepository.query('SELECT id FROM accounts WHERE user_id = $1 LIMIT 1', [user.id]);
+    const accountId = accounts && accounts.length > 0 ? parseInt(accounts[0].id, 10) : null;
+
+    return {
+      id: user.id.toString(),
+      username: user.username,
+      accountId: accountId,
+      roles: [user.role.replace('ROLE_', '')],
+      createdOn: user.createdAt,
     };
   }
 }

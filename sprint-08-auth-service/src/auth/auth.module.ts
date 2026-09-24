@@ -6,12 +6,13 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { RefreshToken } from './refresh-token.entity';
-import { JwtAuthGuard } from './jwt.guard';
+import { LoginAttempt } from './login-attempt.entity';
+import { LoginThrottleService } from './login-throttle.service';
 
 @Module({
   imports: [
     UsersModule,
-    TypeOrmModule.forFeature([RefreshToken]),
+    TypeOrmModule.forFeature([RefreshToken, LoginAttempt]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -21,7 +22,7 @@ import { JwtAuthGuard } from './jwt.guard';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, JwtAuthGuard],
+  providers: [AuthService, LoginThrottleService],
   controllers: [AuthController],
 })
 export class AuthModule {}

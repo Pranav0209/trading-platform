@@ -1,10 +1,4 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from '../users/user.entity';
 
 @Entity({ name: 'refresh_tokens', schema: 'auth' })
@@ -15,11 +9,7 @@ export class RefreshToken {
   @Column({ name: 'user_id' })
   userId: number;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
-
-  @Column({ name: 'token_hash' })
+  @Column({ name: 'token_hash', unique: true })
   tokenHash: string;
 
   @Column({ name: 'expires_at', type: 'timestamp with time zone' })
@@ -28,10 +18,10 @@ export class RefreshToken {
   @Column({ default: false })
   revoked: boolean;
 
-  @Column({
-    name: 'created_at',
-    type: 'timestamp with time zone',
-    default: () => 'CURRENT_TIMESTAMP',
-  })
+  @Column({ name: 'created_at', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 }
