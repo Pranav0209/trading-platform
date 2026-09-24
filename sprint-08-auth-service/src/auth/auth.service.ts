@@ -35,7 +35,7 @@ export class AuthService {
       username: registerDto.username,
       email: registerDto.email,
       passwordHash,
-      role: 'ROLE_USER',
+      role: 'CUSTOMER',
       status: 'ACTIVE',
     });
 
@@ -43,7 +43,7 @@ export class AuthService {
       id: newUser.id.toString(),
       username: newUser.username,
       email: newUser.email,
-      roles: [newUser.role.replace('ROLE_', '')],
+      roles: [newUser.role],
       createdOn: newUser.createdAt,
     };
   }
@@ -126,7 +126,7 @@ export class AuthService {
       userId: Number(user.id), // Sprint 6 expects userId as Number
       role: user.role, // Sprint 6 expects role as String
       accountId: accountId, // Sprint 8 requirement
-      roles: [user.role.replace('ROLE_', '')], // Sprint 8 requirement
+      roles: [user.role], // Sprint 8 requirement
       iss: 'auth-service'
     };
 
@@ -164,7 +164,7 @@ export class AuthService {
       id: user.id.toString(),
       username: user.username,
       accountId: accountId,
-      roles: [user.role.replace('ROLE_', '')],
+      roles: [user.role],
       createdOn: user.createdAt,
     };
   }

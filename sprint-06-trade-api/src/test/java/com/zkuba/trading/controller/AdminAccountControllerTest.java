@@ -48,7 +48,7 @@ class AdminAccountControllerTest {
                 new AuthenticatedUser(
                         10L,
                         "username",
-                        "ROLE_ADMIN"
+                        "ADMIN"
                 );
 
         Authentication authentication =
@@ -56,7 +56,7 @@ class AdminAccountControllerTest {
                         user,
                         null,
                         List.of(
-                                new SimpleGrantedAuthority("ROLE_ADMIN")
+                                new SimpleGrantedAuthority("ADMIN")
                         )
                 );
 

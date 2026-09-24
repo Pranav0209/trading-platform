@@ -54,7 +54,7 @@ class AccountControllerTest {
     void setUpAuthentication() {
 
         AuthenticatedUser user =
-                new AuthenticatedUser(10L, "username", "ROLE_USER");
+                new AuthenticatedUser(10L, "username", "CUSTOMER");
 
         Authentication authentication =
                 new UsernamePasswordAuthenticationToken(

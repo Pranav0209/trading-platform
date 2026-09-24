@@ -31,7 +31,7 @@ class JwtServiceTest {
     void generateAndParse_Success() {
         Long userId = 42L;
         String username = "trader_joe";
-        String role = "ROLE_USER";
+        String role = "CUSTOMER";
 
         SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         Date now = new Date();

@@ -53,7 +53,7 @@ class OrderControllerTest {
                 new AuthenticatedUser(
                         10L,
                         "username",
-                        "ROLE_USER"
+                        "CUSTOMER"
                 );
 
         Authentication authentication =
@@ -61,7 +61,7 @@ class OrderControllerTest {
                         user,
                         null,
                         List.of(
-                                new SimpleGrantedAuthority("ROLE_USER")
+                                new SimpleGrantedAuthority("CUSTOMER")
                         )
                 );
 

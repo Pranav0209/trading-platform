@@ -46,8 +46,6 @@ You should see `orders`, `trade-events`, `market-data`, and their `DLT` counterp
 
 ## Step 3: Start the Trade API
 
-The Trade API will automatically run the `schema.sql` and `data.sql` scripts to seed the `trading` database upon startup.
-
 Open **Terminal 2** and run:
 
 ```bash
@@ -67,7 +65,6 @@ Open **Terminal 3** and run:
 
 ```bash
 cd sprint-07-event-backbone/executor
-FAUXNANCE_API_KEY=put here \
 mvn spring-boot:run
 ```
 
@@ -75,17 +72,32 @@ _(Wait until you see `Started TradeExecutorApplication` in the logs)._
 
 ---
 
-## Step 5: Monitor the Kafka Streams
+## Step 5: Start the Auth Service
+
+The Auth Service issues JWT tokens. We must start it so users can authenticate.
+
+Open **Terminal 4** and run:
+
+```bash
+cd sprint-08-auth-service
+npm run start
+```
+
+_(Wait until you see `Nest application successfully started` in the logs)._
+
+---
+
+## Step 6: Monitor the Kafka Streams
 
 To visually prove that events are flowing asynchronously through the broker, we will attach consumers directly to the Kafka container.
 
-Open **Terminal 4** (Watch Orders):
+Open **Terminal 5** (Watch Orders):
 
 ```bash
 docker exec -it kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic orders
 ```
 
-Open **Terminal 5** (Watch Trade Events):
+Open **Terminal 6** (Watch Trade Events):
 
 ```bash
 docker exec -it kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic trade-events
@@ -93,35 +105,7 @@ docker exec -it kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-serve
 
 ---
 
-## Step 6: Execute the Demonstration!
-
-Now it's time to act as a user. We will log in as `john_doe` and place a `MARKET BUY` order.
-
-Open **Terminal 6** and run the login command to get a JWT token:
-
-```bash
-curl -s -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"john_doe", "password":"password123"}'
-```
-
-Copy the `accessToken` string from the JSON response.
-
-Finally, place the order by substituting `<YOUR_TOKEN>` with the token you just copied:
-
-```bash
-curl -s -X POST http://localhost:8080/api/v1/orders \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <YOUR_TOKEN>" \
-  -d '{
-    "accountId": 2,
-    "symbol": "AMZN",
-    "side": "BUY",
-    "orderType": "MARKET",
-    "quantity": 5,
-    "idempotencyKey": "demo-trade-001"
-  }'
-```
+## Step 7: Execute the Demonstration!
 
 ### The Grand Finale: What You Will See
 
@@ -131,3 +115,49 @@ The exact moment you press enter on that curl command:
 2. In **Terminal 4**, an `ORDER_PLACED` event will instantly appear.
 3. In **Terminal 3**, the Executor will log that it received and executed the order.
 4. In **Terminal 5**, an `ORDER_FILLED` event will instantly appear!
+
+---
+
+## Advanced: Registering a Custom User
+
+If you want to create your own user and place trades with it (instead of using the seeded `john_doe`), follow these steps:
+
+### 1. Register the User on the Auth Service
+
+First, register a new user using the Auth Service on port `3001`.
+
+```bash
+curl -s -X POST http://localhost:3001/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"new_user", "password":"password123", "email":"new_user@example.com"}'
+```
+
+_Note the `id` field in the JSON response (e.g., `4`)._
+
+### 2. Log in as Admin
+
+Trading accounts must be explicitly provisioned by an admin. Log in using the seeded admin credentials.
+
+```bash
+curl -s -X POST http://localhost:3001/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin", "password":"password123"}'
+```
+
+_Copy the `accessToken` from the response._
+
+### 3. Create the Trading Account via Trade API
+
+Finally, use the admin token to create an account for your new user's ID via the Trade API on port `8081`. Replace `<ADMIN_TOKEN>` with the token from Step 2, and `<USER_ID>` with the ID from Step 1.
+
+```bash
+curl -s -X POST http://localhost:8081/api/v1/admin/accounts \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <ADMIN_TOKEN>" \
+  -d '{
+    "userId": <USER_ID>,
+    "currency": "USD"
+  }'
+```
+
+Your new user is now ready to log in and trade!

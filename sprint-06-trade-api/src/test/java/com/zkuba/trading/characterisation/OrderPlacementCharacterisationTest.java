@@ -72,7 +72,7 @@ public class OrderPlacementCharacterisationTest {
         return Jwts.builder()
                 .subject("testuser")
                 .claim("userId", userId)
-                .claim("role", "ROLE_USER")
+                .claim("role", "CUSTOMER")
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + 3600000))
                 .signWith(key)
@@ -89,10 +89,10 @@ public class OrderPlacementCharacterisationTest {
         // Insert test users
         jdbcTemplate.update(
                 "INSERT INTO users (id, username, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?, ?)",
-                1L, "testuser1", "test1@example.com", "hash", "ROLE_USER", "ACTIVE");
+                1L, "testuser1", "test1@example.com", "hash", "CUSTOMER", "ACTIVE");
         jdbcTemplate.update(
                 "INSERT INTO users (id, username, email, password_hash, role, status) VALUES (?, ?, ?, ?, ?, ?)",
-                2L, "testuser2", "test2@example.com", "hash", "ROLE_USER", "ACTIVE");
+                2L, "testuser2", "test2@example.com", "hash", "CUSTOMER", "ACTIVE");
 
         // Insert accounts
         jdbcTemplate.update(
