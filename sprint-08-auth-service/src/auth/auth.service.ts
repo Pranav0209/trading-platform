@@ -8,7 +8,7 @@ import { RefreshDto } from './dto/refresh.dto';
 import * as bcrypt from 'bcryptjs';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RefreshToken } from './refresh-token.entity';
+import { RefreshToken } from '../refresh-tokens/refresh-token.entity';
 import * as crypto from 'crypto';
 
 @Injectable()

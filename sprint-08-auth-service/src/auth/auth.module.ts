@@ -5,7 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
-import { RefreshToken } from './refresh-token.entity';
+import { RefreshToken } from '../refresh-tokens/refresh-token.entity';
 import { LoginAttempt } from './login-attempt.entity';
 import { LoginThrottleService } from './login-throttle.service';
 

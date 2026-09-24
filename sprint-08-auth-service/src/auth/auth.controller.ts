@@ -4,7 +4,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
-import { JwtAuthGuard } from './jwt.guard';
+import { JwtAuthGuard } from './guards/jwt.guard';
 
 @ApiTags('Auth')
 @Controller('auth')
