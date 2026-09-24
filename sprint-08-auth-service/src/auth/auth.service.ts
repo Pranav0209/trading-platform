@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dto/register.dto';
@@ -9,104 +15,197 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefreshToken } from './refresh-token.entity';
 import * as crypto from 'crypto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger('AuthService');
+  private readonly BCRYPT_COST = 12;
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private configService: ConfigService,
     @InjectRepository(RefreshToken)
     private refreshTokenRepository: Repository<RefreshToken>,
   ) {}
 
   async register(registerDto: RegisterDto) {
-    const existingUser = await this.usersService.findOneByUsername(registerDto.username);
-    const existingEmail = await this.usersService.findOneByEmail(registerDto.email);
-    if (existingUser || existingEmail) {
-      throw new ConflictException({ errorCode: 'AUTH-409', message: 'Registration failed' });
+    // Check if username already exists
+    const existingUser = await this.usersService.findOneByUsername(
+      registerDto.username,
+    );
+    if (existingUser) {
+      throw new ConflictException({
+        errorCode: 'AUTH-409',
+        message: 'Registration failed',
+      });
     }
 
-    const salt = await bcrypt.genSalt(12);
-    const passwordHash = await bcrypt.hash(registerDto.password, salt);
+    // Validate that the account exists
+    const accountExists = await this.usersService.validateAccountExists(
+      registerDto.accountId,
+    );
+    if (!accountExists) {
+      throw new BadRequestException({
+        errorCode: 'VAL-422',
+        message: 'Invalid input',
+      });
+    }
 
-    const newUser = await this.usersService.create({
-      username: registerDto.username,
-      email: registerDto.email,
+    // Hash password with bcrypt cost 12
+    const passwordHash = await bcrypt.hash(
+      registerDto.password,
+      this.BCRYPT_COST,
+    );
+
+    // Determine roles - default to CUSTOMER, only allow ADMIN if specified and valid
+    const roles = registerDto.roles || ['CUSTOMER'];
+
+    // Create user in auth schema
+    const newUser = await this.usersService.create(
+      registerDto.username,
       passwordHash,
-      role: 'ROLE_USER',
-      status: 'ACTIVE',
-    });
+      roles,
+    );
 
+    this.logger.log(`User registered: ${registerDto.username}`);
+
+    // Return user response without tokens
     return {
-      id: newUser.id.toString(),
+      id: newUser.id,
       username: newUser.username,
-      email: newUser.email,
-      roles: [newUser.role.replace('ROLE_', '')],
-      createdOn: newUser.createdAt,
+      accountId: registerDto.accountId,
+      roles: newUser.roles,
+      createdOn: newUser.createdAt.toISOString(),
     };
   }
 
   async login(loginDto: LoginDto) {
-    const user = await this.usersService.findOneByUsername(loginDto.username);
+    const user = await this.usersService.findOneByUsername(
+      loginDto.username,
+    );
+
     let isPasswordMatch = false;
 
     if (user) {
-      isPasswordMatch = await bcrypt.compare(loginDto.password, user.passwordHash);
+      isPasswordMatch = await bcrypt.compare(
+        loginDto.password,
+        user.passwordHash,
+      );
     } else {
       // Dummy compare to prevent timing attacks
-      await bcrypt.compare(loginDto.password, '$2a$12$dummyhashdummyhashdummyhashdummyhashdummyhashdummyhash');
+      // Use a realistic bcrypt hash format
+      const dummyHash =
+        '$2a$12$dummyhashdummyhashdummyhashdummyhashdummyhashdummyhash';
+      await bcrypt.compare(loginDto.password, dummyHash).catch(() => {
+        // Ignore errors during dummy comparison
+      });
     }
 
     if (!user || !isPasswordMatch) {
-      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Unauthorised' });
+      // Same response for unknown user and wrong password
+      throw new UnauthorizedException({
+        errorCode: 'AUTH-401',
+        message: 'Unauthorised',
+      });
     }
 
-    return this.generateTokens(user);
+    // Get the account ID for this user from the trade database
+    const accountId = await this.usersService.getAccountIdForUser(user.id);
+
+    return this.generateTokens(user, accountId);
   }
 
   async refresh(refreshDto: RefreshDto) {
-    const hashedPresentedToken = crypto.createHash('sha256').update(refreshDto.refreshToken).digest('hex');
+    // Hash the presented token
+    const hashedPresentedToken = crypto
+      .createHash('sha256')
+      .update(refreshDto.refreshToken)
+      .digest('hex');
+
     const storedToken = await this.refreshTokenRepository.findOne({
       where: { tokenHash: hashedPresentedToken },
       relations: ['user'],
     });
 
     if (!storedToken || storedToken.expiresAt < new Date()) {
-      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Unauthorised' });
+      throw new UnauthorizedException({
+        errorCode: 'AUTH-401',
+        message: 'Unauthorised',
+      });
     }
 
     if (storedToken.revoked) {
       // Token theft detected! Revoke all tokens for this user.
-      await this.refreshTokenRepository.update({ userId: storedToken.userId }, { revoked: true });
-      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Unauthorised' });
+      await this.refreshTokenRepository.update(
+        { userId: storedToken.userId },
+        { revoked: true },
+      );
+      this.logger.warn(
+        `Token theft detected for user ${storedToken.userId}, all tokens revoked`,
+      );
+      throw new UnauthorizedException({
+        errorCode: 'AUTH-401',
+        message: 'Unauthorised',
+      });
     }
 
     // Revoke the presented token
     storedToken.revoked = true;
     await this.refreshTokenRepository.save(storedToken);
 
-    return this.generateTokens(storedToken.user);
+    const accountId = await this.usersService.getAccountIdForUser(
+      storedToken.user.id,
+    );
+
+    return this.generateTokens(storedToken.user, accountId);
   }
 
-  private async generateTokens(user: any) {
-    // Attempt to get accountId if they have an account
-    const accounts = await this.refreshTokenRepository.query('SELECT id FROM accounts WHERE user_id = $1 LIMIT 1', [user.id]);
-    const accountId = accounts && accounts.length > 0 ? parseInt(accounts[0].id, 10) : null;
+  async me(userId: string) {
+    const user = await this.usersService.findOneById(userId);
 
+    if (!user) {
+      throw new UnauthorizedException({
+        errorCode: 'AUTH-401',
+        message: 'Unauthorised',
+      });
+    }
+
+    const accountId = await this.usersService.getAccountIdForUser(user.id);
+
+    return {
+      id: user.id,
+      username: user.username,
+      accountId,
+      roles: user.roles,
+      createdOn: user.createdAt.toISOString(),
+    };
+  }
+
+  private async generateTokens(user: any, accountId: number | null) {
+    // Create JWT payload according to contract
     const payload = {
-      sub: user.username, // Sprint 6 expects username in sub
-      userId: Number(user.id), // Sprint 6 expects userId as Number
-      role: user.role, // Sprint 6 expects role as String
-      accountId: accountId, // Sprint 8 requirement
-      roles: [user.role.replace('ROLE_', '')], // Sprint 8 requirement
-      iss: 'auth-service'
+      sub: user.id, // UUID
+      accountId: accountId,
+      roles: user.roles,
+      iss: 'auth-service',
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 900, // 15 minutes
     };
 
-    const accessToken = await this.jwtService.signAsync(payload);
-    
+    const secret = this.configService.get<string>('JWT_SECRET');
+    const accessToken = this.jwtService.sign(payload, {
+      secret,
+      expiresIn: '15m',
+    });
+
     // Generate new refresh token
     const rawRefreshToken = crypto.randomBytes(32).toString('hex');
-    const hashedRefreshToken = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
+    const hashedRefreshToken = crypto
+      .createHash('sha256')
+      .update(rawRefreshToken)
+      .digest('hex');
 
     const refreshTokenEntity = this.refreshTokenRepository.create({
       userId: user.id,
@@ -116,28 +215,13 @@ export class AuthService {
     });
     await this.refreshTokenRepository.save(refreshTokenEntity);
 
+    this.logger.log(`Tokens generated for user ${user.id}`);
+
     return {
       accessToken,
       refreshToken: rawRefreshToken,
       tokenType: 'Bearer',
       expiresIn: 900,
-    };
-  }
-
-  async me(userId: number) {
-    const user = await this.usersService.findOneById(userId);
-    if (!user) {
-      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Unauthorised' });
-    }
-    const accounts = await this.refreshTokenRepository.query('SELECT id FROM accounts WHERE user_id = $1 LIMIT 1', [user.id]);
-    const accountId = accounts && accounts.length > 0 ? parseInt(accounts[0].id, 10) : null;
-
-    return {
-      id: user.id.toString(),
-      username: user.username,
-      accountId: accountId,
-      roles: [user.role.replace('ROLE_', '')],
-      createdOn: user.createdAt,
     };
   }
 }

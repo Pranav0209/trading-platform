@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { RefreshToken } from './refresh-token.entity';
+import { JwtAuthGuard } from './jwt.guard';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { RefreshToken } from './refresh-token.entity';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService],
+  providers: [AuthService, JwtAuthGuard],
   controllers: [AuthController],
 })
 export class AuthModule {}
