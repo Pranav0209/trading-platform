@@ -84,7 +84,9 @@ describe('JwtAuthGuard - Token Verification on Protected Route', () => {
 
       expect(result).toBe(true);
       expect(mockRequest.user).toBeDefined();
+      // @ts-ignore
       expect(mockRequest.user.sub).toBe(validPayload.sub);
+      // @ts-ignore
       expect(mockRequest.user.accountId).toBe(validPayload.accountId);
     });
 
@@ -121,8 +123,12 @@ describe('JwtAuthGuard - Token Verification on Protected Route', () => {
       try {
         await guard.canActivate(mockExecutionContext);
         fail('Should have thrown UnauthorizedException');
-      } catch (error) {
+      } catch (e) {
+        // @ts-ignore
+        const error = e as any;
+        // @ts-ignore
         expect(error).toBeInstanceOf(UnauthorizedException);
+        // @ts-ignore
         expect(error.response).toMatchObject({
           errorCode: 'AUTH-401',
           message: 'Unauthorised',
@@ -155,10 +161,12 @@ describe('JwtAuthGuard - Token Verification on Protected Route', () => {
         }),
       } as unknown as ExecutionContext;
 
+      // @ts-ignore
       try {
         await guard.canActivate(mockExecutionContext);
         fail('Should have thrown UnauthorizedException');
-      } catch (error) {
+      } catch (e) {
+        const error = e as any;
         expect(error).toBeInstanceOf(UnauthorizedException);
         expect(error.response).toMatchObject({
           errorCode: 'AUTH-401',
@@ -183,10 +191,12 @@ describe('JwtAuthGuard - Token Verification on Protected Route', () => {
         }),
       } as unknown as ExecutionContext;
 
+      // @ts-ignore
       try {
         await guard.canActivate(mockExecutionContext);
         fail('Should have thrown UnauthorizedException');
-      } catch (error) {
+      } catch (e) {
+        const error = e as any;
         expect(error).toBeInstanceOf(UnauthorizedException);
         expect(error.response).toMatchObject({
           errorCode: 'AUTH-401',
@@ -209,10 +219,12 @@ describe('JwtAuthGuard - Token Verification on Protected Route', () => {
         }),
       } as unknown as ExecutionContext;
 
+      // @ts-ignore
       try {
         await guard.canActivate(mockExecutionContext);
         fail('Should have thrown UnauthorizedException');
-      } catch (error) {
+      } catch (e) {
+        const error = e as any;
         expect(error).toBeInstanceOf(UnauthorizedException);
         expect(error.response).toMatchObject({
           errorCode: 'AUTH-401',
@@ -274,10 +286,12 @@ describe('JwtAuthGuard - Token Verification on Protected Route', () => {
         }),
       } as unknown as ExecutionContext;
 
+      // @ts-ignore
       try {
         await guard.canActivate(expiredContext);
         fail('Should have thrown UnauthorizedException for expired token');
-      } catch (error) {
+      } catch (e) {
+        const error = e as any;
         expect(error).toBeInstanceOf(UnauthorizedException);
         expect(error.response).toMatchObject({
           errorCode: 'AUTH-401',

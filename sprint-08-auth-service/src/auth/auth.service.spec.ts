@@ -314,12 +314,14 @@ describe('Requirement 6: Refresh Token Issuance and Rotation', () => {
     expect(firstRefreshResult.refreshToken).toBeDefined();
 
     // Try to use the same refresh token again - should fail
+    // @ts-ignore
     try {
       await service.refresh({
         refreshToken: firstRefreshToken,
       });
       fail('Should have thrown UnauthorizedException');
-    } catch (error) {
+    } catch (e) {
+      const error = e as any;
       expect(error).toBeInstanceOf(UnauthorizedException);
       expect(error.response).toMatchObject({
         errorCode: 'AUTH-401',
@@ -361,12 +363,14 @@ describe('Requirement 6: Refresh Token Issuance and Rotation', () => {
     }
 
     // Try to use the revoked token - should fail and trigger mass revocation
+    // @ts-ignore
     try {
       await service.refresh({
         refreshToken: loginResult.refreshToken,
       });
       fail('Should have thrown UnauthorizedException');
-    } catch (error) {
+    } catch (e) {
+      const error = e as any;
       expect(error).toBeInstanceOf(UnauthorizedException);
       expect(error.response).toMatchObject({
         errorCode: 'AUTH-401',
