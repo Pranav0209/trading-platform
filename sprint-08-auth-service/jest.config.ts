@@ -15,8 +15,8 @@ module.exports = {
     '!src/**/*.module.ts',
     '!src/main.ts',
   ],
-  coverageDirectory: './coverage',
-  coverageReporters: ['text', 'lcovonly', 'json-summary', 'clover'],
+  coverageDirectory: '../coverage',
+  coverageReporters: ['text', 'lcovonly', 'text-summary', 'json-summary', 'clover'],
   testEnvironment: 'node',
 };
 
