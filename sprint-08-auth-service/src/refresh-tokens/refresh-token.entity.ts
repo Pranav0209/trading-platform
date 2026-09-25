@@ -6,16 +6,16 @@ export class RefreshToken {
   @PrimaryGeneratedColumn('increment')
   id: number;
 
-  @Column({ name: 'user_id' })
+  @Column({ name: 'user_id', type: 'int' })
   userId: number;
 
-  @Column({ name: 'token_hash', unique: true })
+  @Column({ name: 'token_hash', type: 'varchar', length: 128, unique: true })
   tokenHash: string;
 
   @Column({ name: 'expires_at', type: 'timestamp with time zone' })
   expiresAt: Date;
 
-  @Column({ default: false })
+  @Column({ type: 'boolean', default: false })
   revoked: boolean;
 
   @Column({ name: 'created_at', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })

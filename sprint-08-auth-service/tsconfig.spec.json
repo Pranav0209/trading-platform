@@ -7,6 +7,7 @@
     "ignoreDeprecations": "6.0",
     "verbatimModuleSyntax": false,
     "resolvePackageJsonExports": false,
+    "emitDecoratorMetadata": false,
     "rootDir": "."
   },
   "include": ["src/**/*.ts", "spec/**/*.ts", "test/**/*.ts"]
