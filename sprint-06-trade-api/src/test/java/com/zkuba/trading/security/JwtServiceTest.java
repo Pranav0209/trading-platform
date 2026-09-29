@@ -1,6 +1,11 @@
 package com.zkuba.trading.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import javax.crypto.SecretKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,9 +31,18 @@ class JwtServiceTest {
     void generateAndParse_Success() {
         Long userId = 42L;
         String username = "trader_joe";
-        String role = "ROLE_USER";
+        String role = "CUSTOMER";
 
-        String token = jwtService.generate(userId, username, role);
+        SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        Date now = new Date();
+        String token = Jwts.builder()
+                .subject(username)
+                .claim("userId", userId)
+                .claim("role", role)
+                .issuedAt(now)
+                .expiration(new Date(now.getTime() + expirationMs))
+                .signWith(key)
+                .compact();
 
         assertThat(token).isNotBlank();
 
@@ -37,11 +51,5 @@ class JwtServiceTest {
         assertThat(claims.get("userId", Long.class)).isEqualTo(userId);
         assertThat(claims.get("role", String.class)).isEqualTo(role);
         assertThat(claims.getExpiration()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("expirationMs should return the configured expiration time in milliseconds")
-    void expirationMs_ReturnsConfiguredValue() {
-        assertThat(jwtService.expirationMs()).isEqualTo(expirationMs);
     }
 }

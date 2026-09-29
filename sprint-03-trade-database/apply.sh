@@ -21,7 +21,7 @@ set +a
 HOST="${POSTGRES_HOST:-localhost}"
 PORT="${POSTGRES_PORT:-5432}"
 USER="${POSTGRES_USER:-postgres}"
-DATABASE="${TARGET_DATABASE:-${POSTGRES_DB:-}}"
+DATABASE="${TARGET_DATABASE:-${POSTGRES_DB:-trading}}"
 
 # validate database
 if [[ -z "$DATABASE" ]]; then

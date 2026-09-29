@@ -11,14 +11,14 @@ ON CONFLICT (symbol) DO NOTHING;
 
 -- Seed Sample Users (Password for all seeded users is: password123)
 -- BCrypt hash for 'password123': $2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy
-INSERT INTO users (id, username, email, password_hash, role, status) VALUES
-    (1, 'admin', 'admin@trading.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'ROLE_ADMIN', 'ACTIVE'),
-    (2, 'john_doe', 'john@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'ROLE_USER', 'ACTIVE'),
-    (3, 'jane_smith', 'jane@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'ROLE_USER', 'ACTIVE')
+INSERT INTO auth.users (id, username, email, password_hash, role, status) VALUES
+    (1, 'admin', 'admin@trading.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'ADMIN', 'ACTIVE'),
+    (2, 'john_doe', 'john@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE'),
+    (3, 'jane_smith', 'jane@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE')
 ON CONFLICT (id) DO NOTHING;
 
 -- Reset sequence for users table so new registrations start after seeded IDs
-SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));
+SELECT setval('auth.users_id_seq', (SELECT MAX(id) FROM auth.users));
 
 -- Seed Trading Accounts
 INSERT INTO accounts (id, account_number, user_id, cash_balance, currency, status, version) VALUES
