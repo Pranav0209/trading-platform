@@ -40,7 +40,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             Long userId = ((Number) claims.get("userId")).longValue();
             String username = claims.getSubject();
-            String role = claims.get("role", String.class);
+            List<?> roles = claims.get("roles", List.class);
+            String role = (roles != null && !roles.isEmpty()) ? String.valueOf(roles.get(0)) : "CUSTOMER";
 
             request.setAttribute("userId", userId);
 

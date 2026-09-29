@@ -17,13 +17,11 @@ import com.zkuba.trading.dto.response.PositionResponse;
 import com.zkuba.trading.mapper.OrderMapper;
 import com.zkuba.trading.repository.AccountRepository;
 import com.zkuba.trading.repository.PositionRepository;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,12 +34,8 @@ public class AccountServiceImpl implements AccountService {
     @Autowired
     private PositionRepository positionRepository;
 
-
     @Autowired
     private OrderMapper orderMapper;
-
-    @Value("${trading.default-initial-balance}")
-    private BigDecimal defaultBalance;
 
     @Override
     @Transactional
@@ -53,7 +47,7 @@ public class AccountServiceImpl implements AccountService {
         Account account = new Account();
         account.setAccountNumber("ACC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         account.setUserId(request.userId());
-        account.setCashBalance(defaultBalance);
+        account.setCashBalance(request.initialBalance());
         account.setCurrency(request.currency() == null ? "USD" : request.currency());
         account.setStatus(AccountStatus.ACTIVE);
         account = accounts.save(account);

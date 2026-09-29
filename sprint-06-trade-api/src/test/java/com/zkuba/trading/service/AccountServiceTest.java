@@ -91,7 +91,7 @@ class AccountServiceTest {
         @DisplayName("create creates account with default USD currency when currency is null")
         void create_Success_DefaultCurrency() {
 
-                CreateAccountRequest request = new CreateAccountRequest(1L, null);
+                CreateAccountRequest request = new CreateAccountRequest(1L, null, java.math.BigDecimal.valueOf(10000));
 
                 when(accounts.findByUserId(1L))
                                 .thenReturn(Optional.empty());
@@ -117,7 +117,7 @@ class AccountServiceTest {
         @DisplayName("create creates account with requested currency")
         void create_Success_CustomCurrency() {
 
-                CreateAccountRequest request = new CreateAccountRequest(1L, "EUR");
+                CreateAccountRequest request = new CreateAccountRequest(1L, "EUR", java.math.BigDecimal.valueOf(10000));
 
                 when(accounts.findByUserId(1L))
                                 .thenReturn(Optional.empty());
@@ -140,7 +140,7 @@ class AccountServiceTest {
         @DisplayName("create rejects creation when user already has an account")
         void create_AlreadyExists_ThrowsException() {
 
-                CreateAccountRequest request = new CreateAccountRequest(1L, "USD");
+                CreateAccountRequest request = new CreateAccountRequest(1L, "USD", java.math.BigDecimal.valueOf(10000));
 
                 when(accounts.findByUserId(1L))
                                 .thenReturn(Optional.of(activeAccount));

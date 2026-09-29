@@ -365,6 +365,50 @@ paths:
         '404':
           $ref: '#/components/responses/AccountNotFound'
 
+  /api/v1/admin/users/pending:
+    get:
+      tags: [Accounts]
+      operationId: getPendingUsers
+      summary: Get users without accounts
+      description: Returns users who have registered but do not have an account (Admin only)
+      responses:
+        '200':
+          description: Pending users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PendingUserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          $ref: '#/components/responses/AccountNotActive'
+
+  /api/v1/admin/accounts:
+    post:
+      tags: [Accounts]
+      operationId: createAccount
+      summary: Create an account
+      description: Create a new account for a user (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAccountRequest'
+      responses:
+        '200':
+          description: Account created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          $ref: '#/components/responses/AccountNotActive'
+
 components:
 
   securitySchemes:
@@ -580,6 +624,32 @@ components:
           type: string
           format: date-time
           example: '2026-09-28T09:14:22Z'
+
+    CreateAccountRequest:
+      type: object
+      additionalProperties: false
+      required: [userId, currency, initialBalance]
+      properties:
+        userId:
+          type: integer
+        currency:
+          type: string
+        initialBalance:
+          type: number
+          format: double
+
+    PendingUserResponse:
+      type: object
+      additionalProperties: false
+      required: [id, username, email]
+      properties:
+        id:
+          type: integer
+          format: int64
+        username:
+          type: string
+        email:
+          type: string
 
     AccountResponse:
       type: object
