@@ -17,10 +17,11 @@ export interface UserResponse {
      */
     id: string;
     username: string;
+    email?: string;
     /**
      * The numeric trading account key, `ACCOUNTS.id`.
      */
-    accountId: number;
+    accountId?: number;
     roles: Array<Role>;
     createdOn?: string;
 }

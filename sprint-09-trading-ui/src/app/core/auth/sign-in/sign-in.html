@@ -1,0 +1,50 @@
+<div class="login-page">
+  <!-- Left Side: Branding -->
+  <div class="login-brand">
+    <div class="brand-content">
+      <div class="logo">
+        <div class="logo-icon">T</div>
+        <div class="logo-text">Enterprise Trading</div>
+      </div>
+      <h1>Trade with <span>Confidence</span></h1>
+      <p>Access global markets, advanced analytics, and lightning-fast execution in one secure platform.</p>
+    </div>
+  </div>
+
+  <!-- Right Side: Login -->
+  <div class="login-section">
+    <div class="login-card">
+      <h2>Sign In</h2>
+      <p class="login-subtitle">Welcome back! Please enter your details.</p>
+
+      @if (errorMessage()) {
+        <div class="error-message" data-testid="error-message">{{ errorMessage() }}</div>
+      }
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input id="username" type="text" formControlName="username" data-testid="username-input" placeholder="Enter your username" />
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input id="password" type="password" formControlName="password" data-testid="password-input" placeholder="••••••••" />
+        </div>
+
+        <div class="form-options">
+          <label class="remember-me">
+            <input type="checkbox" /> Remember me
+          </label>
+          <a href="#" class="forgot-password">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="login-button" [disabled]="form.invalid" data-testid="submit-button">Sign In</button>
+      </form>
+
+      <div class="register-text">
+        Don't have an account? <a href="#">Sign up</a>
+      </div>
+    </div>
+  </div>
+</div>
