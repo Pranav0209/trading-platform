@@ -1,11 +1,16 @@
 import { inject } from '@angular/core';
-import { Router, CanActivateFn } from '@angular/router';
-import { Session } from './session';
+import { CanActivateFn, Router } from '@angular/router';
+import { Session } from '../session';
+import { createSignInRedirect } from './return-to';
 
-export const adminGuard: CanActivateFn = () => {
+export const adminGuard: CanActivateFn = (_route, state) => {
   const session = inject(Session);
   const router = inject(Router);
-  
+
+  if (!session.isLoggedIn) {
+    return createSignInRedirect(router, state.url);
+  }
+
   const token = session.token();
   if (token) {
     try {
@@ -17,6 +22,6 @@ export const adminGuard: CanActivateFn = () => {
       console.error('Failed to parse token in adminGuard', e);
     }
   }
-  
+
   return router.parseUrl('/sign-in');
 };

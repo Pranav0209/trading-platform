@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
-import { Router, provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { SignIn } from './sign-in';
 import { AuthService } from '../../../../generated/auth/api/auth.service';
@@ -14,6 +14,8 @@ describe('SignIn', () => {
   let mockSession: any;
   let router: Router;
   let navigateCalled = false;
+  let navigateByUrlCalledWith: string | null = null;
+  let returnTo: string | null = null;
 
   beforeEach(async () => {
     mockAuthService = {
@@ -28,6 +30,16 @@ describe('SignIn', () => {
       providers: [
         { provide: AuthService, useValue: mockAuthService },
         { provide: Session, useValue: mockSession },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              queryParamMap: {
+                get: (key: string) => (key === 'returnTo' ? returnTo : null),
+              },
+            },
+          },
+        },
         provideRouter([])
       ]
     }).compileComponents();
@@ -37,7 +49,13 @@ describe('SignIn', () => {
       navigateCalled = true;
       return true;
     };
+    router.navigateByUrl = async (url: string | URL) => {
+      navigateByUrlCalledWith = String(url);
+      return true;
+    };
     navigateCalled = false;
+    navigateByUrlCalledWith = null;
+    returnTo = null;
 
     fixture = TestBed.createComponent(SignIn);
     component = fixture.componentInstance;
@@ -50,9 +68,10 @@ describe('SignIn', () => {
     expect(submitBtn.disabled).toBe(true);
   });
 
-  it('valid credentials sign in and redirect', () => {
+  it('valid credentials sign in and redirect to the requested path', () => {
     let loginCalled = false;
     navigateCalled = false;
+    returnTo = '/admin?tab=users';
     mockAuthService.login = () => {
       loginCalled = true;
       return of({ accessToken: 'test-token' });
@@ -67,6 +86,20 @@ describe('SignIn', () => {
     component.onSubmit();
 
     expect(loginCalled).toBe(true);
+    expect(navigateByUrlCalledWith).toBe('/admin?tab=users');
+    expect(navigateCalled).toBe(false);
+  });
+
+  it('refuses an off-origin return address and falls back to the default redirect', () => {
+    returnTo = 'https://evil.example/phish';
+    mockAuthService.login = () => of({ accessToken: 'test-token' });
+
+    component.form.setValue({ username: 'testuser', password: 'password123' });
+    fixture.detectChanges();
+
+    component.onSubmit();
+
+    expect(navigateByUrlCalledWith).toBeNull();
     expect(navigateCalled).toBe(true);
   });
 
