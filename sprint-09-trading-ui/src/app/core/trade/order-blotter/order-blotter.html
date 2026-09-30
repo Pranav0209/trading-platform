@@ -1,0 +1,63 @@
+<section class="order-blotter">
+  <div class="blotter-header">
+    <h2>Order History</h2>
+    <div class="blotter-controls">
+      @if (isAutoRefreshing()) {
+        <span class="auto-refresh-indicator">🔄 Auto-refreshing...</span>
+      }
+      <button class="refresh-button" (click)="manualRefresh()" [disabled]="isLoading()" data-testid="manual-refresh-button">
+        {{ isLoading() ? 'Loading...' : 'Refresh' }}
+      </button>
+      @if (lastRefreshed()) {
+        <span class="last-refreshed">Last refreshed: {{ formatDate(lastRefreshed()!.toISOString()) }}</span>
+      }
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="blotter-error" data-testid="error-message">{{ error() }}</div>
+  }
+
+  @if (orders().length === 0) {
+    <div class="blotter-empty" data-testid="empty-state">
+      @if (!isLoading() && !error()) {
+        <p>No orders found. Your order history will appear here.</p>
+      }
+    </div>
+  } @else {
+    <div class="blotter-table-wrapper">
+      <table class="blotter-table" data-testid="orders-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Symbol</th>
+            <th>Side</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Executed Price</th>
+            <th>Status</th>
+            <th>Created On</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of orders(); track order.orderId) {
+            <tr class="order-row" [attr.data-testid]="'order-row-' + order.orderId">
+              <td class="order-id">{{ order.orderId }}</td>
+              <td class="symbol">{{ order.symbol }}</td>
+              <td class="side" [class.side-buy]="order.side === 'BUY'" [class.side-sell]="order.side === 'SELL'">
+                {{ order.side }}
+              </td>
+              <td class="quantity">{{ order.quantity }}</td>
+              <td class="price">{{ formatPrice(order.price) }}</td>
+              <td class="executed-price">{{ formatPrice(order.executedPrice) }}</td>
+              <td class="status">
+                <app-status-badge [status]="order.status" data-testid="status-badge"></app-status-badge>
+              </td>
+              <td class="created-on">{{ formatDate(order.createdOn) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

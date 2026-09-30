@@ -7,6 +7,7 @@ import { OrderSide } from '../../../../generated/trade/model/orderSide';
 import { PlaceOrderRequest } from '../../../../generated/trade/model/placeOrderRequest';
 import { Session } from '../../auth/session';
 import { ErrorCodeMapper } from '../../error/error-code-mapper';
+import { OrderBlotter } from '../order-blotter/order-blotter';
 
 const SYMBOL_PATTERN = /^(?:[A-Z][A-Z0-9]*(?:\.(?:NS|BO))?|FX:[A-Z]{6}|X:[A-Z0-9]+)$/;
 const PRICE_PATTERN = /^\d+(?:\.\d{1,2})?$/;
@@ -14,7 +15,7 @@ const QUANTITY_PATTERN = /^[1-9]\d*$/;
 
 @Component({
   selector: 'app-order-ticket',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, OrderBlotter],
   templateUrl: './order-ticket.html',
   styleUrl: './order-ticket.css'
 })
