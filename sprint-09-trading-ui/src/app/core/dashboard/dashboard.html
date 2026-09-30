@@ -1,0 +1,278 @@
+<div class="dashboard-layout">
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">T</div>
+      <div class="brand-text">TradeX</div>
+    </div>
+
+    <nav class="nav-menu">
+      <a href="#" class="nav-item active"> <span class="icon">⊞</span> Dashboard </a>
+      <a href="#" class="nav-item"> <span class="icon">📈</span> Markets </a>
+      <a href="#" class="nav-item"> <span class="icon">★</span> Watchlist </a>
+      <a href="#" class="nav-item"> <span class="icon">📄</span> Orders </a>
+      <a href="#" class="nav-item"> <span class="icon">◎</span> Positions </a>
+      <a href="#" class="nav-item"> <span class="icon">💼</span> Holdings </a>
+
+      <div class="nav-divider"></div>
+
+      <a href="#" class="nav-item"> <span class="icon">⚙</span> Account </a>
+      <a href="#" class="nav-item"> <span class="icon">🔒</span> Settings </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="text" placeholder="Search stocks, companies..." />
+      </div>
+
+      <div class="user-controls">
+        <button class="icon-btn">🔔</button>
+        <div class="user-profile" (click)="toggleDropdown()">
+          <div class="avatar">{{ userInitial() | uppercase }}</div>
+          <span class="name">{{ userName() }} ▾</span>
+
+          @if (isDropdownOpen()) {
+            <div class="dropdown-menu">
+              <a href="#" class="dropdown-item">Profile</a>
+              <a href="#" class="dropdown-item">Account</a>
+              <div class="dropdown-divider"></div>
+              <a
+                href="#"
+                class="dropdown-item text-danger"
+                (click)="logout(); $event.preventDefault()"
+              >
+                <span class="icon">🚪</span> Logout
+              </a>
+            </div>
+          }
+        </div>
+      </div>
+    </header>
+
+    <!-- SCROLLABLE DASHBOARD AREA -->
+    <div class="dashboard-scroll-area">
+      <!-- DASHBOARD HEADER -->
+      <section class="dashboard-header">
+        <h1>
+          {{ currentTime }}, <span style="text-transform: capitalize">{{ userName() }}</span>
+        </h1>
+        <p class="subtitle">Here's your portfolio overview.</p>
+      </section>
+
+      <!-- PORTFOLIO SUMMARY CARDS -->
+      <section class="summary-cards">
+        <div class="card summary-card">
+          <div class="card-title">Portfolio Value</div>
+          <div class="card-value">₹{{ portfolioSummary().portfolioValue | number: '1.2-2' }}</div>
+          <div class="card-meta">
+            <span class="positive"
+              >+₹{{ portfolioSummary().todayPnL | number: '1.2-2' }} today</span
+            >
+            <span class="badge positive">+{{ portfolioSummary().todayPnLPercent }}%</span>
+          </div>
+        </div>
+
+        <div class="card summary-card">
+          <div class="card-title">Today's P&L</div>
+          <div class="card-value positive">
+            +₹{{ portfolioSummary().todayPnL | number: '1.2-2' }}
+          </div>
+          <div class="card-meta">
+            <span class="badge positive">+{{ portfolioSummary().todayPnLPercent }}%</span>
+          </div>
+        </div>
+
+        <div class="card summary-card">
+          <div class="card-title">Available Balance</div>
+          <div class="card-value">₹{{ portfolioSummary().availableBalance | number: '1.2-2' }}</div>
+          <div class="card-meta">
+            <span class="muted">Available to trade</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- PERFORMANCE CHART -->
+      <section class="performance-section">
+        <div class="card chart-card">
+          <div class="card-header">
+            <h3 class="card-title">Portfolio Performance</h3>
+            <div class="time-selectors">
+              <button>1D</button>
+              <button>1W</button>
+              <button class="active">1M</button>
+              <button>6M</button>
+              <button>1Y</button>
+              <button>ALL</button>
+            </div>
+          </div>
+
+          <div class="chart-summary">
+            <div class="chart-value">₹12,48,620.40</div>
+            <div class="chart-change positive">+₹18,245.20 (+1.48%)</div>
+          </div>
+
+          <div class="mock-chart">
+            <!-- This is a pure CSS mock chart visual for now -->
+            <svg viewBox="0 0 800 200" preserveAspectRatio="none" class="chart-svg">
+              <defs>
+                <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="#2563EB" stop-opacity="0.2" />
+                  <stop offset="100%" stop-color="#2563EB" stop-opacity="0" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M0,180 L50,160 L100,170 L150,130 L200,140 L250,90 L300,110 L350,60 L400,80 L450,40 L500,50 L550,20 L600,30 L650,10 L700,25 L750,5 L800,15 L800,200 L0,200 Z"
+                fill="url(#chartGradient)"
+              />
+              <path
+                d="M0,180 L50,160 L100,170 L150,130 L200,140 L250,90 L300,110 L350,60 L400,80 L450,40 L500,50 L550,20 L600,30 L650,10 L700,25 L750,5 L800,15"
+                fill="none"
+                stroke="#2563EB"
+                stroke-width="2"
+              />
+            </svg>
+
+            <div class="chart-grid">
+              <div class="grid-line"></div>
+              <div class="grid-line"></div>
+              <div class="grid-line"></div>
+              <div class="grid-line"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- HOLDINGS & POSITIONS ROW -->
+      <section class="two-col-grid">
+        <!-- HOLDINGS -->
+        <div class="card data-card">
+          <div class="card-header">
+            <h3 class="card-title">Holdings</h3>
+            <a href="#" class="view-all">View all</a>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th class="text-right">Qty</th>
+                  <th class="text-right">Avg. Price</th>
+                  <th class="text-right">LTP</th>
+                  <th class="text-right">P&L</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (h of holdings(); track h.symbol) {
+                  <tr>
+                    <td class="symbol">{{ h.symbol }}</td>
+                    <td class="text-right">{{ h.quantity }}</td>
+                    <td class="text-right">₹{{ h.averagePrice | number: '1.2-2' }}</td>
+                    <td class="text-right">₹{{ h.ltp | number: '1.2-2' }}</td>
+                    <td
+                      class="text-right"
+                      [class.positive]="h.pnl > 0"
+                      [class.negative]="h.pnl < 0"
+                    >
+                      {{ h.pnl > 0 ? '+' : '' }}₹{{ h.pnl | number: '1.0-0' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- POSITIONS -->
+        <div class="card data-card">
+          <div class="card-header">
+            <h3 class="card-title">Open Positions</h3>
+            <a href="#" class="view-all">View all</a>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Symbol</th>
+                  <th class="text-right">Qty</th>
+                  <th class="text-right">Avg. Price</th>
+                  <th class="text-right">LTP</th>
+                  <th class="text-right">P&L</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (p of positions(); track p.symbol) {
+                  <tr>
+                    <td class="symbol">{{ p.symbol }}</td>
+                    <td class="text-right">{{ p.quantity }}</td>
+                    <td class="text-right">₹{{ p.averagePrice | number: '1.2-2' }}</td>
+                    <td class="text-right">₹{{ p.ltp | number: '1.2-2' }}</td>
+                    <td
+                      class="text-right"
+                      [class.positive]="p.pnl > 0"
+                      [class.negative]="p.pnl < 0"
+                    >
+                      {{ p.pnl > 0 ? '+' : '' }}₹{{ p.pnl | number: '1.0-0' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- RECENT ORDERS & SYSTEM STATUS ROW -->
+      <section class="two-col-grid secondary-grid">
+        <!-- RECENT ORDERS -->
+        <div class="card data-card span-2">
+          <div class="card-header">
+            <h3 class="card-title">Recent Orders</h3>
+            <a href="#" class="view-all">View all</a>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Symbol</th>
+                  <th>Side</th>
+                  <th class="text-right">Qty</th>
+                  <th class="text-right">Price</th>
+                  <th class="text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (o of recentOrders(); track o.id) {
+                  <tr>
+                    <td class="muted">{{ o.time }}</td>
+                    <td class="symbol">{{ o.symbol }}</td>
+                    <td [class.positive]="o.side === 'BUY'" [class.negative]="o.side === 'SELL'">
+                      {{ o.side }}
+                    </td>
+                    <td class="text-right">{{ o.quantity }}</td>
+                    <td class="text-right">₹{{ o.price | number: '1.2-2' }}</td>
+                    <td class="text-right">
+                      <span
+                        class="status-badge"
+                        [class.badge-success]="o.status === 'FILLED'"
+                        [class.badge-warning]="o.status === 'PENDING'"
+                        [class.badge-danger]="o.status === 'REJECTED'"
+                      >
+                        {{ o.status }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>

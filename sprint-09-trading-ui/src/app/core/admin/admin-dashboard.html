@@ -35,7 +35,11 @@
                 <input type="number" #balanceInput class="form-input" value="500000" />
               </td>
               <td>
-                <button class="action-button" (click)="createAccount(user, currencySelect.value, balanceInput.value)" data-testid="create-account-button">
+                <button
+                  class="action-button"
+                  (click)="createAccount(user, currencySelect.value, balanceInput.value)"
+                  data-testid="create-account-button"
+                >
                   Create Account
                 </button>
               </td>

@@ -48,7 +48,9 @@ export class SignIn {
         } catch (e) {
           console.error('Failed to parse token in sign-in', e);
         }
-        this.router.navigate(['/']);
+        
+        // 3. Standard User Redirect
+        this.router.navigate(['/dashboard']);
       },
       error: () => {
         this.errorMessage.set('Sign in failed. Please check your credentials and try again.');
