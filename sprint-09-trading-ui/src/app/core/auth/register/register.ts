@@ -2,8 +2,9 @@ import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../../../generated/auth/api/auth.service';
 import { HttpErrorResponse } from '@angular/common/http';
+import { AuthService } from '../../../../generated/auth/api/auth.service';
+import { ErrorCodeMapper } from '../../error/error-code-mapper';
 
 @Component({
   selector: 'app-register',
@@ -16,6 +17,7 @@ export class Register {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private errorCodeMapper = inject(ErrorCodeMapper);
 
   errorMessage = signal<string | null>(null);
 
@@ -40,15 +42,7 @@ export class Register {
         this.router.navigate(['/sign-in']);
       },
       error: (err: HttpErrorResponse) => {
-        if (err.status === 409) {
-          this.errorMessage.set('That username or email is already taken.');
-        } else if (err.status === 422) {
-          this.errorMessage.set('A field is not acceptable.');
-        } else if (err.status === 0) {
-          this.errorMessage.set('Could not reach the server. Please check your connection.');
-        } else {
-          this.errorMessage.set('Registration failed. Please try again later.');
-        }
+        this.errorMessage.set(this.errorCodeMapper.mapErrorToMessage(err));
       }
     });
   }

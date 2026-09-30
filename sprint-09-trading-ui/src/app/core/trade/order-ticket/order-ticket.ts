@@ -6,6 +6,7 @@ import { OrdersService } from '../../../../generated/trade/api/orders.service';
 import { OrderSide } from '../../../../generated/trade/model/orderSide';
 import { PlaceOrderRequest } from '../../../../generated/trade/model/placeOrderRequest';
 import { Session } from '../../auth/session';
+import { ErrorCodeMapper } from '../../error/error-code-mapper';
 
 const SYMBOL_PATTERN = /^(?:[A-Z][A-Z0-9]*(?:\.(?:NS|BO))?|FX:[A-Z]{6}|X:[A-Z0-9]+)$/;
 const PRICE_PATTERN = /^\d+(?:\.\d{1,2})?$/;
@@ -21,6 +22,7 @@ export class OrderTicket implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly ordersService = inject(OrdersService);
   private readonly session = inject(Session);
+  private readonly errorCodeMapper = inject(ErrorCodeMapper);
 
   readonly orderSides = [OrderSide.Buy, OrderSide.Sell];
 
@@ -123,28 +125,6 @@ export class OrderTicket implements OnInit {
   }
 
   private mapOrderError(error: HttpErrorResponse): string {
-    if (error.status === 0) {
-      return 'Could not reach the trade service. Check that it is running and allows this origin.';
-    }
-
-    const code = error.error?.errorCode as string | undefined;
-    switch (code) {
-      case 'ACC-404':
-        return 'The trading account could not be found.';
-      case 'ACC-403':
-        return 'This account is not active, or this sign-in may not trade it.';
-      case 'INS-404':
-        return 'This instrument cannot be traded.';
-      case 'ORD-400':
-        return 'There is not enough cash for this order.';
-      case 'ORD-409':
-        return 'There is not enough holding to sell, or this order was already placed.';
-      case 'VAL-422':
-        return 'One or more fields are not acceptable.';
-      case 'AUTH-401':
-        return 'Your session has expired. Please sign in again.';
-      default:
-        return 'The order could not be placed. Please try again.';
-    }
+    return this.errorCodeMapper.mapErrorToMessage(error);
   }
 }

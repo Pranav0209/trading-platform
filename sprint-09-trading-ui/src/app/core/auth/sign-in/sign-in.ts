@@ -1,8 +1,10 @@
 import { Component, inject, signal } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../../generated/auth/api/auth.service';
 import { Session } from '../session';
+import { ErrorCodeMapper } from '../../error/error-code-mapper';
 import { sanitizeReturnTo } from '../guards/return-to';
 
 @Component({
@@ -17,6 +19,7 @@ export class SignIn {
   private readonly session = inject(Session);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly errorCodeMapper = inject(ErrorCodeMapper);
 
   form = this.fb.nonNullable.group({
     username: ['', Validators.required],
@@ -52,8 +55,8 @@ export class SignIn {
         // 3. Standard User Redirect
         this.router.navigate(['/dashboard']);
       },
-      error: () => {
-        this.errorMessage.set('Sign in failed. Please check your credentials and try again.');
+      error: (error: HttpErrorResponse) => {
+        this.errorMessage.set(this.errorCodeMapper.mapErrorToMessage(error));
       },
     });
   }

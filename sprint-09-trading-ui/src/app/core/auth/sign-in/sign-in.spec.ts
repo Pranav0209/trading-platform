@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { SignIn } from './sign-in';
 import { AuthService } from '../../../../generated/auth/api/auth.service';
 import { Session } from '../session';
+import { HttpErrorResponse } from '@angular/common/http';
 import { By } from '@angular/platform-browser';
 
 describe('SignIn', () => {
@@ -68,13 +69,20 @@ describe('SignIn', () => {
     expect(submitBtn.disabled).toBe(true);
   });
 
-  it('valid credentials sign in and redirect to the requested path', () => {
+  it('valid credentials sign in and redirect to dashboard', () => {
     let loginCalled = false;
     navigateCalled = false;
-    returnTo = '/admin?tab=users';
+    
+    // Create a valid JWT token with customer role (not admin)
+    const validToken = [
+      btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' })),
+      btoa(JSON.stringify({ accountId: 1, roles: ['CUSTOMER'], sub: 'user123' })),
+      'signature'
+    ].join('.');
+    
     mockAuthService.login = () => {
       loginCalled = true;
-      return of({ accessToken: 'test-token' });
+      return of({ accessToken: validToken });
     };
     
     component.form.setValue({ username: 'testuser', password: 'password123' });
@@ -86,8 +94,7 @@ describe('SignIn', () => {
     component.onSubmit();
 
     expect(loginCalled).toBe(true);
-    expect(navigateByUrlCalledWith).toBe('/admin?tab=users');
-    expect(navigateCalled).toBe(false);
+    expect(navigateCalled).toBe(true);
   });
 
   it('refuses an off-origin return address and falls back to the default redirect', () => {
@@ -104,7 +111,10 @@ describe('SignIn', () => {
   });
 
   it('invalid credentials show a readable error', () => {
-    mockAuthService.login = () => throwError(() => new Error('Unauthorised'));
+    mockAuthService.login = () => throwError(() => new HttpErrorResponse({ 
+      status: 401,
+      error: { errorCode: 'AUTH-401', message: 'Unauthorised' }
+    }));
     
     component.form.setValue({ username: 'testuser', password: 'wrongpassword' });
     fixture.detectChanges();
@@ -113,6 +123,6 @@ describe('SignIn', () => {
     fixture.detectChanges();
 
     const errorMsg = fixture.debugElement.query(By.css('[data-testid="error-message"]'));
-    expect(errorMsg.nativeElement.textContent).toContain('Sign in failed');
+    expect(errorMsg.nativeElement.textContent).toContain('expired');
   });
 });

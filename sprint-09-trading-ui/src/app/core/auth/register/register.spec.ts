@@ -60,7 +60,10 @@ describe('Register Component', () => {
   });
 
   it('should show error when username or email is taken', () => {
-    mockAuthService.register = () => throwError(() => new HttpErrorResponse({ status: 409 }));
+    mockAuthService.register = () => throwError(() => new HttpErrorResponse({ 
+      status: 409,
+      error: { errorCode: 'AUTH-409', message: 'Username already taken' }
+    }));
     component.form.patchValue({ username: 'testuser', email: 'test@example.com', password: 'password123' });
     
     component.onSubmit();
