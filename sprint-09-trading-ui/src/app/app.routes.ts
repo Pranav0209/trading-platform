@@ -11,5 +11,6 @@ export const routes: Routes = [
   { path: 'trade', component: OrderTicket, canActivate: [authGuard] },
   { path: 'admin', loadComponent: () => import('./core/admin/admin-dashboard').then(m => m.AdminDashboard), canActivate: [adminGuard] },
   { path: 'dashboard', loadComponent: () => import('./core/dashboard/dashboard').then(m => m.Dashboard), canActivate: [authGuard] },
-  { path: '', redirectTo: '/sign-in', pathMatch: 'full' }
+  { path: '', redirectTo: '/sign-in', pathMatch: 'full' },
+  { path: '**', redirectTo: '/dashboard' }
 ];

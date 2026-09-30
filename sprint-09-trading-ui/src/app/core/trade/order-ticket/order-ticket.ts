@@ -58,14 +58,15 @@ export class OrderTicket implements OnInit {
     this.responseMessage.set(null);
 
     const raw = this.form.getRawValue();
-    const payload: PlaceOrderRequest = {
+    const payload = {
       accountId,
       symbol: raw.symbol,
       side: raw.side,
+      orderType: 'LIMIT',
       quantity: Number(raw.quantity),
-      price: Number(raw.price),
+      limitPrice: Number(raw.price),
       idempotencyKey: this.createIdempotencyKey()
-    };
+    } as any;
 
     this.ordersService.placeOrder(payload).subscribe({
       next: (res) => {
