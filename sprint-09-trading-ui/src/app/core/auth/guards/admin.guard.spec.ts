@@ -1,6 +1,5 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, UrlTree, provideRouter } from '@angular/router';
-import { beforeEach, describe, expect, it } from 'vitest';
 import { adminGuard } from './admin.guard';
 import { Session } from '../session';
 
@@ -40,7 +39,7 @@ describe('adminGuard', () => {
   it('redirects signed-out visitors instead of leaving navigation unresolved', () => {
     const result = TestBed.runInInjectionContext(() => adminGuard({} as never, { url: '/admin' } as never));
 
-    expect(result instanceof UrlTree).toBeTrue();
+    expect(result instanceof UrlTree).toBe(true);
     expect(router.serializeUrl(result as UrlTree)).toBe('/sign-in?returnTo=%2Fadmin');
   });
 
@@ -50,6 +49,6 @@ describe('adminGuard', () => {
 
     const result = TestBed.runInInjectionContext(() => adminGuard({} as never, { url: '/admin' } as never));
 
-    expect(result).toBeTrue();
+    expect(result).toBe(true);
   });
 });
