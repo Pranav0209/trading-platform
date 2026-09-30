@@ -2,6 +2,10 @@
 body, html {
   margin: 0;
   padding: 0;
+  background-color: #0A0E13;
+  color: #F5F7FA;
+  font-family: Inter, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 *, *::before, *::after {

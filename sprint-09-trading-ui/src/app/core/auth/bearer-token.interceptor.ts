@@ -4,9 +4,11 @@ import {
   HttpHandler,
   HttpEvent,
 } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Injectable, inject, Injector } from '@angular/core';
+import { Observable, catchError, throwError, switchMap, from, lastValueFrom } from 'rxjs';
+import { Router } from '@angular/router';
 import { Session } from './session';
+import { AuthService } from '../../../generated/auth/api/auth.service';
 
 /**
  * HTTP Interceptor that attaches bearer tokens to requests destined for platform APIs.
@@ -19,6 +21,8 @@ import { Session } from './session';
 })
 export class BearerTokenInterceptor implements HttpInterceptor {
   private session = inject(Session);
+  private router = inject(Router);
+  private injector = inject(Injector);
 
   /** Allow list of origins that should receive the bearer token */
   private allowedOrigins = new Set([
@@ -39,10 +43,12 @@ export class BearerTokenInterceptor implements HttpInterceptor {
     // 1. A token exists in the session
     // 2. The request origin is in the allow list
     // 3. The request is not to an unauthenticated auth endpoint
+    const isUnauthRoute = this.isUnauthenticatedAuthRoute(req.url);
+
     if (
       token &&
       this.isAllowedOrigin(req.url) &&
-      !this.isUnauthenticatedAuthRoute(req.url)
+      !isUnauthRoute
     ) {
       req = req.clone({
         setHeaders: {
@@ -51,7 +57,47 @@ export class BearerTokenInterceptor implements HttpInterceptor {
       });
     }
 
-    return next.handle(req);
+    return next.handle(req).pipe(
+      catchError((error) => {
+        // Only attempt refresh if it's a 401 AND the request wasn't already for login/refresh
+        if (error.status === 401 && !isUnauthRoute) {
+          // Token is expired. Attempt silent refresh using HttpOnly cookie!
+          return from(this.attemptRefresh()).pipe(
+            switchMap((newAccessToken) => {
+              if (newAccessToken) {
+                // Refresh succeeded! Update session and retry original request
+                this.session.setToken(newAccessToken);
+                const retryReq = req.clone({
+                  setHeaders: { Authorization: `Bearer ${newAccessToken}` },
+                });
+                return next.handle(retryReq);
+              } else {
+                // Refresh failed. Auto-logout!
+                this.session.clearToken();
+                this.router.navigate(['/sign-in']);
+                return throwError(() => error);
+              }
+            })
+          );
+        }
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Silently requests a new access token using the generated AuthService contract.
+   * Uses Injector to lazily load AuthService and avoid circular DI errors with HttpClient.
+   */
+  private async attemptRefresh(): Promise<string | null> {
+    try {
+      const authService = this.injector.get(AuthService);
+      // We pass an empty object because the backend reads the refresh token from the HttpOnly cookie
+      const res = await lastValueFrom(authService.refresh({ refreshToken: 'cookie' }));
+      return res.accessToken;
+    } catch {
+      return null;
+    }
   }
 
   /**

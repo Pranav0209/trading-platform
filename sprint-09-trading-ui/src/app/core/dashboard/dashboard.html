@@ -7,12 +7,11 @@
     </div>
 
     <nav class="nav-menu">
-      <a href="#" class="nav-item active"> <span class="icon">⊞</span> Dashboard </a>
-      <a href="#" class="nav-item"> <span class="icon">📈</span> Markets </a>
-      <a href="#" class="nav-item"> <span class="icon">★</span> Watchlist </a>
-      <a href="#" class="nav-item"> <span class="icon">📄</span> Orders </a>
-      <a href="#" class="nav-item"> <span class="icon">◎</span> Positions </a>
-      <a href="#" class="nav-item"> <span class="icon">💼</span> Holdings </a>
+      <a routerLink="/dashboard" class="nav-item active"> <span class="icon">⊞</span> Dashboard </a>
+      <a routerLink="/trade" class="nav-item"> <span class="icon">⚡</span> Trade </a>
+      <a routerLink="/orders" class="nav-item"> <span class="icon">📄</span> Orders </a>
+      <a routerLink="/positions" class="nav-item"> <span class="icon">◎</span> Positions </a>
+      <a href="#holdings-section" class="nav-item"> <span class="icon">💼</span> Holdings </a>
 
       <div class="nav-divider"></div>
 
@@ -150,7 +149,7 @@
       <!-- HOLDINGS & POSITIONS ROW -->
       <section class="two-col-grid">
         <!-- HOLDINGS -->
-        <div class="card data-card">
+        <div id="holdings-section" class="card data-card">
           <div class="card-header">
             <h3 class="card-title">Holdings</h3>
             <a href="#" class="view-all">View all</a>
@@ -188,90 +187,15 @@
         </div>
 
         <!-- POSITIONS -->
-        <div class="card data-card">
-          <div class="card-header">
-            <h3 class="card-title">Open Positions</h3>
-            <a href="#" class="view-all">View all</a>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Symbol</th>
-                  <th class="text-right">Qty</th>
-                  <th class="text-right">Avg. Price</th>
-                  <th class="text-right">LTP</th>
-                  <th class="text-right">P&L</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (p of positions(); track p.symbol) {
-                  <tr>
-                    <td class="symbol">{{ p.symbol }}</td>
-                    <td class="text-right">{{ p.quantity }}</td>
-                    <td class="text-right">₹{{ p.averagePrice | number: '1.2-2' }}</td>
-                    <td class="text-right">₹{{ p.ltp | number: '1.2-2' }}</td>
-                    <td
-                      class="text-right"
-                      [class.positive]="p.pnl > 0"
-                      [class.negative]="p.pnl < 0"
-                    >
-                      {{ p.pnl > 0 ? '+' : '' }}₹{{ p.pnl | number: '1.0-0' }}
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+        <div id="positions-section">
+          <app-positions></app-positions>
         </div>
       </section>
 
       <!-- RECENT ORDERS & SYSTEM STATUS ROW -->
-      <section class="two-col-grid secondary-grid">
+      <section id="orders-section" class="two-col-grid secondary-grid">
         <!-- RECENT ORDERS -->
-        <div class="card data-card span-2">
-          <div class="card-header">
-            <h3 class="card-title">Recent Orders</h3>
-            <a href="#" class="view-all">View all</a>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Symbol</th>
-                  <th>Side</th>
-                  <th class="text-right">Qty</th>
-                  <th class="text-right">Price</th>
-                  <th class="text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (o of recentOrders(); track o.id) {
-                  <tr>
-                    <td class="muted">{{ o.time }}</td>
-                    <td class="symbol">{{ o.symbol }}</td>
-                    <td [class.positive]="o.side === 'BUY'" [class.negative]="o.side === 'SELL'">
-                      {{ o.side }}
-                    </td>
-                    <td class="text-right">{{ o.quantity }}</td>
-                    <td class="text-right">₹{{ o.price | number: '1.2-2' }}</td>
-                    <td class="text-right">
-                      <span
-                        class="status-badge"
-                        [class.badge-success]="o.status === 'FILLED'"
-                        [class.badge-warning]="o.status === 'PENDING'"
-                        [class.badge-danger]="o.status === 'REJECTED'"
-                      >
-                        {{ o.status }}
-                      </span>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <app-orders></app-orders>
       </section>
     </div>
   </main>

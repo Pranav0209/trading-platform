@@ -1,13 +1,15 @@
 import { Component, inject, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { DashboardService } from './dashboard.service';
 import { Session } from '../auth/session';
+import { OrdersComponent } from '../trade/orders/orders';
+import { PositionsComponent } from '../trade/positions/positions';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterLink, OrdersComponent, PositionsComponent],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css']
 })
@@ -19,8 +21,6 @@ export class Dashboard implements OnInit {
   // Expose signals to the template
   portfolioSummary = this.dashboardService.portfolioSummary;
   holdings = this.dashboardService.holdings;
-  positions = this.dashboardService.positions;
-  recentOrders = this.dashboardService.recentOrders;
   systemStatuses = this.dashboardService.systemStatuses;
   userName = this.dashboardService.userName;
   userInitial = computed(() => this.userName().charAt(0));
