@@ -13,26 +13,4 @@ export interface Holding {
   pnl: number;
 }
 
-export interface Position {
-  symbol: string;
-  quantity: number;
-  averagePrice: number;
-  ltp: number;
-  pnl: number;
-}
 
-export interface Order {
-  id: string;
-  time: string;
-  symbol: string;
-  side: 'BUY' | 'SELL';
-  quantity: number;
-  price: number;
-  executedPrice?: number;
-  status: 'FILLED' | 'PENDING' | 'REJECTED' | 'NEW';
-}
-
-export interface SystemStatus {
-  service: string;
-  status: 'Operational' | 'Degraded' | 'Offline';
-}

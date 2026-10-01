@@ -1,64 +1,6 @@
-/* STANDALONE PAGE STYLES */
-.standalone-wrapper {
-  padding: 40px;
-  max-width: 1200px;
-  margin: 0 auto;
-  min-height: 100vh;
-}
-
-.page-header {
-  margin-bottom: 32px;
-}
-
-.back-link {
-  color: #8B95A5;
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  display: inline-block;
-  margin-bottom: 16px;
-  transition: color 0.2s;
-}
-
-.back-link:hover {
-  color: #3B82F6;
-}
-
-.page-header h1 {
-  margin: 0 0 8px 0;
-  font-size: 28px;
-  color: #fff;
-}
-
-.page-header .subtitle {
-  margin: 0;
-  color: #8B95A5;
-}
-
-/* COMPONENT STYLES (Used in both standalone and dashboard) */
-.card {
-  background-color: #0F141B;
-  border: 1px solid #202832;
-  border-radius: 12px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-}
-
 .card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
   flex-wrap: wrap;
   gap: 20px;
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #8B95A5;
-  margin: 0;
 }
 
 .blotter-controls {
@@ -70,7 +12,7 @@
 
 .refresh-button {
   padding: 8px 16px;
-  background-color: #2563EB;
+  background-color: var(--accent);
   color: white;
   border: none;
   border-radius: 6px;
@@ -81,23 +23,23 @@
 }
 
 .refresh-button:hover:not(:disabled) {
-  background-color: #1d4ed8;
+  background-color: var(--accent-hover);
 }
 
 .refresh-button:disabled {
   background-color: #29323d;
-  color: #8B95A5;
+  color: var(--text-secondary);
   cursor: not-allowed;
 }
 
 .auto-refresh-indicator {
-  color: #3B82F6;
+  color: var(--accent-hover);
   font-size: 13px;
   font-weight: 500;
 }
 
 .last-refreshed {
-  color: #8B95A5;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
@@ -114,32 +56,12 @@
 .blotter-empty {
   text-align: center;
   padding: 40px 20px;
-  color: #566171;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
 .table-container {
-  overflow-x: auto;
   border-radius: 8px;
 }
 
-table {
-  width: 100%;
-}
-
-.symbol {
-  font-weight: 600;
-}
-
-.text-right {
-  text-align: right;
-}
-
-.text-center {
-  text-align: center;
-}
-
-.positive { color: #22C55E; }
-.negative { color: #EF4444; }
-.muted { color: #566171; }
 .order-id { font-family: monospace; font-size: 12px; }

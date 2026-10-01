@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { PortfolioSummary, Holding, Position, Order, SystemStatus } from './models';
+import { PortfolioSummary, Holding } from './models';
 import { AccountsService } from '../../../generated/trade/api/accounts.service';
 import { Session } from '../auth/session';
 
@@ -20,13 +20,7 @@ export class DashboardService {
   holdings = signal<Holding[]>([]);
   userName = signal<string>('User');
   
-  // Hardcoded for now until health check APIs are built
-  systemStatuses = signal<SystemStatus[]>([
-    { service: 'Trade API', status: 'Operational' },
-    { service: 'Auth Service', status: 'Operational' },
-    { service: 'Order Executor', status: 'Operational' },
-    { service: 'Database', status: 'Operational' }
-  ]);
+
 
   constructor() {
     this.loadData();

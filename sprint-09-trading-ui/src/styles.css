@@ -1,9 +1,35 @@
-/* You can add global styles to this file, and also import other style files */
+/* ==========================================================================
+   CSS VARIABLES - TRADEX DESIGN SYSTEM
+   ========================================================================== */
+:root {
+  --bg-main: #0A0E13;
+  --bg-surface: #0F141B;
+  --bg-surface-sec: #111820;
+  --border-color: #202832;
+  
+  --text-primary: #F5F7FA;
+  --text-secondary: #8B95A5;
+  --text-muted: #566171;
+  
+  --accent: #2563EB;
+  --accent-hover: #3B82F6;
+  
+  --positive: #22C55E;
+  --negative: #EF4444;
+  --warning: #F59E0B;
+
+  --sidebar-width: 250px;
+  --header-height: 70px;
+}
+
+/* ==========================================================================
+   BASE TYPOGRAPHY & RESET
+   ========================================================================== */
 body, html {
   margin: 0;
   padding: 0;
-  background-color: #0A0E13;
-  color: #F5F7FA;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
   font-family: Inter, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -11,3 +37,118 @@ body, html {
 *, *::before, *::after {
   box-sizing: border-box;
 }
+
+/* ==========================================================================
+   COMMON LAYOUTS (STANDALONE PAGES)
+   ========================================================================== */
+.standalone-wrapper {
+  padding: 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.page-header {
+  margin-bottom: 32px;
+}
+
+.back-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-block;
+  margin-bottom: 16px;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
+  color: var(--accent-hover);
+}
+
+.page-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  color: #fff;
+}
+
+.page-header .subtitle {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   CARDS
+   ========================================================================== */
+.card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.data-card {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ==========================================================================
+   TABLES (LEGACY)
+   ========================================================================== */
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+td {
+  padding: 16px 0;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(32, 40, 50, 0.5);
+  color: var(--text-primary);
+}
+
+tr:last-child td {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+/* ==========================================================================
+   UTILITY CLASSES
+   ========================================================================== */
+.symbol { font-weight: 600; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.positive { color: var(--positive); }
+.negative { color: var(--negative); }
+.muted { color: var(--text-muted); }
+

@@ -3,7 +3,14 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AccountsService } from '../../../../generated/trade/api/accounts.service';
 import { Session } from '../../auth/session';
-import { Position } from '../../dashboard/models';
+
+export interface Position {
+  symbol: string;
+  quantity: number;
+  averagePrice: number;
+  ltp: number;
+  pnl: number;
+}
 
 @Component({
   selector: 'app-positions',

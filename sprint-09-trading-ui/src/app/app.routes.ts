@@ -7,7 +7,7 @@ import { OrderTicket } from './core/trade/order-ticket/order-ticket';
 
 export const routes: Routes = [
   { path: 'sign-in', component: SignIn },
-  { path: 'register', component: Register, canActivate: [authGuard] },
+  { path: 'register', component: Register },
   { path: 'trade', component: OrderTicket, canActivate: [authGuard] },
   { path: 'admin', loadComponent: () => import('./core/admin/admin-dashboard').then(m => m.AdminDashboard), canActivate: [adminGuard] },
   { path: 'dashboard', loadComponent: () => import('./core/dashboard/dashboard').then(m => m.Dashboard), canActivate: [authGuard] },

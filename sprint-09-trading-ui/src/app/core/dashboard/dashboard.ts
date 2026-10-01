@@ -21,7 +21,7 @@ export class Dashboard implements OnInit {
   // Expose signals to the template
   portfolioSummary = this.dashboardService.portfolioSummary;
   holdings = this.dashboardService.holdings;
-  systemStatuses = this.dashboardService.systemStatuses;
+
   userName = this.dashboardService.userName;
   userInitial = computed(() => this.userName().charAt(0));
   

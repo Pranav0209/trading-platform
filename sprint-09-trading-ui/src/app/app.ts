@@ -1,6 +1,5 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import './api/contract-clients';
 
 @Component({
   selector: 'app-root',
