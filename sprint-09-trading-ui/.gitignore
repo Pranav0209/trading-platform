@@ -33,10 +33,21 @@ yarn-error.log
 .sass-cache/
 /connect.lock
 /coverage
-/libpeerconnection.log
+/libpeerconnect.log
 testem.log
 /typings
 wwwroot/*.js
+
+# Playwright e2e tests
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Environment files (local configuration)
+.env
+.env.local
+.env.*.local
 
 # System files
 .DS_Store
