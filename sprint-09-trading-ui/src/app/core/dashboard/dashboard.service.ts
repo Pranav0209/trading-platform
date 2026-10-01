@@ -18,8 +18,6 @@ export class DashboardService {
     availableBalance: 0
   });
   holdings = signal<Holding[]>([]);
-  positions = signal<Position[]>([]);
-  recentOrders = signal<Order[]>([]);
   userName = signal<string>('User');
   
   // Hardcoded for now until health check APIs are built
@@ -40,8 +38,8 @@ export class DashboardService {
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      // We assume the JWT contains 'userId' or 'sub' which acts as accountId
-      const accountId = payload.userId || payload.accountId || 1; // fallback if neither exists
+      // The JWT contains accountId (Sprint 8) or userId (Sprint 6 fallback)
+      const accountId = payload.accountId || payload.userId;
       
       // 'sub' is usually the username in standard JWTs
       if (payload.sub) {
@@ -61,8 +59,7 @@ export class DashboardService {
           },
           error: (err) => console.error('Failed to load balance', err)
         });
-
-        // Fetch Positions
+        // Fetch Positions for Holdings view
         this.accountsService.getPositions(accountId).subscribe({
           next: (res) => {
             // Map generated PositionResponse to our UI Position model
@@ -73,29 +70,10 @@ export class DashboardService {
               ltp: p.averageCost, // Mock LTP as averageCost for now
               pnl: 0 // Mock P&L for now
             }));
-            this.positions.set(mappedPositions);
             // Treat holdings same as positions for the UI mock
             this.holdings.set(mappedPositions);
           },
-          error: (err) => console.error('Failed to load positions', err)
-        });
-
-        // Fetch Orders
-        this.accountsService.getOrders(accountId).subscribe({
-          next: (res) => {
-            // Map generated OrderHistoryEntry to our UI Order model
-            const mappedOrders = res.map(o => ({
-              id: o.orderId,
-              time: new Date(o.createdOn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-              symbol: o.symbol,
-              side: o.side as 'BUY' | 'SELL',
-              quantity: o.quantity,
-              price: o.price,
-              status: o.status as 'FILLED' | 'PENDING' | 'REJECTED'
-            }));
-            this.recentOrders.set(mappedOrders);
-          },
-          error: (err) => console.error('Failed to load orders', err)
+          error: (err) => console.error('Failed to load holdings', err)
         });
       }
     } catch (e) {

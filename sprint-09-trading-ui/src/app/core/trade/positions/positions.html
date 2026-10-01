@@ -1,0 +1,52 @@
+@if (isStandalone()) {
+  <div class="standalone-wrapper">
+    <header class="page-header">
+      <a routerLink="/dashboard" class="back-link">← Back to Dashboard</a>
+      <h1>Your Positions</h1>
+      <p class="subtitle">View and manage your open market positions.</p>
+    </header>
+    <div class="content-container">
+      <ng-container *ngTemplateOutlet="tableContent"></ng-container>
+    </div>
+  </div>
+} @else {
+  <ng-container *ngTemplateOutlet="tableContent"></ng-container>
+}
+
+<ng-template #tableContent>
+  <div class="card data-card">
+    <div class="card-header">
+      <h3 class="card-title">Open Positions</h3>
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th class="text-right">Qty</th>
+            <th class="text-right">Avg. Price</th>
+            <th class="text-right">LTP</th>
+            <th class="text-right">P&L</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of positions(); track p.symbol) {
+            <tr>
+              <td class="symbol">{{ p.symbol }}</td>
+              <td class="text-right">{{ p.quantity }}</td>
+              <td class="text-right">₹{{ p.averagePrice | number: '1.2-2' }}</td>
+              <td class="text-right">₹{{ p.ltp | number: '1.2-2' }}</td>
+              <td
+                class="text-right"
+                [class.positive]="p.pnl > 0"
+                [class.negative]="p.pnl < 0"
+              >
+                {{ p.pnl > 0 ? '+' : '' }}₹{{ p.pnl | number: '1.0-0' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</ng-template>

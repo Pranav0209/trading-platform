@@ -26,10 +26,12 @@ export class OrderTicket implements OnInit {
   private readonly errorCodeMapper = inject(ErrorCodeMapper);
 
   readonly orderSides = [OrderSide.Buy, OrderSide.Sell];
+  readonly orderTypes = ['LIMIT', 'MARKET'];
 
   form = this.fb.nonNullable.group({
     symbol: ['', [Validators.required, Validators.pattern(SYMBOL_PATTERN)]],
     side: [OrderSide.Buy as OrderSide, [Validators.required]],
+    orderType: ['LIMIT', [Validators.required]],
     quantity: ['', [Validators.required, Validators.pattern(QUANTITY_PATTERN)]],
     price: ['', [Validators.required, Validators.pattern(PRICE_PATTERN)]]
   });
@@ -41,10 +43,24 @@ export class OrderTicket implements OnInit {
 
   ngOnInit(): void {
     this.accountId.set(this.parseAccountId(this.session.token()));
+    
+    // Dynamically require or hide the price field based on order type
+    this.form.controls.orderType.valueChanges.subscribe(type => {
+      const priceControl = this.form.controls.price;
+      if (type === 'MARKET') {
+        priceControl.clearValidators();
+        priceControl.disable();
+        priceControl.setValue('');
+      } else {
+        priceControl.setValidators([Validators.required, Validators.pattern(PRICE_PATTERN)]);
+        priceControl.enable();
+      }
+      priceControl.updateValueAndValidity();
+    });
   }
 
   onSubmit(): void {
-    if (this.form.invalid || this.isPriceNonPositive()) {
+    if (this.form.invalid || (this.form.controls.orderType.value === 'LIMIT' && this.isPriceNonPositive())) {
       this.form.markAllAsTouched();
       return;
     }
@@ -65,11 +81,14 @@ export class OrderTicket implements OnInit {
       accountId,
       symbol: raw.symbol,
       side: raw.side,
-      orderType: 'LIMIT',
+      orderType: raw.orderType,
       quantity: Number(raw.quantity),
-      limitPrice: Number(raw.price),
       idempotencyKey: this.createIdempotencyKey()
     } as any;
+
+    if (raw.orderType === 'LIMIT') {
+      payload.limitPrice = Number(raw.price);
+    }
 
     this.ordersService.placeOrder(payload).subscribe({
       next: (res) => {
@@ -86,6 +105,9 @@ export class OrderTicket implements OnInit {
   }
 
   isPriceNonPositive(): boolean {
+    if (this.form.controls.orderType.value === 'MARKET') {
+      return false; // Price is irrelevant for MARKET orders
+    }
     const priceControl = this.form.controls.price;
     const rawPrice = priceControl.value.trim();
     if (rawPrice === '') {

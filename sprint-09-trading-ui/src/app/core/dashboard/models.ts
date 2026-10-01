@@ -28,7 +28,8 @@ export interface Order {
   side: 'BUY' | 'SELL';
   quantity: number;
   price: number;
-  status: 'FILLED' | 'PENDING' | 'REJECTED';
+  executedPrice?: number;
+  status: 'FILLED' | 'PENDING' | 'REJECTED' | 'NEW';
 }
 
 export interface SystemStatus {

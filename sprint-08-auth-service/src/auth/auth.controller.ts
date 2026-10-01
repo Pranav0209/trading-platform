@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, Request, HttpCode } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, Request, HttpCode, Res, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -24,10 +24,22 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorised.' })
   @HttpCode(200)
   @Post('login')
-  async login(@Body() loginDto: LoginDto, @Request() req: any) {
+  async login(@Body() loginDto: LoginDto, @Request() req: any, @Res({ passthrough: true }) res: any) {
     const ipAddress =
       req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || '0.0.0.0';
-    return this.authService.login(loginDto, ipAddress);
+    const result = await this.authService.login(loginDto, ipAddress);
+
+    // Securely set the refresh token as an HttpOnly cookie
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: false, // true in prod
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    // Remove the refresh token from the JSON body
+    const { refreshToken, ...responseBody } = result;
+    return responseBody;
   }
 
   @ApiOperation({ summary: 'Refresh access token using refresh token' })
@@ -35,8 +47,24 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorised.' })
   @HttpCode(200)
   @Post('refresh')
-  async refresh(@Body() refreshDto: RefreshDto) {
-    return this.authService.refresh(refreshDto);
+  async refresh(@Request() req: any, @Res({ passthrough: true }) res: any) {
+    const refreshToken = req.cookies['refreshToken'];
+    if (!refreshToken) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'No refresh token cookie' });
+    }
+
+    const result = await this.authService.refresh({ refreshToken });
+    
+    // Set the newly rotated refresh token
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    const { refreshToken: _, ...responseBody } = result;
+    return responseBody;
   }
 
   @ApiBearerAuth()
