@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OrdersService } from '../../../../generated/trade/api/orders.service';
 import { OrderSide } from '../../../../generated/trade/model/orderSide';
 import { PlaceOrderRequest } from '../../../../generated/trade/model/placeOrderRequest';
 import { Session } from '../../auth/session';
 import { ErrorCodeMapper } from '../../error/error-code-mapper';
-import { OrderBlotter } from '../order-blotter/order-blotter';
 
 const SYMBOL_PATTERN = /^(?:[A-Z][A-Z0-9]*(?:\.(?:NS|BO))?|FX:[A-Z]{6}|X:[A-Z0-9]+)$/;
 const PRICE_PATTERN = /^\d+(?:\.\d{1,2})?$/;
@@ -15,7 +15,7 @@ const QUANTITY_PATTERN = /^[1-9]\d*$/;
 
 @Component({
   selector: 'app-order-ticket',
-  imports: [CommonModule, ReactiveFormsModule, OrderBlotter],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './order-ticket.html',
   styleUrl: './order-ticket.css'
 })
@@ -24,6 +24,7 @@ export class OrderTicket implements OnInit {
   private readonly ordersService = inject(OrdersService);
   private readonly session = inject(Session);
   private readonly errorCodeMapper = inject(ErrorCodeMapper);
+  private readonly router = inject(Router);
 
   readonly orderSides = [OrderSide.Buy, OrderSide.Sell];
   readonly orderTypes = ['LIMIT', 'MARKET'];
@@ -95,6 +96,8 @@ export class OrderTicket implements OnInit {
         this.submitting.set(false);
         this.responseType.set('success');
         this.responseMessage.set(`Order ${res.orderId} is ${res.status}. ${res.message}`);
+        this.form.reset({ side: this.form.controls.side.value, orderType: this.form.controls.orderType.value });
+        this.router.navigate(['/orders']);
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);

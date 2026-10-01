@@ -1,63 +1,104 @@
-<section class="order-blotter">
-  <div class="blotter-header">
-    <h2>Order History</h2>
-    <div class="blotter-controls">
-      @if (isAutoRefreshing()) {
-        <span class="auto-refresh-indicator">🔄 Auto-refreshing...</span>
-      }
-      <button class="refresh-button" (click)="manualRefresh()" [disabled]="isLoading()" data-testid="manual-refresh-button">
-        {{ isLoading() ? 'Loading...' : 'Refresh' }}
-      </button>
-      @if (lastRefreshed()) {
-        <span class="last-refreshed">Last refreshed: {{ formatDate(lastRefreshed()!.toISOString()) }}</span>
-      }
+@if (isStandalone()) {
+  <div class="standalone-wrapper">
+    <header class="page-header">
+      <a routerLink="/dashboard" class="back-link">← Back to Dashboard</a>
+      <h1>Your Orders</h1>
+      <p class="subtitle">View and manage your recent trading activity.</p>
+    </header>
+    <div class="content-container">
+      <ng-container *ngTemplateOutlet="blotterContent"></ng-container>
     </div>
   </div>
+} @else {
+  <ng-container *ngTemplateOutlet="blotterContent"></ng-container>
+}
 
-  @if (error()) {
-    <div class="blotter-error" data-testid="error-message">{{ error() }}</div>
-  }
+<ng-template #blotterContent>
+  <div class="card data-card order-blotter" [class.span-2]="!isStandalone()">
+    <div class="card-header blotter-header">
+      <h3 class="card-title">Recent Orders</h3>
+      <div class="blotter-controls">
+        @if (isAutoRefreshing()) {
+          <span class="auto-refresh-indicator">🔄 Auto-refreshing...</span>
+        }
+        <button class="refresh-button" (click)="manualRefresh()" [disabled]="isLoading()" data-testid="manual-refresh-button">
+          {{ isLoading() ? 'Loading...' : 'Refresh' }}
+        </button>
+        @if (lastRefreshed()) {
+          <span class="last-refreshed">Last refreshed: {{ formatDate(lastRefreshed()!.toISOString()) }}</span>
+        }
+      </div>
+    </div>
+    
+    @if (error()) {
+      <div class="blotter-error" data-testid="error-message">{{ error() }}</div>
+    }
 
-  @if (orders().length === 0) {
-    <div class="blotter-empty" data-testid="empty-state">
-      @if (!isLoading() && !error()) {
-        <p>No orders found. Your order history will appear here.</p>
-      }
-    </div>
-  } @else {
-    <div class="blotter-table-wrapper">
-      <table class="blotter-table" data-testid="orders-table">
-        <thead>
-          <tr>
-            <th>Order ID</th>
-            <th>Symbol</th>
-            <th>Side</th>
-            <th>Quantity</th>
-            <th>Price</th>
-            <th>Executed Price</th>
-            <th>Status</th>
-            <th>Created On</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (order of orders(); track order.orderId) {
-            <tr class="order-row" [attr.data-testid]="'order-row-' + order.orderId">
-              <td class="order-id">{{ order.orderId }}</td>
-              <td class="symbol">{{ order.symbol }}</td>
-              <td class="side" [class.side-buy]="order.side === 'BUY'" [class.side-sell]="order.side === 'SELL'">
-                {{ order.side }}
-              </td>
-              <td class="quantity">{{ order.quantity }}</td>
-              <td class="price">{{ formatPrice(order.price) }}</td>
-              <td class="executed-price">{{ formatPrice(order.executedPrice) }}</td>
-              <td class="status">
-                <app-status-badge [status]="order.status" data-testid="status-badge"></app-status-badge>
-              </td>
-              <td class="created-on">{{ formatDate(order.createdOn) }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  }
-</section>
+    @if (orders().length === 0) {
+      <div class="blotter-empty" data-testid="empty-state">
+        @if (!isLoading() && !error()) {
+          <p>No orders found. Your order history will appear here.</p>
+        }
+      </div>
+    } @else {
+      <div class="table-container mat-elevation-z8">
+        <table mat-table [dataSource]="dataSource" data-testid="orders-table">
+          <!-- Order ID Column -->
+          <ng-container matColumnDef="orderId">
+            <th mat-header-cell *matHeaderCellDef> Order ID </th>
+            <td mat-cell *matCellDef="let order" class="order-id muted"> {{ order.orderId }} </td>
+          </ng-container>
+
+          <!-- Symbol Column -->
+          <ng-container matColumnDef="symbol">
+            <th mat-header-cell *matHeaderCellDef> Symbol </th>
+            <td mat-cell *matCellDef="let order" class="symbol"> {{ order.symbol }} </td>
+          </ng-container>
+
+          <!-- Side Column -->
+          <ng-container matColumnDef="side">
+            <th mat-header-cell *matHeaderCellDef> Side </th>
+            <td mat-cell *matCellDef="let order" class="side" [class.positive]="order.side === 'BUY'" [class.negative]="order.side === 'SELL'">
+              {{ order.side }}
+            </td>
+          </ng-container>
+
+          <!-- Quantity Column -->
+          <ng-container matColumnDef="quantity">
+            <th mat-header-cell *matHeaderCellDef class="text-right"> Quantity </th>
+            <td mat-cell *matCellDef="let order" class="quantity text-right"> {{ order.quantity }} </td>
+          </ng-container>
+
+          <!-- Price Column -->
+          <ng-container matColumnDef="price">
+            <th mat-header-cell *matHeaderCellDef class="text-right"> Price </th>
+            <td mat-cell *matCellDef="let order" class="price text-right"> {{ formatPrice(order.price) }} </td>
+          </ng-container>
+
+          <!-- Executed Price Column -->
+          <ng-container matColumnDef="executedPrice">
+            <th mat-header-cell *matHeaderCellDef class="text-right"> Executed Price </th>
+            <td mat-cell *matCellDef="let order" class="executed-price text-right muted"> {{ formatPrice(order.executedPrice) }} </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef class="text-center"> Status </th>
+            <td mat-cell *matCellDef="let order" class="status text-center">
+              <app-status-badge [status]="order.status" data-testid="status-badge"></app-status-badge>
+            </td>
+          </ng-container>
+
+          <!-- Created On Column -->
+          <ng-container matColumnDef="createdOn">
+            <th mat-header-cell *matHeaderCellDef> Created On </th>
+            <td mat-cell *matCellDef="let order" class="created-on muted"> {{ formatDate(order.createdOn) }} </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="order-row" [attr.data-testid]="'order-row-' + row.orderId"></tr>
+        </table>
+      </div>
+    }
+  </div>
+</ng-template>

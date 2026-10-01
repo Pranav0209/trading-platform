@@ -3,13 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { DashboardService } from './dashboard.service';
 import { Session } from '../auth/session';
-import { OrdersComponent } from '../trade/orders/orders';
+import { OrderBlotter } from '../trade/order-blotter/order-blotter';
 import { PositionsComponent } from '../trade/positions/positions';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, OrdersComponent, PositionsComponent],
+  imports: [CommonModule, RouterLink, OrderBlotter, PositionsComponent],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css']
 })

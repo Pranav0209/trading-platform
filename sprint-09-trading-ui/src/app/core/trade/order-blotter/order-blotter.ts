@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Input, OnInit, OnDestroy, inject, signal, effect } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
+import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { AccountsService } from '../../../../generated/trade/api/accounts.service';
 import { OrderHistoryEntry } from '../../../../generated/trade/model/orderHistoryEntry';
 import { Session } from '../../auth/session';
@@ -11,24 +13,29 @@ const MAX_REFRESH_ATTEMPTS = 120; // Stop after 10 minutes if something stays NE
 
 @Component({
   selector: 'app-order-blotter',
-  imports: [CommonModule, StatusBadgeComponent],
+  imports: [CommonModule, StatusBadgeComponent, RouterLink, MatTableModule],
   templateUrl: './order-blotter.html',
   styleUrl: './order-blotter.css'
 })
 export class OrderBlotter implements OnInit, OnDestroy {
-  @Input() accountId!: number;
+  @Input() accountId?: number;
 
   private readonly accountsService = inject(AccountsService);
   private readonly session = inject(Session);
+  private readonly router = inject(Router);
 
   // State signals
   orders = signal<OrderHistoryEntry[]>([]);
+  dataSource = new MatTableDataSource<OrderHistoryEntry>([]);
+  displayedColumns: string[] = ['orderId', 'symbol', 'side', 'quantity', 'price', 'executedPrice', 'status', 'createdOn'];
+  
   isLoading = signal(false);
   error = signal<string | null>(null);
   lastRefreshed = signal<Date | null>(null);
   hasWorkingOrders = signal(false);
   refreshAttempts = signal(0);
   isAutoRefreshing = signal(false);
+  isStandalone = signal(false);
 
   private refreshIntervalId: number | null = null;
   private refreshAbortController: AbortController | null = null;
@@ -48,6 +55,19 @@ export class OrderBlotter implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.isStandalone.set(this.router.url === '/orders');
+    
+    if (!this.accountId) {
+      const token = this.session.token();
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          this.accountId = payload.accountId || payload.userId;
+        } catch (e) {
+          console.error('Failed to parse token for accountId', e);
+        }
+      }
+    }
     this.loadOrderHistory();
   }
 
@@ -78,6 +98,7 @@ export class OrderBlotter implements OnInit, OnDestroy {
       next: (orders: OrderHistoryEntry[]) => {
         this.isLoading.set(false);
         this.orders.set(orders);
+        this.dataSource.data = orders;
         this.lastRefreshed.set(new Date());
         this.updateWorkingOrdersStatus(orders);
         this.refreshAttempts.set(this.refreshAttempts() + 1);
