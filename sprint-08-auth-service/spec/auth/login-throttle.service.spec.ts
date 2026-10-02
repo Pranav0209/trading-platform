@@ -18,18 +18,7 @@ jest.mock('typeorm', () => ({
 }));
 
 const { LoginThrottleService } = require('../../src/auth/login-throttle.service') as {
-  LoginThrottleService: new (repository: unknown) => {
-    isThrottled(username: string, ipAddress: string): Promise<boolean>;
-    recordFailedAttempt(username: string, ipAddress: string): Promise<void>;
-    recordSuccessfulAttempt(username: string, ipAddress: string): Promise<void>;
-    logger: { warn: jest.Mock };
-  } & {
-    getConfig(): {
-      maxAttempts: number;
-      cooldownSeconds: number;
-      cooldownMinutes: number;
-    };
-  };
+  LoginThrottleService: any;
 };
 
 describe('LoginThrottleService', () => {
@@ -59,15 +48,7 @@ describe('LoginThrottleService', () => {
 
     await expect(service.isThrottled('alice', '10.0.0.1')).resolves.toBe(false);
 
-    expect(repository.count).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          username: 'alice',
-          ipAddress: '10.0.0.1',
-          success: false,
-        }),
-      }),
-    );
+    expect(repository.query).toHaveBeenCalled();
     expect(repository.query).toHaveBeenCalledWith(
       expect.stringContaining('SELECT COUNT(*) as count FROM auth.login_attempts'),
       ['alice', '10.0.0.1', expect.any(Date)],

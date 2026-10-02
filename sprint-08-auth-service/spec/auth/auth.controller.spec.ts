@@ -6,6 +6,8 @@ jest.mock('@nestjs/common', () => ({
   UseGuards: () => () => undefined,
   Request: () => () => undefined,
   HttpCode: () => () => undefined,
+  Res: () => () => undefined,
+  UnauthorizedException: class UnauthorizedException {},
 }));
 
 jest.mock('@nestjs/swagger', () => ({
@@ -72,10 +74,11 @@ describe('AuthController', () => {
       headers: { 'x-forwarded-for': ' 203.0.113.10 , 70.0.0.2 ' },
       ip: '10.10.10.10',
     };
+    const res = { cookie: jest.fn() };
     const expected = { accessToken: 'a', refreshToken: 'b' };
     authService.login.mockResolvedValue(expected);
 
-    await expect(controller.login(dto, req)).resolves.toEqual(expected);
+    await expect(controller.login(dto, req, res)).resolves.toEqual({ accessToken: 'a' });
     expect(authService.login).toHaveBeenCalledWith(dto, '203.0.113.10');
   });
 
@@ -85,8 +88,10 @@ describe('AuthController', () => {
       headers: {},
       ip: '10.10.10.10',
     };
+    const res = { cookie: jest.fn() };
+    authService.login.mockResolvedValue({ refreshToken: 'b' });
 
-    await controller.login(dto, req);
+    await controller.login(dto, req, res);
     expect(authService.login).toHaveBeenCalledWith(dto, '10.10.10.10');
   });
 
@@ -95,18 +100,21 @@ describe('AuthController', () => {
     const req = {
       headers: {},
     };
+    const res = { cookie: jest.fn() };
+    authService.login.mockResolvedValue({ refreshToken: 'b' });
 
-    await controller.login(dto, req);
+    await controller.login(dto, req, res);
     expect(authService.login).toHaveBeenCalledWith(dto, '0.0.0.0');
   });
 
   it('refresh delegates to authService.refresh', async () => {
-    const dto = { refreshToken: 'refresh-token' };
-    const expected = { accessToken: 'new-token' };
+    const req = { cookies: { refreshToken: 'refresh-token' } };
+    const res = { cookie: jest.fn() };
+    const expected = { accessToken: 'new-token', refreshToken: 'new-refresh-token' };
     authService.refresh.mockResolvedValue(expected);
 
-    await expect(controller.refresh(dto)).resolves.toEqual(expected);
-    expect(authService.refresh).toHaveBeenCalledWith(dto);
+    await expect(controller.refresh(req, res)).resolves.toEqual({ accessToken: 'new-token' });
+    expect(authService.refresh).toHaveBeenCalledWith({ refreshToken: 'refresh-token' });
   });
 
   it('me delegates to authService.me using req.user.userId', async () => {

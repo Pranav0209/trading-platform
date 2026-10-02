@@ -45,7 +45,7 @@ const { BadRequestException, HttpException } = require('@nestjs/common') as {
 };
 
 describe('GlobalExceptionFilter', () => {
-  let filter: GlobalExceptionFilter;
+  let filter: any;
 
   beforeEach(() => {
     filter = new GlobalExceptionFilter();

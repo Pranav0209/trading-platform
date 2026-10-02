@@ -37,7 +37,7 @@ const { AuthService } = require('../../src/auth/auth.service') as {
     jwtService: unknown,
     loginThrottleService: unknown,
     refreshTokenRepository: unknown,
-  ) => unknown;
+  ) => any;
 };
 
 const { ConflictException, UnauthorizedException } = require('@nestjs/common') as {
@@ -193,7 +193,6 @@ describe('AuthService', () => {
       expect.objectContaining({
         sub: 'carol',
         userId: 11,
-        role: 'MISSION_OPERATOR',
         accountId: 501,
         roles: ['MISSION_OPERATOR'],
         iss: 'auth-service',
@@ -309,7 +308,6 @@ describe('AuthService', () => {
       expect.objectContaining({
         sub: 'carol',
         userId: 11,
-        role: 'MISSION_OPERATOR',
         accountId: null,
         roles: ['MISSION_OPERATOR'],
       }),

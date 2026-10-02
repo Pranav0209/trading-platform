@@ -79,7 +79,7 @@ describe('JwtAuthGuard', () => {
     expect(jwtService.verifyAsync).toHaveBeenCalledWith('invalid-token', {
       secret: 'test-secret',
     });
-    expect(request['user']).toBeUndefined();
+    expect((request as any).user).toBeUndefined();
   });
 
   it('returns true and sets request user when token verification succeeds', async () => {
@@ -92,6 +92,6 @@ describe('JwtAuthGuard', () => {
     expect(jwtService.verifyAsync).toHaveBeenCalledWith('valid-token', {
       secret: 'test-secret',
     });
-    expect(request['user']).toEqual(payload);
+    expect((request as any).user).toEqual(payload);
   });
 });
