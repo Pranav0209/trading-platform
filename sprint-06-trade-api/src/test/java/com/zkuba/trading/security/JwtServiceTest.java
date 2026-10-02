@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.List;
 import javax.crypto.SecretKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,7 +39,7 @@ class JwtServiceTest {
         String token = Jwts.builder()
                 .subject(username)
                 .claim("userId", userId)
-                .claim("role", role)
+                .claim("roles", List.of(role))
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expirationMs))
                 .signWith(key)
@@ -49,7 +50,7 @@ class JwtServiceTest {
         Claims claims = jwtService.parse(token);
         assertThat(claims.getSubject()).isEqualTo(username);
         assertThat(claims.get("userId", Long.class)).isEqualTo(userId);
-        assertThat(claims.get("role", String.class)).isEqualTo(role);
+        assertThat(claims.get("roles", List.class)).containsExactly(role);
         assertThat(claims.getExpiration()).isNotNull();
     }
 }

@@ -25,15 +25,6 @@ export class LoginThrottleService {
       Date.now() - LoginThrottleService.COOLDOWN_SECONDS * 1000,
     );
 
-    const recentFailures = await this.loginAttemptRepository.count({
-      where: {
-        username,
-        ipAddress,
-        success: false,
-        createdAt: LessThan(new Date()), // Only count attempts after cooldown start
-      },
-    });
-
     // Count only recent failures (within cooldown window)
     const recentFailureCount = await this.loginAttemptRepository.query(
       `SELECT COUNT(*) as count FROM auth.login_attempts 

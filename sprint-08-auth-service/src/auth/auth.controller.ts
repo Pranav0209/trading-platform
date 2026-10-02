@@ -32,7 +32,7 @@ export class AuthController {
     // Securely set the refresh token as an HttpOnly cookie
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: false, // true in prod
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
     });
@@ -58,7 +58,7 @@ export class AuthController {
     // Set the newly rotated refresh token
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
-      secure: false,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
     });

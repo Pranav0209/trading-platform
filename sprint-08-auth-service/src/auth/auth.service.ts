@@ -124,7 +124,6 @@ export class AuthService {
     const payload = {
       sub: user.username, // Sprint 6 expects username in sub
       userId: Number(user.id), // Sprint 6 expects userId as Number
-      role: user.role, // Sprint 6 expects role as String
       accountId: accountId, // Sprint 8 requirement
       roles: [user.role], // Sprint 8 requirement
       iss: 'auth-service'
