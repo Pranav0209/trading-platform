@@ -1,0 +1,52 @@
+<div class="profile-container">
+  <!-- Header Section -->
+  <header class="page-header">
+    <h1>User Profile</h1>
+    <p class="subtitle">Your personal account and preferences</p>
+  </header>
+
+  <div class="content-container">
+    <!-- Profile Card with Green Accents -->
+    <section class="card profile-card">
+      <div class="profile-header">
+        <div class="avatar">{{ (username() | slice: 0 : 1).toUpperCase() }}</div>
+        <div class="profile-title">
+          <h2>{{ username() }}</h2>
+          <div class="role-container">
+            <p class="role-badge">{{ roleDisplay() }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Details Section -->
+      <div class="profile-details">
+        <!-- Username Row -->
+        <div class="detail-row">
+          <div class="detail-label">
+            <span class="material-icons detail-icon">person</span>
+            <span>Username</span>
+          </div>
+          <span class="detail-value">{{ username() }}</span>
+        </div>
+
+        <!-- Email Row -->
+        <div class="detail-row">
+          <div class="detail-label">
+            <span class="material-icons detail-icon">email</span>
+            <span>Email Address</span>
+          </div>
+          <span class="detail-value">{{ displayEmail() }}</span>
+        </div>
+
+        <!-- Last Login Row -->
+        <div class="detail-row">
+          <div class="detail-label">
+            <span class="material-icons detail-icon">schedule</span>
+            <span>Last Login</span>
+          </div>
+          <span class="detail-value">{{ getCurrentDate() }}</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

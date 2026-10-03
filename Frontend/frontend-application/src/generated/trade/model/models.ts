@@ -10,3 +10,4 @@ export * from './orderStatus';
 export * from './pendingUserResponse';
 export * from './placeOrderRequest';
 export * from './positionResponse';
+export * from './updateOrderRequest';

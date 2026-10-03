@@ -21,6 +21,8 @@ export const routes: Routes = [
       { path: 'orders', loadComponent: () => import('./features/trade/order-blotter/order-blotter').then(m => m.OrderBlotter), canActivate: [customerGuard] },
       { path: 'positions', loadComponent: () => import('./features/trade/positions/positions').then(m => m.PositionsComponent), canActivate: [customerGuard] },
       { path: 'holdings', loadComponent: () => import('./features/trade/positions/positions').then(m => m.PositionsComponent), canActivate: [customerGuard] },
+      { path: 'profile', loadComponent: () => import('./features/profile/profile').then(m => m.Profile), canActivate: [customerGuard] },
+      { path: 'account', loadComponent: () => import('./features/account/account').then(m => m.Account), canActivate: [customerGuard] },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

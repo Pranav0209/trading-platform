@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { PortfolioSummary, Holding } from './models';
 import { AccountsService } from '../../../generated/trade/api/accounts.service';
+import { ProfileService } from '../../../generated/auth/api/profile.service';
 import { Session } from '../../core/auth/session';
 
 
@@ -9,6 +10,7 @@ import { Session } from '../../core/auth/session';
 })
 export class DashboardService {
   private accountsService = inject(AccountsService);
+  private profileService = inject(ProfileService);
   private session = inject(Session);
   
   // Signals
@@ -20,6 +22,7 @@ export class DashboardService {
   });
   holdings = signal<Holding[]>([]);
   userName = signal<string>('User');
+  userEmail = signal<string | null>(null);
   accountStatus = signal<string | null>(null);
   accountCurrency = signal<string>('USD');
   
@@ -37,6 +40,7 @@ export class DashboardService {
     });
     this.holdings.set([]);
     this.userName.set('User');
+    this.userEmail.set(null);
     this.accountStatus.set(null);
     this.accountCurrency.set('USD');
   }
@@ -51,6 +55,19 @@ export class DashboardService {
       // If it's missing, the account hasn't been created by the admin yet.
       const accountId = payload.accountId;
 
+      // Fetch the authenticated user's profile
+      // This endpoint is specified in the auth contract and should be called after login
+      this.profileService.getCurrentUser().subscribe({
+        next: (user) => {
+          this.userName.set(user.username || 'User');
+          this.userEmail.set(user.email || null);
+        },
+        error: (err) => {
+          console.error('Failed to load current user profile', err);
+          // Fallback to JWT username if profile endpoint fails
+          this.userName.set(payload.sub || 'User');
+        }
+      });
 
       if (accountId) {
         // Fetch Account Status
