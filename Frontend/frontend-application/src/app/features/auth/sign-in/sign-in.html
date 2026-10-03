@@ -24,7 +24,7 @@
         <div class="error-message" data-testid="error-message" role="alert" aria-live="assertive">{{ errorMessage() }}</div>
       }
 
-      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" data-testid="sign-in-form">
         <div class="form-group">
           <label for="username">Username</label>
           <input
