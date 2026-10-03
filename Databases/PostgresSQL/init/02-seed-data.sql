@@ -36,7 +36,11 @@ INSERT INTO auth.users (id, username, email, password_hash, role, status) VALUES
     (2, 'john_doe', 'john@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE'),
     (3, 'jane_smith', 'jane@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE'),
     (4, 'bob_suspended', 'bob@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'SUSPENDED'),
-    (5, 'alice_closed', 'alice@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'CLOSED')
+    (5, 'alice_closed', 'alice@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'CLOSED'),
+    (6, 'charlie_closed_usr', 'charlie@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'CLOSED'),
+    (7, 'dave_suspended_usr', 'dave@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'SUSPENDED'),
+    (8, 'eve_active_usr', 'eve@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE'),
+    (9, 'frank_active_usr', 'frank@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE')
 ON CONFLICT (id) DO NOTHING;
 
 -- Reset sequence for users table so new registrations start after seeded IDs
@@ -48,7 +52,11 @@ INSERT INTO accounts (id, account_number, user_id, cash_balance, currency, statu
     (2, 'ACC-USD-JOHN01', 2, 45000.00, 'USD', 'ACTIVE', 0),
     (3, 'ACC-USD-JANE02', 3, 28000.00, 'USD', 'ACTIVE', 0),
     (4, 'ACC-USD-BOB03', 4, 15000.00, 'USD', 'SUSPENDED', 0),
-    (5, 'ACC-USD-ALICE04', 5, 0.00, 'USD', 'CLOSED', 0)
+    (5, 'ACC-USD-ALICE04', 5, 0.00, 'USD', 'CLOSED', 0),
+    (6, 'ACC-USD-CHARLIE06', 6, 1000.00, 'USD', 'ACTIVE', 0),
+    (7, 'ACC-USD-DAVE07', 7, 2000.00, 'USD', 'ACTIVE', 0),
+    (8, 'ACC-USD-EVE08', 8, 3000.00, 'USD', 'CLOSED', 0),
+    (9, 'ACC-USD-FRANK09', 9, 4000.00, 'USD', 'SUSPENDED', 0)
 ON CONFLICT (id) DO NOTHING;
 
 -- Reset sequence for accounts table
