@@ -5,7 +5,7 @@
   </header>
 
   <div class="content-container">
-    <section class="card data-card order-ticket">
+    <section class="card data-card order-ticket" data-testid="order-ticket">
       <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
         <!-- <div class="field">
           <label for="account">Account</label>
@@ -95,7 +95,7 @@
         <button
           type="submit"
           class="submit-order-button"
-          [disabled]="submitting()"
+          [disabled]="form.invalid || submitting()"
           data-testid="submit-order-button"
         >
           {{ submitting() ? 'Submitting...' : 'Submit Order' }}
