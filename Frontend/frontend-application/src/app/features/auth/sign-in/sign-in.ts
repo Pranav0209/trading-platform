@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -9,7 +10,7 @@ import { sanitizeReturnTo } from '../../../core/auth/guards/return-to';
 
 @Component({
   selector: 'app-sign-in',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './sign-in.html',
   styleUrl: './sign-in.css',
 })
@@ -31,10 +32,13 @@ export class SignIn {
 
   onSubmit() {
     if (this.form.invalid) return;
+
     this.errorMessage.set(null);
     this.isLoading.set(true);
 
-    const { username, password } = this.form.getRawValue();
+    const username = this.form.get('username')?.value;
+    const password = this.form.get('password')?.value;
+    if (!username || !password) return;
 
     this.authService.login({ username, password }).subscribe({
       next: (res: any) => {
@@ -43,7 +47,9 @@ export class SignIn {
         this.isLoading.set(false);
       },
       error: (error: HttpErrorResponse) => {
-        this.errorMessage.set(this.errorCodeMapper.mapErrorToMessage(error));
+        // Pass 'login' context so ERROR-401 shows "Invalid password" not "Session expired"
+        // Backend returns AUTH-401 for both invalid credentials and throttle, but AUTH-429 for throttle
+        this.errorMessage.set(this.errorCodeMapper.mapErrorToMessage(error, 'login'));
         this.isLoading.set(false);
       },
     });
