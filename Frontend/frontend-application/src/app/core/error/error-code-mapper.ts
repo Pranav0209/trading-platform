@@ -60,6 +60,11 @@ export class ErrorCodeMapper {
     // Extract error code from response body
     const code = error.error?.errorCode as string | undefined;
 
+    // Special case: AUTH-401 during login should say invalid credentials
+    if (code === 'AUTH-401' && error.url?.includes('/login')) {
+      return 'Invalid username or password.';
+    }
+
     // If we have a known code, return its mapped message
     if (code && this.errorMessages[code]) {
       return this.errorMessages[code];

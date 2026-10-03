@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../../generated/auth/api/auth.service';
-import { ErrorCodeMapper } from '../../error/error-code-mapper';
+import { ErrorCodeMapper } from '../../../core/error/error-code-mapper';
 
 @Component({
   selector: 'app-register',

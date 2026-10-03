@@ -1,8 +1,7 @@
 <div class="standalone-wrapper">
   <header class="page-header">
-    <a routerLink="/dashboard" class="back-link">← Back to Dashboard</a>
-    <h1>Order Ticket</h1>
-    <p class="subtitle">Create and submit a trade order with validated inputs.</p>
+    <h1>Trading Desk</h1>
+    <p class="subtitle">Execute your market and limit orders.</p>
   </header>
 
   <div class="content-container">
@@ -45,7 +44,12 @@
 
         <div class="field">
           <label for="orderType">Type</label>
-          <select id="orderType" formControlName="orderType" data-testid="order-type-input" aria-required="true">
+          <select
+            id="orderType"
+            formControlName="orderType"
+            data-testid="order-type-input"
+            aria-required="true"
+          >
             @for (type of orderTypes; track type) {
               <option [value]="type">{{ type }}</option>
             }
@@ -80,13 +84,20 @@
               data-testid="price-input"
               aria-required="true"
             />
-            @if (form.controls.price.touched && (form.controls.price.invalid || isPriceNonPositive())) {
+            @if (
+              form.controls.price.touched && (form.controls.price.invalid || isPriceNonPositive())
+            ) {
               <p class="field-error">Price must be above zero with at most two decimal places.</p>
             }
           </div>
         }
 
-        <button type="submit" class="submit-order-button" [disabled]="submitting()" data-testid="submit-order-button">
+        <button
+          type="submit"
+          class="submit-order-button"
+          [disabled]="submitting()"
+          data-testid="submit-order-button"
+        >
           {{ submitting() ? 'Submitting...' : 'Submit Order' }}
         </button>
       </form>
@@ -105,4 +116,3 @@
     </section>
   </div>
 </div>
-

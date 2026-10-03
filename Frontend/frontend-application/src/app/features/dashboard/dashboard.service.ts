@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { PortfolioSummary, Holding } from './models';
 import { AccountsService } from '../../../generated/trade/api/accounts.service';
-import { Session } from '../auth/session';
+import { Session } from '../../core/auth/session';
 
 // Demo data for testing without backend
 const DEMO_PORTFOLIO: PortfolioSummary = {

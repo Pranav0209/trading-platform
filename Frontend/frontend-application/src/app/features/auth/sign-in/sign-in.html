@@ -1,31 +1,30 @@
-<div class="login-page" role="main" aria-labelledby="auth-heading">
+<div class="login-page">
   <!-- Left Side: Branding -->
   <div class="login-brand">
     <div class="brand-content">
       <div class="logo">
-        <div class="logo-icon" aria-hidden="true">Z</div>
+        <div class="logo-icon">Z</div>
         <div class="logo-text">Zkuba Trading</div>
       </div>
-      <div class="brand-copy">
-        <h1>Trade Smarter</h1>
-        <p>
-          Access real-time market data, advanced analytics, and execute trades with confidence on a secure, professional platform.
-        </p>
-      </div>
+      <h1>Trade with <span>Confidence</span></h1>
+      <p>
+        Access global markets, advanced analytics, and lightning-fast execution in one secure
+        platform.
+      </p>
     </div>
   </div>
 
   <!-- Right Side: Login -->
   <div class="login-section">
     <div class="login-card">
-      <h2 id="auth-heading">Sign In</h2>
-      <p class="login-subtitle">Enter your credentials to access the platform.</p>
+      <h2>Sign In</h2>
+      <p class="login-subtitle">Welcome back! Please enter your details.</p>
 
       @if (errorMessage()) {
         <div class="error-message" data-testid="error-message" role="alert" aria-live="assertive">{{ errorMessage() }}</div>
       }
 
-      <form [formGroup]="form" (ngSubmit)="onSubmit()" aria-describedby="auth-heading">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
         <div class="form-group">
           <label for="username">Username</label>
           <input
@@ -33,9 +32,8 @@
             type="text"
             formControlName="username"
             data-testid="username-input"
-            placeholder="Enter username"
+            placeholder="Enter your username"
             autocomplete="username"
-            aria-required="true"
           />
         </div>
 
@@ -46,16 +44,13 @@
             type="password"
             formControlName="password"
             data-testid="password-input"
-            placeholder="•••••••"
+            placeholder="••••••••"
             autocomplete="current-password"
-            aria-required="true"
           />
         </div>
 
         <div class="form-options">
-          <label class="remember-me"> 
-            <input type="checkbox" /> Remember me 
-          </label>
+          <label class="remember-me"> <input type="checkbox" /> Remember me </label>
           <a href="#" class="forgot-password">Forgot password?</a>
         </div>
 
@@ -65,11 +60,7 @@
           [disabled]="form.invalid || isLoading()"
           data-testid="submit-button"
         >
-          @if (isLoading()) {
-            <span>Signing in...</span>
-          } @else {
-            <span>Sign In</span>
-          }
+          Sign In
         </button>
       </form>
 

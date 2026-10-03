@@ -1,7 +1,7 @@
 @if (isStandalone()) {
   <div class="standalone-wrapper">
     <header class="page-header">
-      <a routerLink="/dashboard" class="back-link">← Back to Dashboard</a>
+
       <h1>Your Orders</h1>
       <p class="subtitle">View and manage your recent trading activity.</p>
     </header>
@@ -24,15 +24,22 @@
             Auto-refreshing...
           </span>
         }
-        <button class="refresh-button" (click)="manualRefresh()" [disabled]="isLoading()" data-testid="manual-refresh-button">
+        <button
+          class="refresh-button"
+          (click)="manualRefresh()"
+          [disabled]="isLoading()"
+          data-testid="manual-refresh-button"
+        >
           {{ isLoading() ? 'Loading...' : 'Refresh' }}
         </button>
         @if (lastRefreshed()) {
-          <span class="last-refreshed">Last refreshed: {{ formatDate(lastRefreshed()!.toISOString()) }}</span>
+          <span class="last-refreshed"
+            >Last refreshed: {{ formatDate(lastRefreshed()!.toISOString()) }}</span
+          >
         }
       </div>
     </div>
-    
+
     @if (error()) {
       <div class="blotter-error" data-testid="error-message">{{ error() }}</div>
     }
@@ -48,58 +55,80 @@
         <table mat-table [dataSource]="dataSource" data-testid="orders-table">
           <!-- Order ID Column -->
           <ng-container matColumnDef="orderId">
-            <th mat-header-cell *matHeaderCellDef> Order ID </th>
-            <td mat-cell *matCellDef="let order" class="order-id muted"> {{ order.orderId }} </td>
+            <th mat-header-cell *matHeaderCellDef>Order ID</th>
+            <td mat-cell *matCellDef="let order" class="order-id muted">{{ order.orderId }}</td>
           </ng-container>
 
           <!-- Symbol Column -->
           <ng-container matColumnDef="symbol">
-            <th mat-header-cell *matHeaderCellDef> Symbol </th>
-            <td mat-cell *matCellDef="let order" class="symbol"> {{ order.symbol }} </td>
+            <th mat-header-cell *matHeaderCellDef>Symbol</th>
+            <td mat-cell *matCellDef="let order" class="symbol">{{ order.symbol }}</td>
           </ng-container>
 
           <!-- Side Column -->
           <ng-container matColumnDef="side">
-            <th mat-header-cell *matHeaderCellDef> Side </th>
-            <td mat-cell *matCellDef="let order" class="side" [class.positive]="order.side === 'BUY'" [class.negative]="order.side === 'SELL'">
+            <th mat-header-cell *matHeaderCellDef>Side</th>
+            <td
+              mat-cell
+              *matCellDef="let order"
+              class="side"
+              [class.positive]="order.side === 'BUY'"
+              [class.negative]="order.side === 'SELL'"
+            >
               {{ order.side }}
             </td>
           </ng-container>
 
           <!-- Quantity Column -->
           <ng-container matColumnDef="quantity">
-            <th mat-header-cell *matHeaderCellDef class="text-right"> Quantity </th>
-            <td mat-cell *matCellDef="let order" class="quantity text-right"> {{ order.quantity }} </td>
+            <th mat-header-cell *matHeaderCellDef class="text-right">Quantity</th>
+            <td mat-cell *matCellDef="let order" class="quantity text-right">
+              {{ order.quantity }}
+            </td>
           </ng-container>
 
           <!-- Price Column -->
           <ng-container matColumnDef="price">
-            <th mat-header-cell *matHeaderCellDef class="text-right"> Price </th>
-            <td mat-cell *matCellDef="let order" class="price text-right"> {{ formatPrice(order.price) }} </td>
+            <th mat-header-cell *matHeaderCellDef class="text-right">Price</th>
+            <td mat-cell *matCellDef="let order" class="price text-right">
+              {{ formatPrice(order.price) }}
+            </td>
           </ng-container>
 
           <!-- Executed Price Column -->
           <ng-container matColumnDef="executedPrice">
-            <th mat-header-cell *matHeaderCellDef class="text-right"> Executed Price </th>
-            <td mat-cell *matCellDef="let order" class="executed-price text-right muted"> {{ formatPrice(order.executedPrice) }} </td>
+            <th mat-header-cell *matHeaderCellDef class="text-right">Executed Price</th>
+            <td mat-cell *matCellDef="let order" class="executed-price text-right muted">
+              {{ formatPrice(order.executedPrice) }}
+            </td>
           </ng-container>
 
           <!-- Status Column -->
           <ng-container matColumnDef="status">
-            <th mat-header-cell *matHeaderCellDef class="text-center"> Status </th>
+            <th mat-header-cell *matHeaderCellDef class="text-center">Status</th>
             <td mat-cell *matCellDef="let order" class="status text-center">
-              <app-status-badge [status]="order.status" data-testid="status-badge"></app-status-badge>
+              <app-status-badge
+                [status]="order.status"
+                data-testid="status-badge"
+              ></app-status-badge>
             </td>
           </ng-container>
 
           <!-- Created On Column -->
           <ng-container matColumnDef="createdOn">
-            <th mat-header-cell *matHeaderCellDef> Created On </th>
-            <td mat-cell *matCellDef="let order" class="created-on muted"> {{ formatDate(order.createdOn) }} </td>
+            <th mat-header-cell *matHeaderCellDef>Created On</th>
+            <td mat-cell *matCellDef="let order" class="created-on muted">
+              {{ formatDate(order.createdOn) }}
+            </td>
           </ng-container>
 
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="order-row" [attr.data-testid]="'order-row-' + row.orderId"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: displayedColumns"
+            class="order-row"
+            [attr.data-testid]="'order-row-' + row.orderId"
+          ></tr>
         </table>
       </div>
     }

@@ -1,9 +1,9 @@
 @if (isStandalone()) {
   <div class="standalone-wrapper">
     <header class="page-header">
-      <a routerLink="/dashboard" class="back-link">← Back to Dashboard</a>
-      <h1>Your Positions</h1>
-      <p class="subtitle">View and manage your open market positions.</p>
+
+      <h1>{{ pageTitle() }}</h1>
+      <p class="subtitle">{{ pageSubtitle() }}</p>
     </header>
     <div class="content-container">
       <ng-container *ngTemplateOutlet="tableContent"></ng-container>
@@ -16,7 +16,10 @@
 <ng-template #tableContent>
   <div class="card data-card">
     <div class="card-header">
-      <h3 class="card-title">Open Positions</h3>
+      <h3 class="card-title">{{ title }}</h3>
+      @if (showViewAll) {
+        <a routerLink="/positions" class="view-all">View all</a>
+      }
     </div>
     <div class="table-container">
       <table>
@@ -36,11 +39,7 @@
               <td class="text-right">{{ p.quantity }}</td>
               <td class="text-right">₹{{ p.averagePrice | number: '1.2-2' }}</td>
               <td class="text-right">₹{{ p.ltp | number: '1.2-2' }}</td>
-              <td
-                class="text-right"
-                [class.positive]="p.pnl > 0"
-                [class.negative]="p.pnl < 0"
-              >
+              <td class="text-right" [class.positive]="p.pnl > 0" [class.negative]="p.pnl < 0">
                 {{ p.pnl > 0 ? '+' : '' }}₹{{ p.pnl | number: '1.0-0' }}
               </td>
             </tr>

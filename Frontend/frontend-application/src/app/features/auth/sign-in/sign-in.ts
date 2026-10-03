@@ -3,9 +3,9 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../../generated/auth/api/auth.service';
-import { Session } from '../session';
-import { ErrorCodeMapper } from '../../error/error-code-mapper';
-import { sanitizeReturnTo } from '../guards/return-to';
+import { Session } from '../../../core/auth/session';
+import { ErrorCodeMapper } from '../../../core/error/error-code-mapper';
+import { sanitizeReturnTo } from '../../../core/auth/guards/return-to';
 
 @Component({
   selector: 'app-sign-in',

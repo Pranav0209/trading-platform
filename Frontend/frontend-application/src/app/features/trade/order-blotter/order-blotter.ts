@@ -5,7 +5,7 @@ import { Router, RouterLink } from '@angular/router';
 import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { AccountsService } from '../../../../generated/trade/api/accounts.service';
 import { OrderHistoryEntry } from '../../../../generated/trade/model/orderHistoryEntry';
-import { Session } from '../../auth/session';
+import { Session } from '../../../core/auth/session';
 import { StatusBadgeComponent } from './status-badge';
 
 const REFRESH_INTERVAL_MS = 5000; // 5 second bounded interval for re-reads
@@ -13,7 +13,7 @@ const MAX_REFRESH_ATTEMPTS = 120; // Stop after 10 minutes if something stays NE
 
 @Component({
   selector: 'app-order-blotter',
-  imports: [CommonModule, StatusBadgeComponent, RouterLink, MatTableModule],
+  imports: [CommonModule, StatusBadgeComponent, MatTableModule],
   templateUrl: './order-blotter.html',
   styleUrl: './order-blotter.css'
 })

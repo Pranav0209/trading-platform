@@ -6,8 +6,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OrdersService } from '../../../../generated/trade/api/orders.service';
 import { OrderSide } from '../../../../generated/trade/model/orderSide';
 import { PlaceOrderRequest } from '../../../../generated/trade/model/placeOrderRequest';
-import { Session } from '../../auth/session';
-import { ErrorCodeMapper } from '../../error/error-code-mapper';
+import { Session } from '../../../core/auth/session';
+import { ErrorCodeMapper } from '../../../core/error/error-code-mapper';
 
 const SYMBOL_PATTERN = /^(?:[A-Z][A-Z0-9]*(?:\.(?:NS|BO))?|FX:[A-Z]{6}|X:[A-Z0-9]+)$/;
 const PRICE_PATTERN = /^\d+(?:\.\d{1,2})?$/;
@@ -15,7 +15,7 @@ const QUANTITY_PATTERN = /^[1-9]\d*$/;
 
 @Component({
   selector: 'app-order-ticket',
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './order-ticket.html',
   styleUrl: './order-ticket.css'
 })

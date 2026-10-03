@@ -2,13 +2,13 @@ import { Component, ViewEncapsulation, computed, inject, OnInit, signal } from '
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { DashboardService } from './dashboard.service';
-import { Session } from '../auth/session';
+import { Session } from '../../core/auth/session';
 import { PositionsComponent } from '../trade/positions/positions';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, PositionsComponent],
+  imports: [CommonModule, PositionsComponent],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css'],
   encapsulation: ViewEncapsulation.None

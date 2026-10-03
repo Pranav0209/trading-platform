@@ -1,0 +1,99 @@
+<div class="dashboard-scroll-area">
+  <!-- DASHBOARD HEADER -->
+  <section class="dashboard-header">
+    <h1>
+      {{ currentTime }}, <span class="user-name-text">{{ userName() }}</span>
+    </h1>
+    <p class="subtitle">Here's your portfolio overview.</p>
+  </section>
+
+  <!-- PORTFOLIO SUMMARY CARDS -->
+  <section class="summary-cards">
+    <div class="card summary-card">
+      <div class="card-title">Portfolio Value</div>
+      <div class="card-value financial-value">
+        ₹{{ portfolioSummary().portfolioValue | number: '1.2-2' }}
+      </div>
+      <div class="card-meta">
+        <span class="positive">+₹{{ portfolioSummary().todayPnL | number: '1.2-2' }} today</span>
+        <span class="badge positive">+{{ portfolioSummary().todayPnLPercent }}%</span>
+      </div>
+    </div>
+
+    <div class="card summary-card">
+      <div class="card-title">Today's P&L</div>
+      <div class="card-value financial-value positive">
+        +₹{{ portfolioSummary().todayPnL | number: '1.2-2' }}
+      </div>
+      <div class="card-meta">
+        <span class="badge positive">+{{ portfolioSummary().todayPnLPercent }}%</span>
+      </div>
+    </div>
+
+    <div class="card summary-card">
+      <div class="card-title">Available Balance</div>
+      <div class="card-value financial-value">
+        ₹{{ portfolioSummary().availableBalance | number: '1.2-2' }}
+      </div>
+      <div class="card-meta">
+        <span class="muted">Available to trade</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIEWPORT FIT ZONE -->
+  <section class="analytics-grid">
+    <!-- PERFORMANCE CHART -->
+    <section class="performance-section">
+      <div class="card chart-card">
+        <div class="card-header">
+          <h3 class="card-title">Portfolio Performance</h3>
+          <div class="time-selectors" role="tablist" aria-label="Performance range">
+            <button type="button">1D</button>
+            <button type="button">1W</button>
+            <button type="button" class="active">1M</button>
+            <button type="button">6M</button>
+            <button type="button">1Y</button>
+            <button type="button">ALL</button>
+          </div>
+        </div>
+
+        <div class="chart-summary">
+          <div class="chart-value financial-value">₹12,48,620.40</div>
+          <div class="chart-change positive">+₹18,245.20 (+1.48%)</div>
+        </div>
+
+        <div class="mock-chart" aria-hidden="true">
+          <svg viewBox="0 0 800 200" preserveAspectRatio="none" class="chart-svg">
+            <defs>
+              <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#00D084" stop-opacity="0.28" />
+                <stop offset="100%" stop-color="#00D084" stop-opacity="0.02" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M0,180 L50,160 L100,170 L150,130 L200,140 L250,90 L300,110 L350,60 L400,80 L450,40 L500,50 L550,20 L600,30 L650,10 L700,25 L750,5 L800,15 L800,200 L0,200 Z"
+              fill="url(#chartGradient)"
+            />
+            <path
+              d="M0,180 L50,160 L100,170 L150,130 L200,140 L250,90 L300,110 L350,60 L400,80 L450,40 L500,50 L550,20 L600,30 L650,10 L700,25 L750,5 L800,15"
+              class="chart-line"
+              fill="none"
+              stroke-width="2"
+            />
+          </svg>
+
+          <div class="chart-grid">
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+            <div class="grid-line"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOLDINGS (Summary) -->
+    <app-positions title="Holdings" [showViewAll]="true"></app-positions>
+  </section>
+</div>
