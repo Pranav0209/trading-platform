@@ -6,6 +6,7 @@ import { MatTableModule, MatTableDataSource } from '@angular/material/table';
 import { AccountsService } from '../../../../generated/trade/api/accounts.service';
 import { OrderHistoryEntry } from '../../../../generated/trade/model/orderHistoryEntry';
 import { Session } from '../../../core/auth/session';
+import { ErrorCodeMapper } from '../../../core/error/error-code-mapper';
 import { StatusBadgeComponent } from './status-badge';
 
 const REFRESH_INTERVAL_MS = 5000; // 5 second bounded interval for re-reads
@@ -23,6 +24,7 @@ export class OrderBlotter implements OnInit, OnDestroy {
   private readonly accountsService = inject(AccountsService);
   private readonly session = inject(Session);
   private readonly router = inject(Router);
+  private readonly errorCodeMapper = inject(ErrorCodeMapper);
 
   // State signals
   orders = signal<OrderHistoryEntry[]>([]);
@@ -183,16 +185,6 @@ export class OrderBlotter implements OnInit, OnDestroy {
    * Map HTTP errors to user-friendly messages.
    */
   private mapError(error: HttpErrorResponse): string {
-    if (error.status === 401) {
-      return 'Unauthorised. Please sign in again.';
-    } else if (error.status === 403) {
-      return 'Account is not active.';
-    } else if (error.status === 404) {
-      return 'Account not found.';
-    } else if (error.status === 0) {
-      return 'Network error. Please check your connection.';
-    } else {
-      return `Error loading order history: ${error.statusText}`;
-    }
+    return this.errorCodeMapper.mapErrorToMessage(error);
   }
 }

@@ -24,6 +24,7 @@ export class PositionsComponent implements OnInit {
   
   // Bind to the centralized dashboard service state
   positions = this.dashboardService.holdings;
+  accountCurrency = this.dashboardService.accountCurrency;
 
   ngOnInit() {
     const url = this.router.url;

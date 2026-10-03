@@ -12,10 +12,10 @@
     <div class="card summary-card">
       <div class="card-title">Portfolio Value</div>
       <div class="card-value financial-value">
-        ₹{{ portfolioSummary().portfolioValue | number: '1.2-2' }}
+        {{ portfolioSummary().portfolioValue | currency: accountCurrency(): 'symbol' }}
       </div>
       <div class="card-meta">
-        <span class="positive">+₹{{ portfolioSummary().todayPnL | number: '1.2-2' }} today</span>
+        <span class="positive">+{{ portfolioSummary().todayPnL | currency: accountCurrency(): 'symbol' }} today</span>
         <span class="badge positive">+{{ portfolioSummary().todayPnLPercent }}%</span>
       </div>
     </div>
@@ -23,7 +23,7 @@
     <div class="card summary-card">
       <div class="card-title">Today's P&L</div>
       <div class="card-value financial-value positive">
-        +₹{{ portfolioSummary().todayPnL | number: '1.2-2' }}
+        +{{ portfolioSummary().todayPnL | currency: accountCurrency(): 'symbol' }}
       </div>
       <div class="card-meta">
         <span class="badge positive">+{{ portfolioSummary().todayPnLPercent }}%</span>
@@ -33,7 +33,7 @@
     <div class="card summary-card">
       <div class="card-title">Available Balance</div>
       <div class="card-value financial-value">
-        ₹{{ portfolioSummary().availableBalance | number: '1.2-2' }}
+        {{ portfolioSummary().availableBalance | currency: accountCurrency(): 'symbol' }}
       </div>
       <div class="card-meta">
         <span class="muted">Available to trade</span>
@@ -59,8 +59,8 @@
         </div>
 
         <div class="chart-summary">
-          <div class="chart-value financial-value">₹12,48,620.40</div>
-          <div class="chart-change positive">+₹18,245.20 (+1.48%)</div>
+          <div class="chart-value financial-value">{{ 1248620.40 | currency: accountCurrency(): 'symbol' }}</div>
+          <div class="chart-change positive">+{{ 18245.20 | currency: accountCurrency(): 'symbol' }} (+1.48%)</div>
         </div>
 
         <div class="mock-chart" aria-hidden="true">

@@ -3,21 +3,6 @@ import { PortfolioSummary, Holding } from './models';
 import { AccountsService } from '../../../generated/trade/api/accounts.service';
 import { Session } from '../../core/auth/session';
 
-// Demo data for testing without backend
-const DEMO_PORTFOLIO: PortfolioSummary = {
-  portfolioValue: 125450.50,
-  todayPnL: 2450.75,
-  todayPnLPercent: 1.98,
-  availableBalance: 42500.00
-};
-
-const DEMO_HOLDINGS: Holding[] = [
-  { symbol: 'INFY', quantity: 25, averagePrice: 1850.25, ltp: 1920.00, pnl: 1748.75 },
-  { symbol: 'TCS', quantity: 10, averagePrice: 3750.00, ltp: 3895.50, pnl: 1455.00 },
-  { symbol: 'HDFC', quantity: 5, averagePrice: 2650.00, ltp: 2740.00, pnl: 450.00 },
-  { symbol: 'ICICI', quantity: 15, averagePrice: 920.50, ltp: 945.75, pnl: 378.75 },
-  { symbol: 'RELIANCE', quantity: 8, averagePrice: 2480.00, ltp: 2510.25, pnl: 241.00 },
-];
 
 @Injectable({
   providedIn: 'root'
@@ -35,10 +20,25 @@ export class DashboardService {
   });
   holdings = signal<Holding[]>([]);
   userName = signal<string>('User');
+  accountStatus = signal<string | null>(null);
+  accountCurrency = signal<string>('USD');
   
 
   constructor() {
-    this.loadData();
+    // Rely on LayoutComponent to trigger loadData when authenticated
+  }
+
+  clearData() {
+    this.portfolioSummary.set({
+      portfolioValue: 0,
+      todayPnL: 0,
+      todayPnLPercent: 0,
+      availableBalance: 0
+    });
+    this.holdings.set([]);
+    this.userName.set('User');
+    this.accountStatus.set(null);
+    this.accountCurrency.set('USD');
   }
 
   loadData() {
@@ -47,29 +47,31 @@ export class DashboardService {
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      // The JWT contains accountId (Sprint 8) or userId (Sprint 6 fallback)
-      const accountId = payload.accountId || payload.userId;
-      
-      // 'sub' is usually the username in standard JWTs
-      if (payload.sub) {
-        this.userName.set(payload.sub);
-      }
+      // The JWT contains accountId when an account has been provisioned.
+      // If it's missing, the account hasn't been created by the admin yet.
+      const accountId = payload.accountId;
 
-      // Check if this is a demo token (demo signature)
-      const isDemoToken = token.endsWith('demo_signature');
-      
-      if (isDemoToken) {
-        // Use demo data for demo login
-        console.log('Loading demo data for testing UI');
-        this.portfolioSummary.set(DEMO_PORTFOLIO);
-        this.holdings.set(DEMO_HOLDINGS);
-        return;
-      }
 
       if (accountId) {
+        // Fetch Account Status
+        this.accountsService.getAccount(accountId).subscribe({
+          next: (res) => {
+            this.accountStatus.set(res.status);
+          },
+          error: (err) => {
+            console.error('Failed to load account', err);
+            if (err.status === 403) {
+              this.accountStatus.set('SUSPENDED');
+            } else {
+              this.accountStatus.set('ACTIVE'); // fallback
+            }
+          }
+        });
+
         // Fetch Balance
         this.accountsService.getBalance(accountId).subscribe({
           next: (res) => {
+            this.accountCurrency.set(res.currency || 'USD');
             this.portfolioSummary.set({
               portfolioValue: res.cashBalance, // In real life, add position values
               todayPnL: 0, // Mocked for now
@@ -79,8 +81,6 @@ export class DashboardService {
           },
           error: (err) => {
             console.error('Failed to load balance', err);
-            // Fallback to demo data on error
-            this.portfolioSummary.set(DEMO_PORTFOLIO);
           }
         });
         // Fetch Positions for Holdings view
@@ -99,16 +99,14 @@ export class DashboardService {
           },
           error: (err) => {
             console.error('Failed to load holdings', err);
-            // Fallback to demo data on error
-            this.holdings.set(DEMO_HOLDINGS);
           }
         });
+      } else {
+        // No accountId in JWT means the account isn't provisioned yet
+        this.accountStatus.set('PENDING');
       }
     } catch (e) {
       console.error('Failed to parse token for dashboard data', e);
-      // Fallback to demo data on parse error
-      this.portfolioSummary.set(DEMO_PORTFOLIO);
-      this.holdings.set(DEMO_HOLDINGS);
     }
   }
 }

@@ -21,8 +21,10 @@ export class Dashboard implements OnInit {
   // Expose signals to the template
   portfolioSummary = this.dashboardService.portfolioSummary;
   holdings = this.dashboardService.holdings;
+  accountStatus = this.dashboardService.accountStatus;
+  accountCurrency = this.dashboardService.accountCurrency;
 
-  userName = this.dashboardService.userName;
+  userName = this.session.userName;
   userInitial = computed(() => this.userName().charAt(0));
   
   isDropdownOpen = signal(false);

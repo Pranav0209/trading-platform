@@ -7,26 +7,33 @@
     </div>
 
     <nav class="nav-menu">
-      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
-        <span class="material-icons icon" aria-hidden="true">dashboard</span>
-        Dashboard
-      </a>
-      <a routerLink="/trade" routerLinkActive="active" class="nav-item">
-        <span class="material-icons icon" aria-hidden="true">candlestick_chart</span>
-        Trade
-      </a>
-      <a routerLink="/orders" routerLinkActive="active" class="nav-item">
-        <span class="material-icons icon" aria-hidden="true">receipt_long</span>
-        Orders
-      </a>
-      <a routerLink="/positions" routerLinkActive="active" class="nav-item">
-        <span class="material-icons icon" aria-hidden="true">show_chart</span>
-        Positions
-      </a>
-      <a routerLink="/holdings" routerLinkActive="active" class="nav-item">
-        <span class="material-icons icon" aria-hidden="true">account_balance_wallet</span>
-        Holdings
-      </a>
+      @if (!isAdmin()) {
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+          <span class="material-icons icon" aria-hidden="true">dashboard</span>
+          Dashboard
+        </a>
+        <a routerLink="/trade" routerLinkActive="active" class="nav-item">
+          <span class="material-icons icon" aria-hidden="true">candlestick_chart</span>
+          Trade
+        </a>
+        <a routerLink="/orders" routerLinkActive="active" class="nav-item">
+          <span class="material-icons icon" aria-hidden="true">receipt_long</span>
+          Orders
+        </a>
+        <a routerLink="/positions" routerLinkActive="active" class="nav-item">
+          <span class="material-icons icon" aria-hidden="true">show_chart</span>
+          Positions
+        </a>
+        <a routerLink="/holdings" routerLinkActive="active" class="nav-item">
+          <span class="material-icons icon" aria-hidden="true">account_balance_wallet</span>
+          Holdings
+        </a>
+      } @else {
+        <a routerLink="/admin" routerLinkActive="active" class="nav-item">
+          <span class="material-icons icon" aria-hidden="true">admin_panel_settings</span>
+          Admin Panel
+        </a>
+      }
 
       <div class="nav-divider"></div>
 
@@ -77,6 +84,23 @@
     </header>
 
     <!-- ROUTER OUTLET FOR SCROLLABLE DASHBOARD AREA -->
-    <router-outlet></router-outlet>
+    @if (isAdmin() || accountStatus() === 'ACTIVE') {
+      <router-outlet></router-outlet>
+    } @else if (accountStatus() === 'SUSPENDED' || accountStatus() === 'CLOSED') {
+      <div class="inactive-account-prompt">
+        <h2>Account {{ accountStatus() }}</h2>
+        <p>
+          Your trading account is currently {{ accountStatus() | lowercase }}. Please contact
+          support or resolve your account issues to resume trading.
+        </p>
+      </div>
+    } @else if (accountStatus() === 'PENDING') {
+      <div class="inactive-account-prompt">
+        <h2>Account Pending</h2>
+        <p>
+          Your registration is complete, but your trading account has not been fully provisioned by an administrator yet. Please check back later.
+        </p>
+      </div>
+    }
   </main>
 </div>

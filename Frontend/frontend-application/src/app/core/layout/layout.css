@@ -432,3 +432,41 @@ html.dark-theme .dropdown-item.text-danger {
     width: min(320px, 62vw);
   }
 }
+
+.inactive-account-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  text-align: center;
+  background-color: var(--background-light);
+  color: var(--text-primary-light);
+  border-radius: var(--border-radius);
+  margin: var(--spacing-xl);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+html.dark-theme .inactive-account-prompt {
+  background-color: var(--background-dark);
+  color: var(--text-primary-dark);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.inactive-account-prompt h2 {
+  font-size: 32px;
+  margin-bottom: 16px;
+  color: #d32f2f;
+}
+
+.inactive-account-prompt p {
+  font-size: 18px;
+  max-width: 600px;
+  line-height: 1.5;
+  color: var(--text-secondary-light);
+}
+
+html.dark-theme .inactive-account-prompt p {
+  color: var(--text-secondary-dark);
+}

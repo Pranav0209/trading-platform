@@ -37,10 +37,10 @@
             <tr>
               <td class="symbol">{{ p.symbol }}</td>
               <td class="text-right">{{ p.quantity }}</td>
-              <td class="text-right">₹{{ p.averagePrice | number: '1.2-2' }}</td>
-              <td class="text-right">₹{{ p.ltp | number: '1.2-2' }}</td>
+              <td class="text-right">{{ p.averagePrice | currency: accountCurrency(): 'symbol' }}</td>
+              <td class="text-right">{{ p.ltp | currency: accountCurrency(): 'symbol' }}</td>
               <td class="text-right" [class.positive]="p.pnl > 0" [class.negative]="p.pnl < 0">
-                {{ p.pnl > 0 ? '+' : '' }}₹{{ p.pnl | number: '1.0-0' }}
+                {{ p.pnl > 0 ? '+' : '' }}{{ p.pnl | currency: accountCurrency(): 'symbol':'1.0-0' }}
               </td>
             </tr>
           }
