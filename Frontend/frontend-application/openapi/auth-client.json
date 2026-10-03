@@ -1,0 +1,11 @@
+{
+  "generatorName": "typescript-angular",
+  "inputSpec": "../../Contracts/auth-api.yaml",
+  "outputDir": "src/generated/auth",
+  "validateSpec": false,
+  "additionalProperties": {
+    "ngVersion": "21.0.0",
+    "providedIn": "root",
+    "stringEnums": "true"
+  }
+}

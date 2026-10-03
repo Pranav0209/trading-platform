@@ -1,0 +1,11 @@
+{
+  "generatorName": "typescript-angular",
+  "inputSpec": "../../Contracts/trade-api.yaml",
+  "outputDir": "src/generated/trade",
+  "validateSpec": false,
+  "additionalProperties": {
+    "ngVersion": "21.0.0",
+    "providedIn": "root",
+    "stringEnums": "true"
+  }
+}
