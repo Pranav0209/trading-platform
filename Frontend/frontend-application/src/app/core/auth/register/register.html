@@ -1,30 +1,31 @@
-<div class="login-page">
+<div class="login-page" role="main" aria-labelledby="register-heading">
   <!-- Left Side: Branding -->
   <div class="login-brand">
     <div class="brand-content">
       <div class="logo">
-        <div class="logo-icon">T</div>
-        <div class="logo-text">Enterprise Trading</div>
+        <div class="logo-icon" aria-hidden="true">Z</div>
+        <div class="logo-text">Zkuba Trading</div>
       </div>
-      <h1>Join the <span>Platform</span></h1>
-      <p>
-        Create an account to access global markets, advanced analytics, and lightning-fast
-        execution.
-      </p>
+      <div class="brand-copy">
+        <h1>Trade Smarter</h1>
+        <p>
+          Create your account to access global markets, advanced analytics, and secure execution.
+        </p>
+      </div>
     </div>
   </div>
 
   <!-- Right Side: Login -->
   <div class="login-section">
     <div class="login-card">
-      <h2>Sign Up</h2>
+      <h2 id="register-heading">Sign Up</h2>
       <p class="login-subtitle">Create a new trading account.</p>
 
       @if (errorMessage()) {
-        <div class="error-message" data-testid="error-message">{{ errorMessage() }}</div>
+        <div class="error-message" data-testid="error-message" role="alert" aria-live="assertive">{{ errorMessage() }}</div>
       }
 
-      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" aria-describedby="register-heading">
         <div class="form-group">
           <label for="username">Username</label>
           <input
@@ -33,6 +34,8 @@
             formControlName="username"
             data-testid="username-input"
             placeholder="Choose a username"
+            autocomplete="username"
+            aria-required="true"
           />
         </div>
 
@@ -44,6 +47,8 @@
             formControlName="email"
             data-testid="email-input"
             placeholder="Enter your email address"
+            autocomplete="email"
+            aria-required="true"
           />
         </div>
 
@@ -55,6 +60,8 @@
             formControlName="password"
             data-testid="password-input"
             placeholder="Create a password (min 8 chars)"
+            autocomplete="new-password"
+            aria-required="true"
           />
         </div>
 

@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OrdersService } from '../../../../generated/trade/api/orders.service';
 import { OrderSide } from '../../../../generated/trade/model/orderSide';
@@ -15,7 +15,7 @@ const QUANTITY_PATTERN = /^[1-9]\d*$/;
 
 @Component({
   selector: 'app-order-ticket',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './order-ticket.html',
   styleUrl: './order-ticket.css'
 })

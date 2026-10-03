@@ -1,67 +1,171 @@
 .card-header {
   flex-wrap: wrap;
-  gap: 20px;
+  gap: var(--spacing-lg);
 }
 
 .blotter-controls {
   display: flex;
-  gap: 15px;
+  gap: var(--spacing-md);
   align-items: center;
   flex-wrap: wrap;
 }
 
 .refresh-button {
-  padding: 8px 16px;
-  background-color: var(--accent);
-  color: white;
+  padding: 8px 14px;
+  background-color: var(--primary-green-light);
+  color: #FFFFFF;
   border: none;
-  border-radius: 6px;
-  cursor: pointer;
+  border-radius: var(--border-radius);
   font-size: 13px;
-  font-weight: 600;
-  transition: background-color 0.2s ease;
+  font-weight: 500;
+  box-shadow: var(--shadow-1);
+  transition: background-color 160ms ease, box-shadow 160ms ease;
 }
 
 .refresh-button:hover:not(:disabled) {
-  background-color: var(--accent-hover);
+  background-color: var(--primary-green-dark);
+  box-shadow: var(--shadow-2);
+}
+
+html.dark-theme .refresh-button {
+  background-color: var(--primary-green-dark-mode);
+  color: #121212;
+}
+
+html.dark-theme .refresh-button:hover:not(:disabled) {
+  background-color: #00B674;
 }
 
 .refresh-button:disabled {
-  background-color: #29323d;
-  color: var(--text-secondary);
+  background-color: #BDC2B6;
+  color: #556055;
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+html.dark-theme .refresh-button:disabled {
+  background-color: #303030;
+  color: #8E8E8A;
 }
 
 .auto-refresh-indicator {
-  color: var(--accent-hover);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--primary-green-light);
   font-size: 13px;
   font-weight: 500;
 }
 
+html.dark-theme .auto-refresh-indicator {
+  color: var(--primary-green-dark-mode);
+}
+
+.spinner-icon {
+  font-size: 16px;
+  animation: spin 1.2s linear infinite;
+}
+
 .last-refreshed {
-  color: var(--text-secondary);
+  color: var(--text-secondary-light);
   font-size: 12px;
+}
+
+html.dark-theme .last-refreshed {
+  color: var(--text-secondary-dark);
 }
 
 .blotter-error {
   padding: 12px 16px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: 8px;
-  color: #fca5a5;
-  margin-bottom: 20px;
+  background: rgba(197, 65, 49, 0.12);
+  border: 1px solid rgba(197, 65, 49, 0.28);
+  border-radius: var(--border-radius);
+  color: var(--error-light);
+  margin-bottom: var(--spacing-md);
   font-size: 14px;
+}
+
+html.dark-theme .blotter-error {
+  background: rgba(255, 125, 109, 0.18);
+  border-color: rgba(255, 125, 109, 0.34);
+  color: var(--error-dark);
 }
 
 .blotter-empty {
   text-align: center;
-  padding: 40px 20px;
-  color: var(--text-muted);
+  padding: var(--spacing-xl) var(--spacing-lg);
+  color: var(--text-tertiary-light);
   font-size: 14px;
 }
 
-.table-container {
-  border-radius: 8px;
+html.dark-theme .blotter-empty {
+  color: var(--text-tertiary-dark);
 }
 
-.order-id { font-family: monospace; font-size: 12px; }
+.table-container {
+  overflow: auto;
+  max-width: 100%;
+  border: var(--border-width) solid;
+  border-radius: var(--border-radius);
+}
+
+html:not(.dark-theme) .table-container {
+  border-color: var(--border-light);
+}
+
+html.dark-theme .table-container {
+  border-color: var(--border-dark);
+}
+
+.order-blotter .mat-mdc-table {
+  width: 100%;
+  min-width: 900px;
+  background: transparent;
+}
+
+.order-blotter .mat-mdc-header-cell,
+.order-blotter .mat-mdc-cell {
+  padding: 10px 8px;
+  border-bottom: 1px solid;
+}
+
+.order-blotter .mat-mdc-header-cell {
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+html:not(.dark-theme) .order-blotter .mat-mdc-header-cell {
+  color: var(--text-secondary-light);
+  border-bottom-color: var(--border-light);
+}
+
+html.dark-theme .order-blotter .mat-mdc-header-cell {
+  color: var(--text-secondary-dark);
+  border-bottom-color: var(--border-dark);
+}
+
+html:not(.dark-theme) .order-blotter .mat-mdc-cell {
+  color: var(--text-primary-light);
+  border-bottom-color: #ECECE6;
+}
+
+html.dark-theme .order-blotter .mat-mdc-cell {
+  color: var(--text-primary-dark);
+  border-bottom-color: #2B2B2B;
+}
+
+.order-id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}

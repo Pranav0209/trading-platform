@@ -1,17 +1,17 @@
-import { Component, inject, OnInit, computed, signal } from '@angular/core';
+import { Component, ViewEncapsulation, computed, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { DashboardService } from './dashboard.service';
 import { Session } from '../auth/session';
-import { OrderBlotter } from '../trade/order-blotter/order-blotter';
 import { PositionsComponent } from '../trade/positions/positions';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, OrderBlotter, PositionsComponent],
+  imports: [CommonModule, RouterLink, PositionsComponent],
   templateUrl: './dashboard.html',
-  styleUrls: ['./dashboard.css']
+  styleUrls: ['./dashboard.css'],
+  encapsulation: ViewEncapsulation.None
 })
 export class Dashboard implements OnInit {
   private dashboardService = inject(DashboardService);

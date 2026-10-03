@@ -1,0 +1,41 @@
+.app-header {
+  border-bottom: 1px solid;
+  padding: var(--spacing-md) var(--spacing-lg);
+  position: sticky;
+  top: 0;
+  z-index: 1200;
+  background-color: transparent;
+  isolation: isolate;
+}
+
+html:not(.dark-theme) .app-header {
+  background-color: var(--primary-green-light);
+  border-bottom-color: var(--primary-green-dark);
+  box-shadow: var(--shadow-1);
+}
+
+html.dark-theme .app-header {
+  background-color: var(--surface-dark);
+  border-bottom-color: var(--border-dark);
+  box-shadow: var(--shadow-1);
+}
+
+.header-content {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+app-theme-toggle,
+.theme-toggle {
+  margin-left: auto;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.app-main {
+  min-height: calc(100dvh - var(--header-height));
+}

@@ -2,21 +2,42 @@
   <!-- LEFT SIDEBAR -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-icon">T</div>
-      <div class="brand-text">TradeX</div>
+      <div class="brand-icon">Z</div>
+      <div class="brand-text">zkuba</div>
     </div>
 
     <nav class="nav-menu">
-      <a routerLink="/dashboard" class="nav-item active"> <span class="icon">⊞</span> Dashboard </a>
-      <a routerLink="/trade" class="nav-item"> <span class="icon">⚡</span> Trade </a>
-      <a routerLink="/orders" class="nav-item"> <span class="icon">📄</span> Orders </a>
-      <a routerLink="/positions" class="nav-item"> <span class="icon">◎</span> Positions </a>
-      <a href="#holdings-section" class="nav-item"> <span class="icon">💼</span> Holdings </a>
+      <a routerLink="/dashboard" class="nav-item active">
+        <span class="material-icons icon" aria-hidden="true">dashboard</span>
+        Dashboard
+      </a>
+      <a routerLink="/trade" class="nav-item">
+        <span class="material-icons icon" aria-hidden="true">candlestick_chart</span>
+        Trade
+      </a>
+      <a routerLink="/orders" class="nav-item">
+        <span class="material-icons icon" aria-hidden="true">receipt_long</span>
+        Orders
+      </a>
+      <a routerLink="/positions" class="nav-item">
+        <span class="material-icons icon" aria-hidden="true">show_chart</span>
+        Positions
+      </a>
+      <a href="#holdings-section" class="nav-item">
+        <span class="material-icons icon" aria-hidden="true">account_balance_wallet</span>
+        Holdings
+      </a>
 
       <div class="nav-divider"></div>
 
-      <a href="#" class="nav-item"> <span class="icon">⚙</span> Account </a>
-      <a href="#" class="nav-item"> <span class="icon">🔒</span> Settings </a>
+      <a href="#" class="nav-item">
+        <span class="material-icons icon" aria-hidden="true">person</span>
+        Account
+      </a>
+      <a href="#" class="nav-item">
+        <span class="material-icons icon" aria-hidden="true">settings</span>
+        Settings
+      </a>
     </nav>
   </aside>
 
@@ -25,15 +46,20 @@
     <!-- TOP HEADER -->
     <header class="top-header">
       <div class="search-bar">
-        <span class="search-icon">🔍</span>
-        <input type="text" placeholder="Search stocks, companies..." />
+        <span class="material-icons search-icon" role="img" aria-label="Search">search</span>
+        <input type="text" placeholder="Search stocks, companies..." aria-label="Search stocks and companies" />
       </div>
 
       <div class="user-controls">
-        <button class="icon-btn">🔔</button>
+        <button class="icon-btn" type="button" aria-label="View notifications">
+          <span class="material-icons" aria-hidden="true">notifications</span>
+        </button>
         <div class="user-profile" (click)="toggleDropdown()">
           <div class="avatar">{{ userInitial() | uppercase }}</div>
-          <span class="name">{{ userName() }} ▾</span>
+          <span class="name">
+            <span class="user-name-text">{{ userName() }}</span>
+            <span class="material-icons dropdown-arrow" aria-hidden="true">expand_more</span>
+          </span>
 
           @if (isDropdownOpen()) {
             <div class="dropdown-menu">
@@ -45,7 +71,8 @@
                 class="dropdown-item text-danger"
                 (click)="logout(); $event.preventDefault()"
               >
-                <span class="icon">🚪</span> Logout
+                <span class="material-icons icon" aria-hidden="true">logout</span>
+                Logout
               </a>
             </div>
           }
@@ -58,7 +85,7 @@
       <!-- DASHBOARD HEADER -->
       <section class="dashboard-header">
         <h1>
-          {{ currentTime }}, <span style="text-transform: capitalize">{{ userName() }}</span>
+          {{ currentTime }}, <span class="user-name-text">{{ userName() }}</span>
         </h1>
         <p class="subtitle">Here's your portfolio overview.</p>
       </section>
@@ -67,7 +94,7 @@
       <section class="summary-cards">
         <div class="card summary-card">
           <div class="card-title">Portfolio Value</div>
-          <div class="card-value">₹{{ portfolioSummary().portfolioValue | number: '1.2-2' }}</div>
+          <div class="card-value financial-value">₹{{ portfolioSummary().portfolioValue | number: '1.2-2' }}</div>
           <div class="card-meta">
             <span class="positive"
               >+₹{{ portfolioSummary().todayPnL | number: '1.2-2' }} today</span
@@ -78,7 +105,7 @@
 
         <div class="card summary-card">
           <div class="card-title">Today's P&L</div>
-          <div class="card-value positive">
+          <div class="card-value financial-value positive">
             +₹{{ portfolioSummary().todayPnL | number: '1.2-2' }}
           </div>
           <div class="card-meta">
@@ -88,114 +115,108 @@
 
         <div class="card summary-card">
           <div class="card-title">Available Balance</div>
-          <div class="card-value">₹{{ portfolioSummary().availableBalance | number: '1.2-2' }}</div>
+          <div class="card-value financial-value">₹{{ portfolioSummary().availableBalance | number: '1.2-2' }}</div>
           <div class="card-meta">
             <span class="muted">Available to trade</span>
           </div>
         </div>
       </section>
 
-      <!-- PERFORMANCE CHART -->
-      <section class="performance-section">
-        <div class="card chart-card">
-          <div class="card-header">
-            <h3 class="card-title">Portfolio Performance</h3>
-            <div class="time-selectors">
-              <button>1D</button>
-              <button>1W</button>
-              <button class="active">1M</button>
-              <button>6M</button>
-              <button>1Y</button>
-              <button>ALL</button>
+      <!-- VIEWPORT FIT ZONE -->
+      <section class="analytics-grid">
+        <!-- PERFORMANCE CHART -->
+        <section class="performance-section">
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3 class="card-title">Portfolio Performance</h3>
+              <div class="time-selectors" role="tablist" aria-label="Performance range">
+                <button type="button">1D</button>
+                <button type="button">1W</button>
+                <button type="button" class="active">1M</button>
+                <button type="button">6M</button>
+                <button type="button">1Y</button>
+                <button type="button">ALL</button>
+              </div>
+            </div>
+
+            <div class="chart-summary">
+              <div class="chart-value financial-value">₹12,48,620.40</div>
+              <div class="chart-change positive">+₹18,245.20 (+1.48%)</div>
+            </div>
+
+            <div class="mock-chart" aria-hidden="true">
+              <svg viewBox="0 0 800 200" preserveAspectRatio="none" class="chart-svg">
+                <defs>
+                  <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="#00D084" stop-opacity="0.28" />
+                    <stop offset="100%" stop-color="#00D084" stop-opacity="0.02" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M0,180 L50,160 L100,170 L150,130 L200,140 L250,90 L300,110 L350,60 L400,80 L450,40 L500,50 L550,20 L600,30 L650,10 L700,25 L750,5 L800,15 L800,200 L0,200 Z"
+                  fill="url(#chartGradient)"
+                />
+                <path
+                  d="M0,180 L50,160 L100,170 L150,130 L200,140 L250,90 L300,110 L350,60 L400,80 L450,40 L500,50 L550,20 L600,30 L650,10 L700,25 L750,5 L800,15"
+                  class="chart-line"
+                  fill="none"
+                  stroke-width="2"
+                />
+              </svg>
+
+              <div class="chart-grid">
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+                <div class="grid-line"></div>
+              </div>
             </div>
           </div>
+        </section>
 
-          <div class="chart-summary">
-            <div class="chart-value">₹12,48,620.40</div>
-            <div class="chart-change positive">+₹18,245.20 (+1.48%)</div>
-          </div>
-
-          <div class="mock-chart">
-            <!-- This is a pure CSS mock chart visual for now -->
-            <svg viewBox="0 0 800 200" preserveAspectRatio="none" class="chart-svg">
-              <defs>
-                <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stop-color="#2563EB" stop-opacity="0.2" />
-                  <stop offset="100%" stop-color="#2563EB" stop-opacity="0" />
-                </linearGradient>
-              </defs>
-              <path
-                d="M0,180 L50,160 L100,170 L150,130 L200,140 L250,90 L300,110 L350,60 L400,80 L450,40 L500,50 L550,20 L600,30 L650,10 L700,25 L750,5 L800,15 L800,200 L0,200 Z"
-                fill="url(#chartGradient)"
-              />
-              <path
-                d="M0,180 L50,160 L100,170 L150,130 L200,140 L250,90 L300,110 L350,60 L400,80 L450,40 L500,50 L550,20 L600,30 L650,10 L700,25 L750,5 L800,15"
-                fill="none"
-                stroke="#2563EB"
-                stroke-width="2"
-              />
-            </svg>
-
-            <div class="chart-grid">
-              <div class="grid-line"></div>
-              <div class="grid-line"></div>
-              <div class="grid-line"></div>
-              <div class="grid-line"></div>
+        <!-- HOLDINGS & POSITIONS -->
+        <section class="two-col-grid">
+          <div id="holdings-section" class="card data-card">
+            <div class="card-header">
+              <h3 class="card-title">Holdings</h3>
+              <a href="#" class="view-all">View all</a>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- HOLDINGS & POSITIONS ROW -->
-      <section class="two-col-grid">
-        <!-- HOLDINGS -->
-        <div id="holdings-section" class="card data-card">
-          <div class="card-header">
-            <h3 class="card-title">Holdings</h3>
-            <a href="#" class="view-all">View all</a>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Symbol</th>
-                  <th class="text-right">Qty</th>
-                  <th class="text-right">Avg. Price</th>
-                  <th class="text-right">LTP</th>
-                  <th class="text-right">P&L</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (h of holdings(); track h.symbol) {
+            <div class="table-container">
+              <table>
+                <thead>
                   <tr>
-                    <td class="symbol">{{ h.symbol }}</td>
-                    <td class="text-right">{{ h.quantity }}</td>
-                    <td class="text-right">₹{{ h.averagePrice | number: '1.2-2' }}</td>
-                    <td class="text-right">₹{{ h.ltp | number: '1.2-2' }}</td>
-                    <td
-                      class="text-right"
-                      [class.positive]="h.pnl > 0"
-                      [class.negative]="h.pnl < 0"
-                    >
-                      {{ h.pnl > 0 ? '+' : '' }}₹{{ h.pnl | number: '1.0-0' }}
-                    </td>
+                    <th>Symbol</th>
+                    <th class="text-right">Qty</th>
+                    <th class="text-right">Avg. Price</th>
+                    <th class="text-right">LTP</th>
+                    <th class="text-right">P&L</th>
                   </tr>
-                }
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  @for (h of holdings(); track h.symbol) {
+                    <tr>
+                      <td class="symbol">{{ h.symbol }}</td>
+                      <td class="text-right financial-value">{{ h.quantity }}</td>
+                      <td class="text-right financial-value">₹{{ h.averagePrice | number: '1.2-2' }}</td>
+                      <td class="text-right financial-value">₹{{ h.ltp | number: '1.2-2' }}</td>
+                      <td
+                        class="text-right financial-value"
+                        [class.positive]="h.pnl > 0"
+                        [class.negative]="h.pnl < 0"
+                      >
+                        {{ h.pnl > 0 ? '+' : '' }}₹{{ h.pnl | number: '1.0-0' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        <!-- POSITIONS -->
-        <div id="positions-section">
-          <app-positions></app-positions>
-        </div>
-      </section>
-
-      <!-- RECENT ORDERS & SYSTEM STATUS ROW -->
-      <section id="orders-section">
-        <!-- RECENT ORDERS -->
-        <app-order-blotter></app-order-blotter>
+          <div id="positions-section">
+            <app-positions></app-positions>
+          </div>
+        </section>
       </section>
     </div>
   </main>

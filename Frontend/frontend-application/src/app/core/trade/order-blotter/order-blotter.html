@@ -19,7 +19,10 @@
       <h3 class="card-title">Recent Orders</h3>
       <div class="blotter-controls">
         @if (isAutoRefreshing()) {
-          <span class="auto-refresh-indicator">🔄 Auto-refreshing...</span>
+          <span class="auto-refresh-indicator" aria-live="polite">
+            <span class="material-icons spinner-icon" aria-hidden="true">sync</span>
+            Auto-refreshing...
+          </span>
         }
         <button class="refresh-button" (click)="manualRefresh()" [disabled]="isLoading()" data-testid="manual-refresh-button">
           {{ isLoading() ? 'Loading...' : 'Refresh' }}
@@ -41,7 +44,7 @@
         }
       </div>
     } @else {
-      <div class="table-container mat-elevation-z8">
+      <div class="table-container">
         <table mat-table [dataSource]="dataSource" data-testid="orders-table">
           <!-- Order ID Column -->
           <ng-container matColumnDef="orderId">

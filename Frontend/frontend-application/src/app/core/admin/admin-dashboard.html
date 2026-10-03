@@ -1,52 +1,64 @@
-<div class="admin-page">
-  <div class="admin-card">
-    <h2>Admin Dashboard</h2>
-    <p class="subtitle">Pending User Registrations</p>
+<div class="standalone-wrapper admin-page">
+  <header class="page-header">
+    <h1>Admin Dashboard</h1>
+    <p class="subtitle">Pending user registrations awaiting account creation.</p>
+  </header>
 
-    @if (pendingUsers().length === 0) {
-      <p class="empty-state">No pending registrations.</p>
-    } @else {
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>User ID</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Currency</th>
-            <th>Initial Balance</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (user of pendingUsers(); track user.id) {
-            <tr>
-              <td>{{ user.id }}</td>
-              <td>{{ user.username }}</td>
-              <td>{{ user.email }}</td>
-              <td>
-                <select #currencySelect class="form-input">
-                  <option value="USD">USD</option>
-                  <option value="EUR">EUR</option>
-                  <option value="GBP">GBP</option>
-                  <option value="INR" selected>INR</option>
-                </select>
-              </td>
-              <td>
-                <input type="number" #balanceInput class="form-input" value="500000" />
-              </td>
-              <td>
-                <button
-                  class="action-button"
-                  (click)="createAccount(user, currencySelect.value, balanceInput.value)"
-                  data-testid="create-account-button"
-                >
-                  Create Account
-                </button>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
+  <div class="content-container">
+    <section class="card data-card admin-card">
+      @if (pendingUsers().length === 0) {
+        <p class="empty-state">No pending registrations.</p>
+      } @else {
+        <div class="table-container">
+          <table class="data-table" data-testid="pending-users-table">
+            <thead>
+              <tr>
+                <th>User ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Currency</th>
+                <th class="text-right">Initial Balance</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of pendingUsers(); track user.id) {
+                <tr>
+                  <td>{{ user.id }}</td>
+                  <td>{{ user.username }}</td>
+                  <td>{{ user.email }}</td>
+                  <td>
+                    <select #currencySelect class="form-input" aria-label="Currency for {{ user.username }}">
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option>
+                      <option value="INR" selected>INR</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      #balanceInput
+                      class="form-input text-right"
+                      value="500000"
+                      aria-label="Initial balance for {{ user.username }}"
+                    />
+                  </td>
+                  <td>
+                    <button
+                      class="action-button"
+                      (click)="createAccount(user, currencySelect.value, balanceInput.value)"
+                      data-testid="create-account-button"
+                    >
+                      Create Account
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
   </div>
 </div>

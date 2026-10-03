@@ -1,101 +1,119 @@
 :host {
   display: block;
-  min-height: 100vh;
-  background: #0a0e13;
-  color: #f5f7fa;
-  font-family: Inter, "Segoe UI", Roboto, sans-serif;
-  padding: 40px;
+  min-height: 100%;
 }
 
 .order-ticket {
-  max-width: 560px;
+  max-width: 620px;
   margin: 0 auto;
-  padding: 30px;
-  background: rgba(30, 41, 59, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
 }
 
-h1 {
-  margin: 0 0 20px;
-  color: #fff;
-}
-
-form {
+.order-ticket form {
   display: grid;
-  gap: 14px;
+  gap: var(--spacing-md);
 }
 
-.field {
+.order-ticket .field {
   display: grid;
-  gap: 6px;
+  gap: var(--spacing-xs);
 }
 
-label {
-  color: #d9dee7;
+.order-ticket label {
   font-size: 13px;
   font-weight: 500;
+  letter-spacing: 0.2px;
 }
 
-input,
-select,
-button {
+html:not(.dark-theme) .order-ticket label {
+  color: var(--text-secondary-light);
+}
+
+html.dark-theme .order-ticket label {
+  color: var(--text-secondary-dark);
+}
+
+.order-ticket input,
+.order-ticket select {
   height: 44px;
-  padding: 0 14px;
-  border-radius: 8px;
-  border: 1px solid #29323d;
-  outline: none;
-  font: inherit;
+  padding-inline: 12px;
 }
 
-input,
-select {
-  background: #0a0e13;
-  color: #f5f7fa;
-}
-
-input:focus,
-select:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
-}
-
-button {
+.submit-order-button {
+  height: 44px;
   border: none;
-  background: #2563eb;
-  color: #fff;
+  border-radius: var(--border-radius);
+  background-color: var(--primary-green-light);
+  color: #FFFFFF;
   cursor: pointer;
   font-weight: 600;
+  letter-spacing: 0.3px;
+  box-shadow: var(--shadow-1);
+  transition: background-color 160ms ease, box-shadow 160ms ease;
 }
 
-button:hover {
-  background: #1d4ed8;
+.submit-order-button:hover:not(:disabled) {
+  background-color: var(--primary-green-dark);
+  box-shadow: var(--shadow-2);
 }
 
-button:disabled {
-  opacity: 0.6;
+.submit-order-button:disabled {
+  background-color: #BDC2B6;
+  color: #556055;
   cursor: not-allowed;
+  box-shadow: none;
+}
+
+html.dark-theme .submit-order-button {
+  background-color: var(--primary-green-dark-mode);
+  color: #121212;
+}
+
+html.dark-theme .submit-order-button:hover:not(:disabled) {
+  background-color: #00B674;
+}
+
+html.dark-theme .submit-order-button:disabled {
+  background-color: #303030;
+  color: #8E8E8A;
 }
 
 .field-error {
   margin: 0;
-  color: #fca5a5;
+  color: var(--error-light);
   font-size: 13px;
 }
 
-.success,
-.error {
-  margin: 14px 0 0;
+html.dark-theme .field-error {
+  color: var(--error-dark);
+}
+
+.response-message {
+  margin: var(--spacing-md) 0 0;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
+  border: 1px solid transparent;
 }
 
-.success {
-  background: rgba(16, 185, 129, 0.15);
-  color: #6ee7b7;
+.response-message.success {
+  background: rgba(31, 142, 88, 0.14);
+  border-color: rgba(31, 142, 88, 0.26);
+  color: var(--success-light);
 }
 
-.error {
-  background: rgba(239, 68, 68, 0.15);
-  color: #fca5a5;
+.response-message.error {
+  background: rgba(197, 65, 49, 0.12);
+  border-color: rgba(197, 65, 49, 0.28);
+  color: var(--error-light);
+}
+
+html.dark-theme .response-message.success {
+  background: rgba(86, 209, 143, 0.20);
+  border-color: rgba(86, 209, 143, 0.34);
+  color: var(--success-dark);
+}
+
+html.dark-theme .response-message.error {
+  background: rgba(255, 125, 109, 0.18);
+  border-color: rgba(255, 125, 109, 0.34);
+  color: var(--error-dark);
 }

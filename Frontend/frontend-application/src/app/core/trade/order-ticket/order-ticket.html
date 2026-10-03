@@ -1,71 +1,108 @@
-<section class="order-ticket">
-  <h1>Order Ticket</h1>
+<div class="standalone-wrapper">
+  <header class="page-header">
+    <a routerLink="/dashboard" class="back-link">← Back to Dashboard</a>
+    <h1>Order Ticket</h1>
+    <p class="subtitle">Create and submit a trade order with validated inputs.</p>
+  </header>
 
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
-    <div class="field">
-      <label for="account">Account</label>
-      <input
-        id="account"
-        type="text"
-        [value]="accountId() ?? 'Unavailable'"
-        readonly
-        data-testid="account-input"
-      />
-    </div>
+  <div class="content-container">
+    <section class="card data-card order-ticket">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="field">
+          <label for="account">Account</label>
+          <input
+            id="account"
+            type="text"
+            [value]="accountId() ?? 'Unavailable'"
+            readonly
+            data-testid="account-input"
+          />
+        </div>
 
-    <div class="field">
-      <label for="symbol">Instrument</label>
-      <input id="symbol" type="text" formControlName="symbol" placeholder="INFY.NS" data-testid="symbol-input" />
-      @if (form.controls.symbol.touched && form.controls.symbol.invalid) {
-        <p class="field-error">Enter a valid tradable symbol.</p>
+        <div class="field">
+          <label for="symbol">Instrument</label>
+          <input
+            id="symbol"
+            type="text"
+            formControlName="symbol"
+            placeholder="INFY.NS"
+            data-testid="symbol-input"
+            aria-required="true"
+          />
+          @if (form.controls.symbol.touched && form.controls.symbol.invalid) {
+            <p class="field-error">Enter a valid tradable symbol.</p>
+          }
+        </div>
+
+        <div class="field">
+          <label for="side">Side</label>
+          <select id="side" formControlName="side" data-testid="side-input" aria-required="true">
+            @for (side of orderSides; track side) {
+              <option [value]="side">{{ side }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="orderType">Type</label>
+          <select id="orderType" formControlName="orderType" data-testid="order-type-input" aria-required="true">
+            @for (type of orderTypes; track type) {
+              <option [value]="type">{{ type }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="quantity">Quantity</label>
+          <input
+            id="quantity"
+            type="number"
+            min="1"
+            step="1"
+            formControlName="quantity"
+            data-testid="quantity-input"
+            aria-required="true"
+          />
+          @if (form.controls.quantity.touched && form.controls.quantity.invalid) {
+            <p class="field-error">Quantity must be a whole number above zero.</p>
+          }
+        </div>
+
+        @if (form.controls.orderType.value === 'LIMIT') {
+          <div class="field">
+            <label for="price">Price</label>
+            <input
+              id="price"
+              type="text"
+              inputmode="decimal"
+              formControlName="price"
+              placeholder="1250.50"
+              data-testid="price-input"
+              aria-required="true"
+            />
+            @if (form.controls.price.touched && (form.controls.price.invalid || isPriceNonPositive())) {
+              <p class="field-error">Price must be above zero with at most two decimal places.</p>
+            }
+          </div>
+        }
+
+        <button type="submit" class="submit-order-button" [disabled]="submitting()" data-testid="submit-order-button">
+          {{ submitting() ? 'Submitting...' : 'Submit Order' }}
+        </button>
+      </form>
+
+      @if (responseMessage()) {
+        <p
+          class="response-message"
+          [class.success]="responseType() === 'success'"
+          [class.error]="responseType() === 'error'"
+          data-testid="response-message"
+          aria-live="polite"
+        >
+          {{ responseMessage() }}
+        </p>
       }
-    </div>
-
-    <div class="field">
-      <label for="side">Side</label>
-      <select id="side" formControlName="side" data-testid="side-input">
-        @for (side of orderSides; track side) {
-          <option [value]="side">{{ side }}</option>
-        }
-      </select>
-    </div>
-
-    <div class="field">
-      <label for="orderType">Type</label>
-      <select id="orderType" formControlName="orderType" data-testid="order-type-input">
-        @for (type of orderTypes; track type) {
-          <option [value]="type">{{ type }}</option>
-        }
-      </select>
-    </div>
-
-    <div class="field">
-      <label for="quantity">Quantity</label>
-      <input id="quantity" type="number" min="1" step="1" formControlName="quantity" data-testid="quantity-input" />
-      @if (form.controls.quantity.touched && form.controls.quantity.invalid) {
-        <p class="field-error">Quantity must be a whole number above zero.</p>
-      }
-    </div>
-
-    @if (form.controls.orderType.value === 'LIMIT') {
-      <div class="field">
-        <label for="price">Price</label>
-        <input id="price" type="text" inputmode="decimal" formControlName="price" placeholder="1250.50" data-testid="price-input" />
-        @if (form.controls.price.touched && (form.controls.price.invalid || isPriceNonPositive())) {
-          <p class="field-error">Price must be above zero with at most two decimal places.</p>
-        }
-      </div>
-    }
-
-    <button type="submit" [disabled]="submitting()" data-testid="submit-order-button">
-      {{ submitting() ? 'Submitting...' : 'Submit Order' }}
-    </button>
-  </form>
-
-  @if (responseMessage()) {
-    <p [class.success]="responseType() === 'success'" [class.error]="responseType() === 'error'" data-testid="response-message">
-      {{ responseMessage() }}
-    </p>
-  }
-</section>
+    </section>
+  </div>
+</div>
 
