@@ -62,6 +62,12 @@ public class TradeExecutionService {
             return Optional.empty();
         }
 
+        // validation - fetch account early
+        Account account = accountRepository.findById(order.getAccountId()).orElseThrow();
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            return Optional.of(rejectOrder(order, "ACCOUNT_SUSPENDED"));
+        }
+
         // fetching "live" market data, if price is not available-> reject order
         QuoteResponse quoteResponse = null;
         try {
@@ -69,6 +75,21 @@ public class TradeExecutionService {
         } catch (PricingUnavailableException e) {
             return Optional.of(rejectOrder(order, "PRICING_UNAVAILABLE"));
         }
+
+        // Validate holdings/cash BEFORE checking price - must reject if insufficient holdings/funds
+        // even if limit order price hasn't been met yet
+        Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol())
+                .orElse(null);
+
+        // Pre-check for bounds - reject immediately if insufficient holdings/funds
+        // This prevents limit orders from sitting at NEW when they can never be filled
+        if (order.getSide() == OrderSide.SELL) {
+            int currentQty = position != null ? position.getQuantity() : 0;
+            if (currentQty < order.getQuantity()) {
+                return Optional.of(rejectOrder(order, "INSUFFICIENT_HOLDINGS"));
+            }
+        }
+        // For BUY orders, we check cash balance after getting the execution price
 
         // checks if order can be filled
         FillDecision decision = fillRuleEngine.evaluate(order, quoteResponse.data());
@@ -80,12 +101,6 @@ public class TradeExecutionService {
                 return Optional.empty();
             }
             return Optional.of(rejectOrder(order, decision.rejectReason()));
-        }
-
-        // validation
-        Account account = accountRepository.findById(order.getAccountId()).orElseThrow();
-        if (account.getStatus() != AccountStatus.ACTIVE) {
-            return Optional.of(rejectOrder(order, "ACCOUNT_SUSPENDED"));
         }
 
         BigDecimal executedPrice = decision.executedPrice();
@@ -104,19 +119,9 @@ public class TradeExecutionService {
         BigDecimal totalValueInAccountCurrency = totalValueInStockCurrency.multiply(conversionRate);
         BigDecimal executedPriceInAccountCurrency = totalValueInAccountCurrency.divide(BigDecimal.valueOf(order.getQuantity()), 4, RoundingMode.HALF_UP);
 
-        Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol())
-                .orElse(null);
-
-        // Pre-check for bounds to avoid filling an order that will immediately fail
-        // cash checks
+        // Check BUY order has sufficient funds at execution price
         if (order.getSide() == OrderSide.BUY && account.getCashBalance().compareTo(totalValueInAccountCurrency) < 0) {
             return Optional.of(rejectOrder(order, "INSUFFICIENT_FUNDS"));
-        }
-        if (order.getSide() == OrderSide.SELL) {
-            int currentQty = position != null ? position.getQuantity() : 0;
-            if (currentQty < order.getQuantity()) {
-                return Optional.of(rejectOrder(order, "INSUFFICIENT_HOLDINGS"));
-            }
         }
 
         // GUARDED STATE TRANSITION: Must be the FIRST write in the transaction

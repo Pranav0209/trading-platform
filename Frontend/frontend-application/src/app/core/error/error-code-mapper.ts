@@ -26,8 +26,7 @@ export class ErrorCodeMapper {
     'ACC-404': 'The trading account could not be found.',
     'ACC-403': 'This account is not active, or this sign-in may not trade it.',
     'INS-404': 'This instrument cannot be traded.',
-    'ORD-400': 'There is not enough cash for this order.',
-    'ORD-409': 'There is not enough holding to sell, or this order was already placed.',
+    'ORD-400': 'There is not enough cash for this order.'
   };
 
   /**
