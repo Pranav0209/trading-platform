@@ -20,10 +20,6 @@
       <h2>Sign Up</h2>
       <p class="login-subtitle">Create a new trading account.</p>
 
-      @if (errorMessage()) {
-        <div class="error-message" data-testid="error-message" role="alert" aria-live="assertive">{{ errorMessage() }}</div>
-      }
-
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
         <div class="form-group">
           <label for="username">Username</label>
@@ -34,6 +30,11 @@
             data-testid="username-input"
             placeholder="Choose a username"
             autocomplete="username"
+            [disabled]="isSubmitting()"
+          />
+          <app-form-error
+            [control]="form.get('username')"
+            message="Username is required and must be 50 characters or less"
           />
         </div>
 
@@ -46,6 +47,11 @@
             data-testid="email-input"
             placeholder="Enter your email address"
             autocomplete="email"
+            [disabled]="isSubmitting()"
+          />
+          <app-form-error
+            [control]="form.get('email')"
+            message="Please enter a valid email address (max 255 characters)"
           />
         </div>
 
@@ -58,16 +64,25 @@
             data-testid="password-input"
             placeholder="Create a password (min 8 chars)"
             autocomplete="new-password"
+            [disabled]="isSubmitting()"
+          />
+          <app-form-error
+            [control]="form.get('password')"
+            message="Password must be between 8 and 100 characters"
           />
         </div>
 
         <button
           type="submit"
           class="login-button"
-          [disabled]="form.invalid"
+          [disabled]="form.invalid || isSubmitting()"
           data-testid="submit-button"
         >
-          Create Account
+          @if (isSubmitting()) {
+            Creating Account...
+          } @else {
+            Create Account
+          }
         </button>
       </form>
 

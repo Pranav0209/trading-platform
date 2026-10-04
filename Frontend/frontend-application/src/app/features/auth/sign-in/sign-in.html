@@ -20,16 +20,6 @@
       <h2>Sign In</h2>
       <p class="login-subtitle">Welcome back! Please enter your details.</p>
 
-      @if (errorMessage()) {
-        <div 
-          class="error-message"
-          data-testid="error-message"
-          role="alert"
-          aria-live="assertive">
-          {{ errorMessage() }}
-        </div>
-      }
-
       <form [formGroup]="form" (ngSubmit)="onSubmit()" data-testid="sign-in-form">
         <div class="form-group">
           <label for="username">Username</label>
@@ -41,6 +31,10 @@
             placeholder="Enter your username"
             autocomplete="username"
             [disabled]="isLoading()"
+          />
+          <app-form-error
+            [control]="form.get('username')"
+            message="Username is required and must be 64 characters or less"
           />
         </div>
 
@@ -54,6 +48,10 @@
             placeholder="••••••••"
             autocomplete="current-password"
             [disabled]="isLoading()"
+          />
+          <app-form-error
+            [control]="form.get('password')"
+            message="Password is required and must be 128 characters or less"
           />
         </div>
 
