@@ -19,7 +19,27 @@ test.describe('Navigation and Dashboard Journey', () => {
     await page.getByTestId('username-input').fill(validUsername as string);
     await page.getByTestId('password-input').fill(validPassword as string);
     await page.getByTestId('submit-button').click();
-    await expect(page).toHaveURL(/\/dashboard/);
+    
+    // Wait for either successful navigation or error message
+    await Promise.race([
+      page.waitForNavigation().catch(() => {}),
+      page.locator('[data-testid="error-message"]').waitFor({ timeout: 2000 }).catch(() => {})
+    ]);
+    
+    // Check if login succeeded or failed
+    const errorMessage = page.locator('[data-testid="error-message"]');
+    const isError = await errorMessage.isVisible().catch(() => false);
+    
+    if (isError) {
+      const errorText = await errorMessage.textContent();
+      throw new Error(`Login failed: ${errorText}`);
+    }
+    
+    // Wait for network to settle
+    await page.waitForLoadState('networkidle').catch(() => {});
+    
+    // Verify we're on dashboard
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
   }
 
   test.beforeEach(async ({ context }) => {

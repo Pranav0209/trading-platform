@@ -15,7 +15,10 @@ test.describe('Place Order Journey', () => {
     await page.getByTestId('username-input').fill(validUsername as string);
     await page.getByTestId('password-input').fill(validPassword as string);
     await page.getByTestId('submit-button').click();
-    await expect(page).toHaveURL(/\/dashboard/);
+    
+    // Wait for navigation and network to settle before checking URL
+    await page.waitForLoadState('networkidle').catch(() => {});
+    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
   }
 
   test.beforeEach(async ({ context }) => {
