@@ -29,10 +29,53 @@ export class Account implements OnInit {
   isLoading = signal(true);
   error = signal<string | null>(null);
 
-
+  // Masking state
+  isAccountNumberRevealed = signal(false);
+  isBalanceRevealed = signal(false);
 
   ngOnInit(): void {
     this.loadAccountDetails();
+  }
+
+  /**
+   * Toggle account number visibility
+   */
+  toggleAccountNumberVisibility(): void {
+    this.isAccountNumberRevealed.update(v => !v);
+  }
+
+  /**
+   * Toggle balance visibility
+   */
+  toggleBalanceVisibility(): void {
+    this.isBalanceRevealed.update(v => !v);
+  }
+
+  /**
+   * Get masked account number (shows only last 4 digits)
+   */
+  getMaskedAccountNumber(): string {
+    const acc = this.accountNumber();
+    if (acc.length <= 4) return '****';
+    return '****' + acc.slice(-4);
+  }
+
+  /**
+   * Get masked balance (shows only first and last digit)
+   */
+  getMaskedBalance(): string {
+    const balance = this.cashBalance();
+    return `${'*'.repeat(Math.max(1, Math.floor(balance).toString().length - 1))}${balance.toString().slice(-1)}`;
+  }
+
+  /**
+   * Format currency for display
+   */
+  formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: this.currency(),
+    }).format(amount);
   }
 
   /**
@@ -77,27 +120,5 @@ export class Account implements OnInit {
         this.isLoading.set(false);
       },
     });
-  }
-
-  /**
-   * Get status badge color
-   */
-  getStatusColor(): string {
-    const status = this.status();
-    return status === 'ACTIVE'
-      ? '#10b981'
-      : status === 'SUSPENDED'
-        ? '#f59e0b'
-        : '#ef4444';
-  }
-
-  /**
-   * Format currency
-   */
-  formatCurrency(value: number): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: this.currency(),
-    }).format(value);
   }
 }
