@@ -1,5 +1,6 @@
 import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { LoginThrottleService } from './login-throttle.service';
 import { RegisterDto } from './dto/register.dto';
@@ -17,6 +18,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private loginThrottleService: LoginThrottleService,
+    private configService: ConfigService,
     @InjectRepository(RefreshToken)
     private refreshTokenRepository: Repository<RefreshToken>,
   ) {}
@@ -143,19 +145,21 @@ export class AuthService {
     const rawRefreshToken = crypto.randomBytes(32).toString('hex');
     const hashedRefreshToken = crypto.createHash('sha256').update(rawRefreshToken).digest('hex');
 
+    const refreshTokenExpiryDays = this.configService.get<number>('JWT_REFRESH_TOKEN_EXPIRY_DAYS') || 7;
     const refreshTokenEntity = this.refreshTokenRepository.create({
       userId: user.id,
       tokenHash: hashedRefreshToken,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expiresAt: new Date(Date.now() + refreshTokenExpiryDays * 24 * 60 * 60 * 1000),
       revoked: false,
     });
     await this.refreshTokenRepository.save(refreshTokenEntity);
 
+    const accessTokenExpiresInSeconds = this.configService.get<number>('ACCESS_TOKEN_EXPIRES_IN_SECONDS') || 900;
     return {
       accessToken,
       refreshToken: rawRefreshToken,
       tokenType: 'Bearer',
-      expiresIn: 900,
+      expiresIn: accessTokenExpiresInSeconds,
     };
   }
 

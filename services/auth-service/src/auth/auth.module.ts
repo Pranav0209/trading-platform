@@ -17,7 +17,7 @@ import { LoginThrottleService } from './login-throttle.service';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '15m' },
+        signOptions: { expiresIn: (configService.get<string>('JWT_TOKEN_EXPIRY') ?? '15m') as any },
       }),
       inject: [ConfigService],
     }),

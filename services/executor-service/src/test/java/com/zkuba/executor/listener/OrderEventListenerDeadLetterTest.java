@@ -58,7 +58,7 @@ import static org.mockito.Mockito.when;
  */
 @SpringBootTest
 @TestPropertySource(properties = {
-    "spring.kafka.bootstrap-servers=localhost:9092",
+    "spring.kafka.bootstrap-servers=${KAFKA_BOOTSTRAP_SERVERS}",
     "spring.kafka.consumer.group-id=test-executor",
     "spring.kafka.consumer.auto-offset-reset=earliest"
 })
@@ -239,7 +239,7 @@ class OrderEventListenerDeadLetterTest {
 
     private KafkaConsumer<String, String> createDLTConsumer() {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
+        props.put("bootstrap.servers", "${KAFKA_BOOTSTRAP_SERVERS}");
         props.put("group.id", "dlt-test-consumer");
         props.put("auto.offset.reset", "earliest");
         props.put("key.deserializer", StringDeserializer.class.getName());

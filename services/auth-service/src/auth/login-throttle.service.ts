@@ -1,20 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import { LoginAttempt } from './login-attempt.entity';
 
 @Injectable()
 export class LoginThrottleService {
   private readonly logger = new Logger('LoginThrottleService');
-
-  // Configuration constants
-  static readonly MAX_ATTEMPTS = 5;
-  static readonly COOLDOWN_SECONDS = 900; // 15 minutes
+  private readonly maxAttempts: number;
+  private readonly cooldownSeconds: number;
 
   constructor(
     @InjectRepository(LoginAttempt)
     private loginAttemptRepository: Repository<LoginAttempt>,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.maxAttempts = this.configService.get<number>('LOGIN_MAX_ATTEMPTS') || 5;
+    this.cooldownSeconds = this.configService.get<number>('LOGIN_COOLDOWN_SECONDS') || 900;
+  }
 
   /**
    * Check if a username+IP combination is currently throttled
@@ -22,7 +25,7 @@ export class LoginThrottleService {
    */
   async isThrottled(username: string, ipAddress: string): Promise<boolean> {
     const cooldownStart = new Date(
-      Date.now() - LoginThrottleService.COOLDOWN_SECONDS * 1000,
+      Date.now() - this.cooldownSeconds * 1000,
     );
 
     // Count only recent failures (within cooldown window)
@@ -34,7 +37,7 @@ export class LoginThrottleService {
     );
 
     const failureCount = recentFailureCount[0]?.count || 0;
-    const isThrottled = failureCount >= LoginThrottleService.MAX_ATTEMPTS;
+    const isThrottled = failureCount >= this.maxAttempts;
 
     if (isThrottled) {
       this.logger.warn(
@@ -86,11 +89,11 @@ export class LoginThrottleService {
   /**
    * Get throttle configuration for documentation
    */
-  static getConfig() {
+  getConfig() {
     return {
-      maxAttempts: this.MAX_ATTEMPTS,
-      cooldownSeconds: this.COOLDOWN_SECONDS,
-      cooldownMinutes: this.COOLDOWN_SECONDS / 60,
+      maxAttempts: this.maxAttempts,
+      cooldownSeconds: this.cooldownSeconds,
+      cooldownMinutes: this.cooldownSeconds / 60,
     };
   }
 }

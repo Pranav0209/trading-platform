@@ -4,8 +4,7 @@ set -euo pipefail
 
 # resolve paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MIGRATIONS_DIR="$SCRIPT_DIR/migrations"
-SEED_DIR="$SCRIPT_DIR/seed"
+MIGRATIONS_DIR="$SCRIPT_DIR/init"
 ENV_FILE="$SCRIPT_DIR/.env"
 
 if [[ ! -f "$ENV_FILE" ]]; then
@@ -18,10 +17,10 @@ source "$ENV_FILE"
 set +a
 
 # connection settings from .env
-HOST="${POSTGRES_HOST:-localhost}"
-PORT="${POSTGRES_PORT:-5432}"
-USER="${POSTGRES_USER:-postgres}"
-DATABASE="${TARGET_DATABASE:-${POSTGRES_DB:-trading}}"
+HOST="${POSTGRES_HOST}"
+PORT="${POSTGRES_PORT}"
+USER="${POSTGRES_USER}"
+DATABASE="${TARGET_DATABASE:-${POSTGRES_DB}}"
 
 # validate database
 if [[ -z "$DATABASE" ]]; then
@@ -42,8 +41,8 @@ psql \
     --username="$USER" \
     --dbname="$DATABASE" \
     -v ON_ERROR_STOP=1 \
-    -f "$MIGRATIONS_DIR/zkuba_dbschema.sql" \
-    -f "$SEED_DIR/zkuba_dbseed.sql"
+    -f "$MIGRATIONS_DIR/01-schema.sql" \
+    -f "$MIGRATIONS_DIR/02-seed-data.sql"
 
 echo "Database setup completed successfully."
 

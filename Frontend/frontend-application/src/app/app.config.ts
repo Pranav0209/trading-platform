@@ -7,6 +7,11 @@ import { BASE_PATH as AUTH_BASE_PATH } from '../generated/auth/variables';
 import { Configuration as AuthConfiguration } from '../generated/auth/configuration';
 import { BASE_PATH as TRADE_BASE_PATH } from '../generated/trade/variables';
 import { BearerTokenInterceptor } from './core/auth/bearer-token.interceptor';
+import { environment } from '../environments/environment';
+
+// Get URLs from environment configuration (injected from .env during build)
+const authApiUrl = environment.authApiUrl;
+const tradeApiUrl = environment.tradeApiUrl;
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -21,10 +26,10 @@ export const appConfig: ApplicationConfig = {
     { 
       provide: AuthConfiguration, 
       useFactory: () => new AuthConfiguration({ 
-        basePath: 'http://localhost:3000',
+        basePath: authApiUrl,
         withCredentials: true 
       }) 
     },
-    { provide: TRADE_BASE_PATH, useValue: 'http://localhost:8081' }
+    { provide: TRADE_BASE_PATH, useValue: tradeApiUrl }
   ]
 };

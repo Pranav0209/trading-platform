@@ -9,6 +9,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, throwError, switchMap, from, lastValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { Session } from './session';
+import { environment } from '../../../environments/environment';
 
 /**
  * HTTP Interceptor that attaches bearer tokens to requests destined for platform APIs.
@@ -24,10 +25,14 @@ export class BearerTokenInterceptor implements HttpInterceptor {
   private router = inject(Router);
   private httpClient = inject(HttpClient);
 
+  // Get URLs from environment configuration (injected from .env during build)
+  private authApiUrl = environment.authApiUrl;
+  private tradeApiUrl = environment.tradeApiUrl;
+
   /** Allow list of origins that should receive the bearer token */
   private allowedOrigins = new Set([
-    'http://localhost:3000', // Auth service - protected routes only
-    'http://localhost:8081', // Trade API - all routes
+    this.authApiUrl, // Auth service - protected routes only
+    this.tradeApiUrl, // Trade API - all routes
   ]);
 
   /** Path segments that indicate unauthenticated routes in the Auth service */
@@ -95,9 +100,10 @@ export class BearerTokenInterceptor implements HttpInterceptor {
     try {
       // Make direct HTTP call with credentials enabled
       // Backend reads refreshToken from HttpOnly cookie automatically
+      const refreshUrl = `${this.authApiUrl}/auth/refresh`;
       const response = await lastValueFrom(
         this.httpClient.post<{ accessToken: string }>(
-          'http://localhost:3000/auth/refresh',
+          refreshUrl,
           {}, // Empty body - token comes from cookie
           { withCredentials: true } // CRITICAL: Enables cookie transmission
         )

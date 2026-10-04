@@ -49,6 +49,9 @@ wwwroot/*.js
 .env.local
 .env.*.local
 
+# Generated environment file (auto-generated from .env during build)
+src/environments/environment.ts
+
 # System files
 .DS_Store
 Thumbs.db
