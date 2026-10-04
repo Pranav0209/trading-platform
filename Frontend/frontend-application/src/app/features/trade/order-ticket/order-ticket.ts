@@ -8,6 +8,7 @@ import { OrderSide } from '../../../../generated/trade/model/orderSide';
 import { PlaceOrderRequest } from '../../../../generated/trade/model/placeOrderRequest';
 import { Session } from '../../../core/auth/session';
 import { ErrorCodeMapper } from '../../../core/error/error-code-mapper';
+import { ToastService } from '../../../core/notifications/toast.service';
 
 const SYMBOL_PATTERN = /^(?:[A-Z][A-Z0-9]*(?:\.(?:NS|BO))?|FX:[A-Z]{6}|X:[A-Z0-9]+)$/;
 const PRICE_PATTERN = /^\d+(?:\.\d{1,2})?$/;
@@ -24,6 +25,7 @@ export class OrderTicket implements OnInit {
   private readonly ordersService = inject(OrdersService);
   private readonly session = inject(Session);
   private readonly errorCodeMapper = inject(ErrorCodeMapper);
+  private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
 
   readonly orderSides = [OrderSide.Buy, OrderSide.Sell];
@@ -63,13 +65,13 @@ export class OrderTicket implements OnInit {
   onSubmit(): void {
     if (this.form.invalid || (this.form.controls.orderType.value === 'LIMIT' && this.isPriceNonPositive())) {
       this.form.markAllAsTouched();
+      this.toastService.warning('Please correct the form errors before submitting');
       return;
     }
 
     const accountId = this.accountId();
     if (accountId === null) {
-      this.responseType.set('error');
-      this.responseMessage.set('This session cannot place orders because no trade account is present in the token.');
+      this.toastService.error('This session cannot place orders because no trade account is present in the token.');
       return;
     }
 
@@ -94,15 +96,16 @@ export class OrderTicket implements OnInit {
     this.ordersService.placeOrder(payload).subscribe({
       next: (res) => {
         this.submitting.set(false);
-        this.responseType.set('success');
-        this.responseMessage.set(`Order ${res.orderId} is ${res.status}. ${res.message}`);
+        this.toastService.success(res.message || `Order ${res.orderId} placed successfully - Status: ${res.status}`);
         this.form.reset({ side: this.form.controls.side.value, orderType: this.form.controls.orderType.value });
         this.router.navigate(['/orders']);
       },
       error: (error: HttpErrorResponse) => {
         this.submitting.set(false);
+        const errorMsg = this.mapOrderError(error);
+        this.toastService.error(errorMsg);
         this.responseType.set('error');
-        this.responseMessage.set(this.mapOrderError(error));
+        this.responseMessage.set(errorMsg);
       }
     });
   }

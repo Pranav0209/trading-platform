@@ -21,10 +21,10 @@ test.describe('Place Order Journey', () => {
 
   async function signInFresh(page: any) {
     // Each test signs in independently to avoid shared state
-    await page.goto(`${baseURL}/sign-in`);
-    await page.fill('input[name="username"]', validUsername);
-    await page.fill('input[name="password"]', validPassword);
-    await page.click('[data-testid="submit-button"]');
+    await page.goto(${baseURL}/sign-in);
+    await page.getByTestId('username-input').fill(validUsername as string);
+    await page.getByTestId('password-input').fill(validPassword as string);
+    await page.getByTestId('submit-button').click();
     await expect(page).toHaveURL(/\/dashboard/);
   }
 
@@ -43,20 +43,20 @@ test.describe('Place Order Journey', () => {
     await expect(page.locator('[data-testid="order-ticket"]')).toBeVisible();
 
     // Try submitting with empty form
-    const submitButton = page.locator('[data-testid="submit-button"]');
+    const submitButton = page.getByTestId('submit-order-button');
     await expect(submitButton).toBeDisabled();
 
     // Fill invalid quantity (zero)
-    await page.fill('input[name="quantity"]', '0');
+    await page.getByTestId('quantity-input').fill('0');
     await expect(submitButton).toBeDisabled();
 
     // Fill valid quantity but empty symbol
-    await page.fill('input[name="quantity"]', '10');
-    await page.fill('input[name="price"]', '100.00');
+    await page.getByTestId('quantity-input').fill('10');
+    await page.getByTestId('price-input').fill('100.00');
     await expect(submitButton).toBeDisabled();
 
     // Fill valid symbol - should enable submit
-    await page.fill('input[name="symbol"]', 'INFY.NS');
+    await page.getByTestId('symbol-input').fill('INFY.NS');
     await expect(submitButton).toBeEnabled();
   });
 
@@ -70,13 +70,13 @@ test.describe('Place Order Journey', () => {
     await expect(page.locator('[data-testid="order-ticket"]')).toBeVisible();
 
     // Fill valid order
-    await page.fill('input[name="symbol"]', 'INFY.NS');
-    await page.selectOption('select[name="side"]', 'BUY');
-    await page.fill('input[name="quantity"]', '5');
-    await page.fill('input[name="price"]', '1500.50');
+    await page.getByTestId('symbol-input').fill('INFY.NS');
+    await page.getByTestId('side-input').selectOption('BUY');
+    await page.getByTestId('quantity-input').fill('5');
+    await page.getByTestId('price-input').fill('1500.50');
 
     // Submit order
-    const submitButton = page.locator('[data-testid="submit-button"]');
+    const submitButton = page.getByTestId('submit-order-button');
     await submitButton.click();
 
     // Response should show success message with order status
@@ -99,13 +99,13 @@ test.describe('Place Order Journey', () => {
 
     // Try placing order with unrealistic price that will be rejected
     // (e.g., trying to buy a huge quantity with insufficient funds)
-    await page.fill('input[name="symbol"]', 'INFY.NS');
-    await page.selectOption('select[name="side"]', 'BUY');
-    await page.fill('input[name="quantity"]', '99999'); // Unrealistic quantity
-    await page.fill('input[name="price"]', '99999.99'); // Unrealistic price
+    await page.getByTestId('symbol-input').fill('INFY.NS');
+    await page.getByTestId('side-input').selectOption('BUY');
+    await page.getByTestId('quantity-input').fill('99999'); // Unrealistic quantity
+    await page.getByTestId('price-input').fill('99999.99'); // Unrealistic price
 
     // Submit order
-    const submitButton = page.locator('[data-testid="submit-button"]');
+    const submitButton = page.getByTestId('submit-order-button');
     await submitButton.click();
 
     // Error should be visible
@@ -128,11 +128,11 @@ test.describe('Place Order Journey', () => {
     // First order: sign in, place order
     await signInFresh(page);
     await page.click('[data-testid="nav-order-ticket"]');
-    await page.fill('input[name="symbol"]', 'INFY.NS');
-    await page.selectOption('select[name="side"]', 'BUY');
-    await page.fill('input[name="quantity"]', '1');
-    await page.fill('input[name="price"]', '1500.00');
-    const firstOrderButton = page.locator('[data-testid="submit-button"]');
+    await page.getByTestId('symbol-input').fill('INFY.NS');
+    await page.getByTestId('side-input').selectOption('BUY');
+    await page.getByTestId('quantity-input').fill('1');
+    await page.getByTestId('price-input').fill('1500.00');
+    const firstOrderButton = page.getByTestId('submit-order-button');
     await firstOrderButton.click();
 
     // Wait for response
@@ -145,11 +145,11 @@ test.describe('Place Order Journey', () => {
     // Second order: sign in again with fresh session
     await signInFresh(page);
     await page.click('[data-testid="nav-order-ticket"]');
-    await page.fill('input[name="symbol"]', 'RELIANCE.NS');
-    await page.selectOption('select[name="side"]', 'SELL');
-    await page.fill('input[name="quantity"]', '2');
-    await page.fill('input[name="price"]', '2500.00');
-    const secondOrderButton = page.locator('[data-testid="submit-button"]');
+    await page.getByTestId('symbol-input').fill('RELIANCE.NS');
+    await page.getByTestId('side-input').selectOption('SELL');
+    await page.getByTestId('quantity-input').fill('2');
+    await page.getByTestId('price-input').fill('2500.00');
+    const secondOrderButton = page.getByTestId('submit-order-button');
     await secondOrderButton.click();
 
     // Wait for response

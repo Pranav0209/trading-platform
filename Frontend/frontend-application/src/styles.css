@@ -1,9 +1,9 @@
 /* ==========================================================================
-   FIDELITY TRADING THEME - GLOBAL TEMPLATE
+   ZKUBA TRADING THEME - GLOBAL TEMPLATE
    ========================================================================== */
 
 :root {
-  /* Fidelity brand palette */
+  /* Zkuba brand palette */
   --primary-green-light: #006747;
   --primary-green-dark: #005339;
   --primary-green-dark-mode: #00D084;
@@ -459,5 +459,190 @@ html.dark-theme .muted {
   .standalone-wrapper {
     padding: var(--spacing-md);
   }
+}
+
+/* ==========================================================================
+   TOAST NOTIFICATIONS - MATERIAL SNACKBAR
+   ========================================================================== */
+
+/* Light Theme Toast Styling - zkuba Trading Theme */
+html:not(.dark-theme) .toast-success {
+  --snack-bar-background: #006747 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html:not(.dark-theme) .toast-success .mdc-snackbar__surface {
+  background-color: #006747 !important;
+}
+
+html:not(.dark-theme) .toast-success .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+html:not(.dark-theme) .toast-error {
+  --snack-bar-background: #c54531 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html:not(.dark-theme) .toast-error .mdc-snackbar__surface {
+  background-color: #c54531 !important;
+}
+
+html:not(.dark-theme) .toast-error .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+html:not(.dark-theme) .toast-warning {
+  --snack-bar-background: #ff6b35 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html:not(.dark-theme) .toast-warning .mdc-snackbar__surface {
+  background-color: #ff6b35 !important;
+}
+
+html:not(.dark-theme) .toast-warning .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+html:not(.dark-theme) .toast-info {
+  --snack-bar-background: #006747 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html:not(.dark-theme) .toast-info .mdc-snackbar__surface {
+  background-color: #006747 !important;
+}
+
+html:not(.dark-theme) .toast-info .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+/* Dark Theme Toast Styling - zkuba Trading Theme */
+html.dark-theme .toast-success {
+  --snack-bar-background: #00D084 !important;
+  --snack-bar-color: #121212 !important;
+}
+
+html.dark-theme .toast-success .mdc-snackbar__surface {
+  background-color: #00D084 !important;
+}
+
+html.dark-theme .toast-success .mat-mdc-snack-bar-label {
+  color: #121212 !important;
+  font-weight: 500;
+}
+
+html.dark-theme .toast-error {
+  --snack-bar-background: #ff6b6b !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html.dark-theme .toast-error .mdc-snackbar__surface {
+  background-color: #ff6b6b !important;
+}
+
+html.dark-theme .toast-error .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+html.dark-theme .toast-warning {
+  --snack-bar-background: #ff8c00 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html.dark-theme .toast-warning .mdc-snackbar__surface {
+  background-color: #ff8c00 !important;
+}
+
+html.dark-theme .toast-warning .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+html.dark-theme .toast-info {
+  --snack-bar-background: #00D084 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html.dark-theme .toast-info .mdc-snackbar__surface {
+  background-color: #00D084 !important;
+}
+
+html.dark-theme .toast-info .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+/* Toast Close Button Styling */
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button {
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  background-color: transparent !important;
+  pointer-events: auto !important;
+}
+
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button:hover {
+  background-color: transparent !important;
+}
+
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button:hover::before,
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button:hover::after {
+  background-color: transparent !important;
+  opacity: 0 !important;
+}
+
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button::before,
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button::after {
+  background-color: transparent !important;
+  opacity: 0 !important;
+}
+
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button:focus,
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button:active {
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+.mdc-button__ripple {
+  display: none !important;
+}
+
+/* Material Snackbar Close Button */
+.mdc-snackbar__action {
+  color: inherit;
+  opacity: 0.9;
+}
+
+.mdc-snackbar__action:hover {
+  opacity: 0.9;
+}
+
+.mdc-snackbar {
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.20);
+}
+
+html.dark-theme .mdc-snackbar {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.40);
+}
+
+.mdc-snackbar__surface {
+  border-radius: 8px;
+  padding: 16px 20px !important;
+  min-height: 48px;
+}
+
+.mat-mdc-snack-bar-label {
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: 0.3px;
+  word-break: break-word;
 }
 

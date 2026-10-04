@@ -177,22 +177,224 @@ html.dark-theme .order-blotter .mat-mdc-cell {
   background-color: var(--color-surface-hover, rgba(255,255,255,0.05));
 }
 
-tr.detail-row {
-  height: 0;
-}
-tr.element-row:not(.expanded-row):hover {
-  background: var(--color-surface-hover, #333);
-}
-tr.element-row:not(.expanded-row):active {
-  background: #333;
-}
-.order-element-detail {
-  overflow: hidden;
-  display: flex;
-}
-.order-detail-message {
-  padding: 16px;
-  margin: 8px 0;
-  width: 100%;
+/* Expand/Collapse Button */
+.expand-cell {
+  width: 40px;
+  padding: 10px 4px !important;
+  text-align: center;
 }
 
+.expand-button {
+  background: transparent;
+  border: none;
+  color: var(--primary-green-light);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius);
+  transition: all 160ms ease;
+  padding: 6px;
+}
+
+.expand-button:hover {
+  background: rgba(0, 103, 71, 0.1);
+  color: var(--primary-green-dark);
+}
+
+html.dark-theme .expand-button {
+  color: var(--primary-green-dark-mode);
+}
+
+html.dark-theme .expand-button:hover {
+  background: rgba(0, 208, 132, 0.1);
+  color: #00B674;
+}
+
+.expand-button .material-icons {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+/* Detail Row */
+.detail-row {
+  background-color: transparent !important;
+}
+
+.detail-cell {
+  padding: 16px 8px !important;
+  border-top: 2px solid;
+  border-bottom: 1px solid;
+}
+
+html:not(.dark-theme) .detail-cell {
+  border-color: #ECECE6;
+  background-color: rgba(0, 103, 71, 0.04);
+}
+
+html.dark-theme .detail-cell {
+  border-color: #2B2B2B;
+  background-color: rgba(0, 208, 132, 0.06);
+}
+
+/* Edit Form */
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  max-width: 400px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+html:not(.dark-theme) .form-group label {
+  color: var(--text-secondary-light);
+}
+
+html.dark-theme .form-group label {
+  color: var(--text-secondary-dark);
+}
+
+.form-input {
+  padding: 6px 10px;
+  border: 1px solid;
+  border-radius: var(--border-radius);
+  font-size: 13px;
+  font-family: var(--font-mono);
+  transition: all 160ms ease;
+}
+
+html:not(.dark-theme) .form-input {
+  background-color: #FFFFFF;
+  color: var(--text-primary-light);
+  border-color: #E0D9CF;
+}
+
+html:not(.dark-theme) .form-input:focus {
+  outline: none;
+  border-color: var(--primary-green-light);
+  box-shadow: 0 0 0 3px rgba(0, 103, 71, 0.1);
+  background-color: rgba(0, 103, 71, 0.02);
+}
+
+html.dark-theme .form-input {
+  background-color: #1A1A1A;
+  color: var(--text-primary-dark);
+  border-color: #404040;
+}
+
+html.dark-theme .form-input:focus {
+  outline: none;
+  border-color: var(--primary-green-dark-mode);
+  box-shadow: 0 0 0 3px rgba(0, 208, 132, 0.1);
+  background-color: rgba(0, 208, 132, 0.02);
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.edit-cancel-btn,
+.order-cancel-btn,
+.edit-update-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 160ms ease;
+  white-space: nowrap;
+}
+
+/* Close Button - Transparent */
+.edit-cancel-btn {
+  background-color: transparent;
+  border: 1px solid;
+}
+
+html:not(.dark-theme) .edit-cancel-btn {
+  color: var(--text-secondary-light);
+  border-color: #E0D9CF;
+}
+
+html:not(.dark-theme) .edit-cancel-btn:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  border-color: #D0C3B9;
+}
+
+html.dark-theme .edit-cancel-btn {
+  color: var(--text-secondary-dark);
+  border-color: #404040;
+}
+
+html.dark-theme .edit-cancel-btn:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: #505050;
+}
+
+/* Cancel Order Button - Red */
+.order-cancel-btn {
+  background-color: var(--error-light);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-1);
+}
+
+.order-cancel-btn:hover {
+  background-color: #a63d2a;
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
+}
+
+html.dark-theme .order-cancel-btn {
+  background-color: #ff6b6b;
+  color: #121212;
+}
+
+html.dark-theme .order-cancel-btn:hover {
+  background-color: #ff5252;
+}
+
+/* Update Button - Green */
+.edit-update-btn {
+  background: linear-gradient(135deg, var(--primary-green-light), var(--primary-green-dark));
+  color: #FFFFFF;
+  box-shadow: var(--shadow-1);
+}
+
+.edit-update-btn:hover {
+  background-color: var(--primary-green-dark);
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
+}
+
+html.dark-theme .edit-update-btn {
+  background: linear-gradient(135deg, var(--primary-green-dark-mode), #00B674);
+  color: #121212;
+}
+
+html.dark-theme .edit-update-btn:hover {
+  background-color: #00B674;
+}

@@ -73,13 +73,21 @@ export class AuthService {
     const loginSuccessful = !isThrottled && user && isPasswordMatch && user.status === 'ACTIVE';
 
     if (!loginSuccessful) {
-      // Record failed attempt
+      // If throttled, return specific error code so frontend knows to show retry message
+      if (isThrottled) {
+        throw new UnauthorizedException({ 
+          errorCode: 'AUTH-429', 
+          message: 'Too many login attempts. Please try again in a few minutes.' 
+        });
+      }
+
+      // For other failures (wrong password, user not found, inactive), record attempt
       await this.loginThrottleService.recordFailedAttempt(
         loginDto.username,
         ipAddress,
       );
 
-      // Return identical response regardless of failure reason
+      // Return generic error (doesn't leak if user exists)
       throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Unauthorised' });
     }
 

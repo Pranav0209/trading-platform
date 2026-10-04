@@ -5,8 +5,30 @@
   </header>
 
   <div class="content-container">
+    <!-- Error Message -->
+    @if (errorMessage()) {
+      <div class="message-box error-box" role="alert">
+        <div class="message-content">
+          {{ errorMessage() }}
+        </div>
+        <button class="close-button" (click)="clearMessages()" aria-label="Close error message">✕</button>
+      </div>
+    }
+
+    <!-- Success Message -->
+    @if (successMessage()) {
+      <div class="message-box success-box" role="status">
+        <div class="message-content">
+          {{ successMessage() }}
+        </div>
+        <button class="close-button" (click)="clearMessages()" aria-label="Close success message">✕</button>
+      </div>
+    }
+
     <section class="card data-card admin-card">
-      @if (pendingUsers().length === 0) {
+      @if (isLoading()) {
+        <div class="loading-state">Loading pending users...</div>
+      } @else if (pendingUsers().length === 0) {
         <p class="empty-state">No pending registrations.</p>
       } @else {
         <div class="table-container">
@@ -48,9 +70,10 @@
                     <button
                       class="action-button"
                       (click)="createAccount(user, currencySelect.value, balanceInput.value)"
+                      [disabled]="creatingAccountUserId() === user.id || isLoading()"
                       data-testid="create-account-button"
                     >
-                      Create Account
+                      {{ creatingAccountUserId() === user.id ? 'Creating...' : 'Create Account' }}
                     </button>
                   </td>
                 </tr>

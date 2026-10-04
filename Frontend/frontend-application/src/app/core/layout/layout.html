@@ -37,13 +37,13 @@
 
       <div class="nav-divider"></div>
 
-      <a href="#" class="nav-item">
+      <a routerLink="/account" routerLinkActive="active" class="nav-item">
         <span class="material-icons icon" aria-hidden="true">person</span>
         Account
       </a>
-      <a href="#" class="nav-item">
+      <a routerLink="/profile" routerLinkActive="active" class="nav-item">
         <span class="material-icons icon" aria-hidden="true">settings</span>
-        Settings
+        Profile
       </a>
     </nav>
   </aside>
@@ -66,8 +66,8 @@
 
           @if (isDropdownOpen()) {
             <div class="dropdown-menu">
-              <a href="#" class="dropdown-item">Profile</a>
-              <a href="#" class="dropdown-item">Account</a>
+              <a routerLink="/profile" (click)="toggleDropdown()" class="dropdown-item">Profile</a>
+              <a routerLink="/account" (click)="toggleDropdown()" class="dropdown-item">Account</a>
               <div class="dropdown-divider"></div>
               <a
                 href="#"

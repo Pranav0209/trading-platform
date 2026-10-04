@@ -174,6 +174,100 @@ paths:
           $ref: '#/components/responses/InvalidInput'
 
   /api/v1/orders/{id}:
+    put:
+      tags: [Orders]
+      operationId: updateOrder
+      summary: Update an order
+      description: |
+        Updates quantity and/or limit price for an order that is still `NEW`. 
+        An order that is already `FILLED`, `REJECTED` or `CANCELLED` cannot be updated and returns `ORD-409`.
+
+        At least one of quantity or limitPrice must be provided. Both can be provided to update both fields.
+        The update is atomic with the database transaction.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The order UUID, without the `ORD-` display prefix.
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateOrderRequest'
+            examples:
+              updateQuantity:
+                summary: Update quantity only
+                value:
+                  quantity: 150
+              updatePrice:
+                summary: Update limit price only
+                value:
+                  limitPrice: 30.00
+              updateBoth:
+                summary: Update both quantity and price
+                value:
+                  quantity: 150
+                  limitPrice: 30.00
+      responses:
+        '200':
+          description: Order updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+              examples:
+                updated:
+                  value:
+                    orderId: ORD-6f2b1c2a-6a1e-4a4f-9c0d-2f7a1b3c4d5e
+                    status: NEW
+                    message: Order updated successfully
+                    symbol: ACME
+                    side: BUY
+                    quantity: 150
+                    price: 30.00
+        '400':
+          description: Insufficient funds for the updated order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                funds:
+                  value:
+                    errorCode: ORD-400
+                    message: Insufficient funds
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          $ref: '#/components/responses/AccountNotActive'
+        '404':
+          description: No order exists with that identifier.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notFound:
+                  value:
+                    errorCode: ORD-409
+                    message: Order not found
+        '409':
+          description: The order is not in an updatable state or insufficient holdings for sell.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                notUpdatable:
+                  value:
+                    errorCode: ORD-409
+                    message: Order is not updatable
+        '422':
+          $ref: '#/components/responses/InvalidInput'
     delete:
       tags: [Orders]
       operationId: cancelOrder
@@ -554,6 +648,27 @@ components:
             Client-generated unique request identifier, normally a UUID. Enforced by a unique
             constraint on `orders.idempotency_key`. Reuse returns `ORD-409`.
           example: 6f2b1c2a-6a1e-4a4f-9c0d-2f7a1b3c4d5e
+
+    UpdateOrderRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          description: New quantity in whole units. Must be greater than zero if provided.
+          example: 150
+        limitPrice:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          multipleOf: 0.01
+          description: |
+            New limit price per unit, to two decimal places. Must be greater than zero if provided.
+            Serialise as a JSON number and hold it as `BigDecimal` in Java. Never use `double` for
+            money in the domain.
+          example: 30.00
 
     OrderResponse:
       type: object

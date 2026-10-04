@@ -17,6 +17,7 @@ export class ErrorCodeMapper {
     // Auth API Errors
     'AUTH-401': 'Your session has expired. Please sign in again.',
     'AUTH-409': 'That username or email is already taken.',
+    'AUTH-429': 'Too many login attempts. Your account is temporarily locked. Please try again in a few minutes.',
     
     // Platform/Validation Errors (used by both APIs)
     'VAL-422': 'One or more fields are not acceptable.',
@@ -36,6 +37,7 @@ export class ErrorCodeMapper {
   private readonly allKnownCodes = new Set([
     'AUTH-401',
     'AUTH-409',
+    'AUTH-429',
     'VAL-422',
     'ACC-404',
     'ACC-403',
@@ -49,9 +51,10 @@ export class ErrorCodeMapper {
    * Handles status 0 (network/CORS errors) and unknown error codes.
    *
    * @param error - The HTTP error response
+   * @param context - 'login' for login page, undefined for other API calls
    * @returns A trader-friendly error message
    */
-  mapErrorToMessage(error: HttpErrorResponse): string {
+  mapErrorToMessage(error: HttpErrorResponse, context?: 'login'): string {
     // Handle network errors: status 0 means no response from service
     if (error.status === 0) {
       return 'Could not reach the service. Check that it is running and allows this origin.';
@@ -59,15 +62,21 @@ export class ErrorCodeMapper {
 
     // Extract error code from response body
     const code = (error.error?.errorCode || error.error?.error) as string | undefined;
+    const message = error.error?.message as string | undefined;
 
-    // Special case: AUTH-401 during login should say invalid credentials
-    if (code === 'AUTH-401' && error.url?.includes('/login')) {
+    // Special handling for AUTH-401 in login context
+    if (context === 'login' && code === 'AUTH-401') {
       return 'Invalid username or password.';
     }
 
     // If we have a known code, return its mapped message
     if (code && this.errorMessages[code]) {
       return this.errorMessages[code];
+    }
+
+    // Fallback to auth-service message if provided
+    if (message) {
+      return message;
     }
 
     // Fallback for unknown codes

@@ -3,12 +3,12 @@ import {
   HttpRequest,
   HttpHandler,
   HttpEvent,
+  HttpClient,
 } from '@angular/common/http';
-import { Injectable, inject, Injector } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, throwError, switchMap, from, lastValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { Session } from './session';
-import { AuthService } from '../../../generated/auth/api/auth.service';
 
 /**
  * HTTP Interceptor that attaches bearer tokens to requests destined for platform APIs.
@@ -22,7 +22,7 @@ import { AuthService } from '../../../generated/auth/api/auth.service';
 export class BearerTokenInterceptor implements HttpInterceptor {
   private session = inject(Session);
   private router = inject(Router);
-  private injector = inject(Injector);
+  private httpClient = inject(HttpClient);
 
   /** Allow list of origins that should receive the bearer token */
   private allowedOrigins = new Set([
@@ -86,16 +86,25 @@ export class BearerTokenInterceptor implements HttpInterceptor {
   }
 
   /**
-   * Silently requests a new access token using the generated AuthService contract.
-   * Uses Injector to lazily load AuthService and avoid circular DI errors with HttpClient.
+   * Silently requests a new access token using the refresh token in the HttpOnly cookie.
+   * 
+   * CRITICAL: Must use withCredentials: true so the browser sends the HttpOnly cookie.
+   * Backend reads refresh token from cookie, not from request body.
    */
   private async attemptRefresh(): Promise<string | null> {
     try {
-      const authService = this.injector.get(AuthService);
-      // We pass an empty object because the backend reads the refresh token from the HttpOnly cookie
-      const res = await lastValueFrom(authService.refresh({ refreshToken: 'cookie' }));
-      return res.accessToken;
-    } catch {
+      // Make direct HTTP call with credentials enabled
+      // Backend reads refreshToken from HttpOnly cookie automatically
+      const response = await lastValueFrom(
+        this.httpClient.post<{ accessToken: string }>(
+          'http://localhost:3000/auth/refresh',
+          {}, // Empty body - token comes from cookie
+          { withCredentials: true } // CRITICAL: Enables cookie transmission
+        )
+      );
+      return response.accessToken;
+    } catch (error) {
+      console.error('Token refresh failed:', error);
       return null;
     }
   }
