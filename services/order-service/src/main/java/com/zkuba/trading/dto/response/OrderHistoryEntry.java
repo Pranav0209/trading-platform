@@ -11,6 +11,7 @@ public record OrderHistoryEntry(
         BigDecimal price,
         BigDecimal executedPrice,
         String status,
+        String rejectReason,
         String idempotencyKey,
         String createdOn
 ) {}

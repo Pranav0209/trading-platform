@@ -30,6 +30,10 @@ export interface OrderHistoryEntry {
      */
     executedPrice?: number;
     status: OrderStatus;
+    /**
+     * Human-readable reject reason.
+     */
+    rejectReason?: string;
     idempotencyKey?: string;
     createdOn: string;
 }

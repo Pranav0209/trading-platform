@@ -38,6 +38,7 @@ export class OrderBlotter implements OnInit, OnDestroy {
   refreshAttempts = signal(0);
   isAutoRefreshing = signal(false);
   isStandalone = signal(false);
+  selectedRejectReason = signal<string | null>(null);
 
   private refreshIntervalId: number | null = null;
   private refreshAbortController: AbortController | null = null;
@@ -118,6 +119,18 @@ export class OrderBlotter implements OnInit, OnDestroy {
   manualRefresh(): void {
     this.refreshAttempts.set(0); // Reset counter for manual refresh
     this.loadOrderHistory();
+  }
+
+  onRowClick(order: OrderHistoryEntry): void {
+    if (order.status === 'REJECTED' && order.rejectReason) {
+      this.selectedRejectReason.set(order.rejectReason);
+    } else {
+      this.selectedRejectReason.set(null);
+    }
+  }
+
+  clearRejectReason(): void {
+    this.selectedRejectReason.set(null);
   }
 
   /**

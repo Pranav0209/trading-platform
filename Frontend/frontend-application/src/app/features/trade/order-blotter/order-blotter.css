@@ -169,3 +169,30 @@ html.dark-theme .order-blotter .mat-mdc-cell {
     transform: rotate(360deg);
   }
 }
+
+.clickable {
+  cursor: pointer;
+}
+.clickable:hover {
+  background-color: var(--color-surface-hover, rgba(255,255,255,0.05));
+}
+
+tr.detail-row {
+  height: 0;
+}
+tr.element-row:not(.expanded-row):hover {
+  background: var(--color-surface-hover, #333);
+}
+tr.element-row:not(.expanded-row):active {
+  background: #333;
+}
+.order-element-detail {
+  overflow: hidden;
+  display: flex;
+}
+.order-detail-message {
+  padding: 16px;
+  margin: 8px 0;
+  width: 100%;
+}
+

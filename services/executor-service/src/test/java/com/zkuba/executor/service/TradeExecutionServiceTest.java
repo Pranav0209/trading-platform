@@ -180,7 +180,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.REJECTED),
                         isNull(),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 )
         ).thenReturn(1);
 
@@ -251,6 +252,7 @@ class TradeExecutionServiceTest {
                 any(),
                 any(),
                 any(),
+                any(),
                 any()
         );
 
@@ -301,7 +303,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.REJECTED),
                         isNull(),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 );
     }
 
@@ -333,7 +336,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.REJECTED),
                         isNull(),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 )
         ).thenReturn(1);
 
@@ -359,7 +363,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.REJECTED),
                         isNull(),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 );
     }
 
@@ -457,7 +462,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.FILLED),
                         eq(new BigDecimal("200.00")),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 )
         ).thenReturn(1);
 
@@ -645,7 +651,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.FILLED),
                         eq(new BigDecimal("150.00")),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 )
         ).thenReturn(1);
 
@@ -736,7 +743,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.FILLED),
                         eq(new BigDecimal("150.00")),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 )
         ).thenReturn(1);
 
@@ -803,7 +811,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.FILLED),
                         eq(new BigDecimal("150.00")),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 )
         ).thenReturn(0);
 
@@ -839,7 +848,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.REJECTED),
                         isNull(),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 )
         ).thenReturn(0);
 
@@ -972,7 +982,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.REJECTED),
                         isNull(),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 )
         ).thenReturn(1);
 
@@ -1051,7 +1062,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.FILLED),
                         eq(new BigDecimal("150.00")),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 )
         ).thenReturn(1);
 
@@ -1109,7 +1121,8 @@ class TradeExecutionServiceTest {
                         eq(orderId),
                         eq(OrderStatus.REJECTED),
                         isNull(),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 )
         ).thenReturn(1);
 

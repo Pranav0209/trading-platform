@@ -1,5 +1,6 @@
 package com.zkuba.executor.service;
 
+import com.zkuba.executor.client.CurrencyConversionClient;
 import com.zkuba.executor.client.FauxnanceQuoteClient;
 import com.zkuba.executor.client.PricingUnavailableException;
 import com.zkuba.executor.client.QuoteResponse;
@@ -44,6 +45,9 @@ public class TradeExecutionService {
     @Autowired
     private FillRuleEngine fillRuleEngine;
 
+    @Autowired
+    private CurrencyConversionClient currencyConversionClient;
+
     // if 2 threads try to update exact same account at same time, db wil throw
     // OptimisticLockingException, if that happes we tell spring to not crash and
     // just to wait 50ms and try upto 5 times
@@ -85,14 +89,27 @@ public class TradeExecutionService {
         }
 
         BigDecimal executedPrice = decision.executedPrice();
-        BigDecimal totalValue = executedPrice.multiply(BigDecimal.valueOf(order.getQuantity()));
+        BigDecimal totalValueInStockCurrency = executedPrice.multiply(BigDecimal.valueOf(order.getQuantity()));
+
+        BigDecimal conversionRate = BigDecimal.ONE;
+        try {
+            String quoteCurrency = quoteResponse.data().currency();
+            if (quoteCurrency != null && !quoteCurrency.equalsIgnoreCase(account.getCurrency())) {
+                conversionRate = currencyConversionClient.getConversionRate(quoteCurrency, account.getCurrency());
+            }
+        } catch (PricingUnavailableException e) {
+            return Optional.of(rejectOrder(order, "PRICING_UNAVAILABLE"));
+        }
+
+        BigDecimal totalValueInAccountCurrency = totalValueInStockCurrency.multiply(conversionRate);
+        BigDecimal executedPriceInAccountCurrency = totalValueInAccountCurrency.divide(BigDecimal.valueOf(order.getQuantity()), 4, RoundingMode.HALF_UP);
 
         Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol())
                 .orElse(null);
 
         // Pre-check for bounds to avoid filling an order that will immediately fail
         // cash checks
-        if (order.getSide() == OrderSide.BUY && account.getCashBalance().compareTo(totalValue) < 0) {
+        if (order.getSide() == OrderSide.BUY && account.getCashBalance().compareTo(totalValueInAccountCurrency) < 0) {
             return Optional.of(rejectOrder(order, "INSUFFICIENT_FUNDS"));
         }
         if (order.getSide() == OrderSide.SELL) {
@@ -104,27 +121,27 @@ public class TradeExecutionService {
 
         // GUARDED STATE TRANSITION: Must be the FIRST write in the transaction
         OffsetDateTime executedOn = OffsetDateTime.now();
-        int updated = orderRepository.executeOrder(order.getId(), OrderStatus.FILLED, executedPrice, executedOn);
+        int updated = orderRepository.executeOrder(order.getId(), OrderStatus.FILLED, executedPriceInAccountCurrency, executedOn, null);
         if (updated == 0) {
             // Another thread/delivery got here first
             throw new OptimisticLockException("Order already executed");
         }
 
         order.setStatus(OrderStatus.FILLED);
-        order.setExecutedPrice(executedPrice);
+        order.setExecutedPrice(executedPriceInAccountCurrency);
         order.setExecutedOn(executedOn);
 
         if (order.getSide() == OrderSide.BUY) {
-            BigDecimal newBalance = account.getCashBalance().subtract(totalValue);
+            BigDecimal newBalance = account.getCashBalance().subtract(totalValueInAccountCurrency);
             updateAccount(account, newBalance);
-            updateBuyPosition(account.getId(), order.getSymbol(), order.getQuantity(), executedPrice, position);
+            updateBuyPosition(account.getId(), order.getSymbol(), order.getQuantity(), executedPriceInAccountCurrency, position);
         } else {
-            BigDecimal newBalance = account.getCashBalance().add(totalValue);
+            BigDecimal newBalance = account.getCashBalance().add(totalValueInAccountCurrency);
             updateAccount(account, newBalance);
             updateSellPosition(position, order.getQuantity());
         }
 
-        return Optional.of(buildFilledEvent(order, account.getCashBalance(), position));
+        return Optional.of(buildFilledEvent(order, account.getCashBalance(), position, totalValueInAccountCurrency));
     }
 
     private void updateAccount(Account account, BigDecimal newBalance) {
@@ -166,11 +183,12 @@ public class TradeExecutionService {
 
     private TradeEventPayload rejectOrder(Order order, String reason) {
         OffsetDateTime executedOn = OffsetDateTime.now();
-        int updated = orderRepository.executeOrder(order.getId(), OrderStatus.REJECTED, null, executedOn);
+        int updated = orderRepository.executeOrder(order.getId(), OrderStatus.REJECTED, null, executedOn, reason);
         if (updated == 0) {
             throw new OptimisticLockException("Order already executed");
         }
         order.setStatus(OrderStatus.REJECTED);
+        order.setRejectReason(reason);
         order.setExecutedOn(executedOn);
 
         Account account = accountRepository.findById(order.getAccountId()).orElseThrow();
@@ -180,10 +198,10 @@ public class TradeExecutionService {
         return buildRejectedEvent(order, reason, account.getCashBalance(), position);
     }
 
-    private TradeEventPayload buildFilledEvent(Order order, BigDecimal newCashBalance, Position position) {
+    private TradeEventPayload buildFilledEvent(Order order, BigDecimal newCashBalance, Position position, BigDecimal totalValueInAccountCurrency) {
         BigDecimal cashDelta = order.getSide() == OrderSide.BUY
-                ? order.getExecutedPrice().multiply(BigDecimal.valueOf(order.getQuantity())).negate()
-                : order.getExecutedPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+                ? totalValueInAccountCurrency.negate()
+                : totalValueInAccountCurrency;
 
         int qtyAfter = position != null ? position.getQuantity() : 0;
         BigDecimal avgCostAfter = position != null && position.getQuantity() > 0 ? position.getAverageCost()

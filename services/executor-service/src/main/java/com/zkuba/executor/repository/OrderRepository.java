@@ -18,7 +18,8 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       UPDATE Order o
       SET o.status = :newStatus,
           o.executedPrice = :executedPrice,
-          o.executedOn = :executedOn
+          o.executedOn = :executedOn,
+          o.rejectReason = :rejectReason
       WHERE o.id = :id
         AND o.status = 'NEW'
       """)
@@ -26,5 +27,6 @@ public interface OrderRepository extends JpaRepository<Order, UUID> {
       @Param("id") UUID id,
       @Param("newStatus") OrderStatus newStatus,
       @Param("executedPrice") BigDecimal executedPrice,
-      @Param("executedOn") OffsetDateTime executedOn);
+      @Param("executedOn") OffsetDateTime executedOn,
+      @Param("rejectReason") String rejectReason);
 }

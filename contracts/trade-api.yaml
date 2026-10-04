@@ -617,6 +617,10 @@ components:
           example: 25.48
         status:
           $ref: '#/components/schemas/OrderStatus'
+        rejectReason:
+          type: [string, 'null']
+          description: Human-readable reject reason.
+          example: 'Insufficient funds'
         idempotencyKey:
           type: string
           example: 6f2b1c2a-6a1e-4a4f-9c0d-2f7a1b3c4d5e
