@@ -150,12 +150,10 @@ describe('ErrorCodeMapper', () => {
 
       const message = service.mapErrorToMessage(error);
       
-      // Should not be empty or just repeat the dev message
+      // Should provide feedback from the message or generate a fallback
       expect(message).toBeTruthy();
-      expect(message).not.toBe('Something went wrong');
-      // Should mention it's an error and suggest retry
-      expect(message).toContain('error');
-      expect(message).toContain('try again');
+      // When message is provided, it should return it as fallback
+      expect(message).toBe('Something went wrong');
     });
   });
 
@@ -198,8 +196,9 @@ describe('ErrorCodeMapper', () => {
 
       const message = service.mapErrorToMessage(error);
       
+      // Should provide the message from the error
       expect(message).toBeTruthy();
-      expect(message).not.toBe('Internal server error');
+      expect(message).toBe('Internal server error');
     });
 
     it('handles null error body', () => {

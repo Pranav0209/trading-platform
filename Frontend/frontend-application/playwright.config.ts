@@ -1,7 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+// Load .env file explicitly with absolute path to ensure it works regardless of working directory
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 /**
  * Playwright configuration for e2e tests against the real stack.

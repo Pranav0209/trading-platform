@@ -44,6 +44,13 @@
       <div class="blotter-error" data-testid="error-message">{{ error() }}</div>
     }
 
+    @if (selectedRejectReason()) {
+      <div class="blotter-error reject-reason-banner" data-testid="reject-reason-message">
+        <strong>Order Rejected:</strong> {{ selectedRejectReason() }}
+        <button (click)="clearRejectReason()" style="float: right; background: none; border: none; font-size: 1.2rem; cursor: pointer;">×</button>
+      </div>
+    }
+
     @if (orders().length === 0) {
       <div class="blotter-empty" data-testid="empty-state">
         @if (!isLoading() && !error()) {
@@ -144,7 +151,9 @@
             <tr
               mat-row
               class="order-row"
+              [class.clickable]="row.status === 'REJECTED'"
               [attr.data-testid]="'order-row-' + row.orderId"
+              (click)="onRowClick(row)"
             ></tr>
             <!-- Detail Row -->
             @if (isRowExpanded(row)) {

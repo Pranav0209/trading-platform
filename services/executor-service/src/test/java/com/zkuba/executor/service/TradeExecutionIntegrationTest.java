@@ -122,7 +122,8 @@ class TradeExecutionIntegrationTest {
                 eq(orderId),
                 eq(OrderStatus.FILLED),
                 any(BigDecimal.class),
-                any(OffsetDateTime.class)
+                any(OffsetDateTime.class),
+                any()
         )).thenReturn(1);
 
         // ============================================================
@@ -249,7 +250,8 @@ class TradeExecutionIntegrationTest {
                         eq(orderId),
                         eq(OrderStatus.FILLED),
                         any(BigDecimal.class),
-                        any(OffsetDateTime.class)
+                        any(OffsetDateTime.class),
+                        any()
                 );
 
         // ============================================================

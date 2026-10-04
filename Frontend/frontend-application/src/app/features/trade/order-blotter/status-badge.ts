@@ -65,6 +65,9 @@ const STATUS_CONFIGS: Record<OrderStatus, StatusConfig> = {
       border: 1px solid currentColor;
       opacity: 0.8;
       white-space: nowrap;
+      width: 100px;
+      text-align: center;
+      box-sizing: border-box;
     }
   `]
 })

@@ -43,6 +43,9 @@ public class Order {
     @Column(name = "executed_price")
     private BigDecimal executedPrice;
 
+    @Column(name = "reject_reason")
+    private String rejectReason;
+
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
@@ -119,6 +122,14 @@ public class Order {
 
     public void setExecutedPrice(BigDecimal executedPrice) {
         this.executedPrice = executedPrice;
+    }
+
+    public String getRejectReason() {
+        return rejectReason;
+    }
+
+    public void setRejectReason(String rejectReason) {
+        this.rejectReason = rejectReason;
     }
 
     public OrderStatus getStatus() {

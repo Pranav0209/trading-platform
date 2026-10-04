@@ -43,6 +43,9 @@ public class Order {
     @Column(name = "executed_price")
     private BigDecimal executedPrice;
 
+    @Column(name = "reject_reason")
+    private String rejectReason;
+
     @Column(name = "updated_at")
     private OffsetDateTime executedOn;
 
@@ -122,6 +125,14 @@ public class Order {
 
     public void setExecutedPrice(BigDecimal executedPrice) {
         this.executedPrice = executedPrice;
+    }
+
+    public String getRejectReason() {
+        return rejectReason;
+    }
+
+    public void setRejectReason(String rejectReason) {
+        this.rejectReason = rejectReason;
     }
 
     public OffsetDateTime getExecutedOn() {

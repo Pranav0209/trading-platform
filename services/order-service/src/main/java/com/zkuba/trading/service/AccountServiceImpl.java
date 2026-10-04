@@ -126,6 +126,7 @@ public class AccountServiceImpl implements AccountService {
                         order.getLimitPrice(),
                         order.getExecutedPrice(),
                         order.getStatus().name(),
+                        order.getRejectReason(),
                         order.getIdempotencyKey(),
                         order.getCreatedAt() != null ? order.getCreatedAt().toString() : null))
                 .toList();

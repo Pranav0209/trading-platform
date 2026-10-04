@@ -47,6 +47,7 @@ export class OrderBlotter implements OnInit, OnDestroy {
   isStandalone = signal(false);
   expandedOrderId = signal<string | null>(null);
   editFormData = signal<{ quantity: number; price: number } | null>(null);
+  selectedRejectReason = signal<string | null>(null);
 
   private refreshIntervalId: number | null = null;
   private refreshAbortController: AbortController | null = null;
@@ -127,6 +128,18 @@ export class OrderBlotter implements OnInit, OnDestroy {
   manualRefresh(): void {
     this.refreshAttempts.set(0); // Reset counter for manual refresh
     this.loadOrderHistory();
+  }
+
+  onRowClick(order: OrderHistoryEntry): void {
+    if (order.status === 'REJECTED' && order.rejectReason) {
+      this.selectedRejectReason.set(order.rejectReason);
+    } else {
+      this.selectedRejectReason.set(null);
+    }
+  }
+
+  clearRejectReason(): void {
+    this.selectedRejectReason.set(null);
   }
 
   /**
@@ -258,7 +271,6 @@ export class OrderBlotter implements OnInit, OnDestroy {
         .subscribe({
           next: (response) => {
             if (response) {
-              console.log('Order cancelled successfully:', response);
               this.toastService.success(response.message || 'Order cancelled successfully');
               this.expandedOrderId.set(null);
               this.editFormData.set(null);
@@ -299,7 +311,6 @@ export class OrderBlotter implements OnInit, OnDestroy {
         .subscribe({
           next: (response) => {
             if (response) {
-              console.log('Order updated successfully:', response);
               this.toastService.success(response.message || 'Order updated successfully');
               this.expandedOrderId.set(null);
               this.editFormData.set(null);
