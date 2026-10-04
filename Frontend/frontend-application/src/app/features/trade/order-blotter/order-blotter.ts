@@ -271,7 +271,6 @@ export class OrderBlotter implements OnInit, OnDestroy {
         .subscribe({
           next: (response) => {
             if (response) {
-              console.log('Order cancelled successfully:', response);
               this.toastService.success(response.message || 'Order cancelled successfully');
               this.expandedOrderId.set(null);
               this.editFormData.set(null);
@@ -312,7 +311,6 @@ export class OrderBlotter implements OnInit, OnDestroy {
         .subscribe({
           next: (response) => {
             if (response) {
-              console.log('Order updated successfully:', response);
               this.toastService.success(response.message || 'Order updated successfully');
               this.expandedOrderId.set(null);
               this.editFormData.set(null);
