@@ -67,6 +67,27 @@ export class AuthController {
     return responseBody;
   }
 
+  @ApiOperation({ summary: 'Logout and clear refresh token' })
+  @ApiResponse({ status: 200, description: 'Logged out successfully.' })
+  @HttpCode(200)
+  @Post('logout')
+  async logout(@Request() req: any, @Res({ passthrough: true }) res: any) {
+    const refreshToken = req.cookies['refreshToken'];
+    
+    if (refreshToken) {
+      await this.authService.logout(refreshToken);
+    }
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+    });
+
+    return { message: 'Logged out successfully' };
+  }
+
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully.' })
