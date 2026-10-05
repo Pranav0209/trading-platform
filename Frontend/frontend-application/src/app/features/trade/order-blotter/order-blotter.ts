@@ -10,6 +10,7 @@ import { OrdersService } from '../../../../generated/trade/api/orders.service';
 import { OrderHistoryEntry } from '../../../../generated/trade/model/orderHistoryEntry';
 import { UpdateOrderRequest } from '../../../../generated/trade/model/updateOrderRequest';
 import { Session } from '../../../core/auth/session';
+import { DashboardService } from '../../dashboard/dashboard.service';
 import { ErrorCodeMapper } from '../../../core/error/error-code-mapper';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { StatusBadgeComponent } from './status-badge';
@@ -29,6 +30,7 @@ export class OrderBlotter implements OnInit, OnDestroy {
   private readonly accountsService = inject(AccountsService);
   private readonly ordersService = inject(OrdersService);
   private readonly session = inject(Session);
+  private readonly dashboardService = inject(DashboardService);
   private readonly router = inject(Router);
   private readonly errorCodeMapper = inject(ErrorCodeMapper);
   private readonly toastService = inject(ToastService);
@@ -114,6 +116,7 @@ export class OrderBlotter implements OnInit, OnDestroy {
         this.lastRefreshed.set(new Date());
         this.updateWorkingOrdersStatus(orders);
         this.refreshAttempts.set(this.refreshAttempts() + 1);
+        this.dashboardService.refreshAccountData(this.accountId);
       },
       error: (error: HttpErrorResponse) => {
         this.isLoading.set(false);

@@ -7,6 +7,7 @@ import { OrdersService } from '../../../../generated/trade/api/orders.service';
 import { OrderSide } from '../../../../generated/trade/model/orderSide';
 import { PlaceOrderRequest } from '../../../../generated/trade/model/placeOrderRequest';
 import { Session } from '../../../core/auth/session';
+import { DashboardService } from '../../dashboard/dashboard.service';
 import { ErrorCodeMapper } from '../../../core/error/error-code-mapper';
 import { ToastService } from '../../../core/notifications/toast.service';
 
@@ -24,6 +25,7 @@ export class OrderTicket implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly ordersService = inject(OrdersService);
   private readonly session = inject(Session);
+  private readonly dashboardService = inject(DashboardService);
   private readonly errorCodeMapper = inject(ErrorCodeMapper);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
@@ -97,6 +99,7 @@ export class OrderTicket implements OnInit {
       next: (res) => {
         this.submitting.set(false);
         this.toastService.success(res.message || `Order ${res.orderId} placed successfully - Status: ${res.status}`);
+        this.dashboardService.refreshAccountData(accountId);
         this.form.reset({ side: this.form.controls.side.value, orderType: this.form.controls.orderType.value });
         this.router.navigate(['/orders']);
       },

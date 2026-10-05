@@ -9,9 +9,9 @@ import { Session } from '../../core/auth/session';
   providedIn: 'root'
 })
 export class DashboardService {
-  private accountsService = inject(AccountsService);
-  private profileService = inject(ProfileService);
-  private session = inject(Session);
+  private readonly accountsService = inject(AccountsService);
+  private readonly profileService = inject(ProfileService);
+  private readonly session = inject(Session);
   
   // Signals
   portfolioSummary = signal<PortfolioSummary>({
@@ -51,10 +51,6 @@ export class DashboardService {
 
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));
-      // The JWT contains accountId when an account has been provisioned.
-      // If it's missing, the account hasn't been created by the admin yet.
-      const accountId = payload.accountId;
-
       // Fetch the authenticated user's profile
       // This endpoint is specified in the auth contract and should be called after login
       this.profileService.getCurrentUser().subscribe({
@@ -69,61 +65,98 @@ export class DashboardService {
         }
       });
 
-      if (accountId) {
-        // Fetch Account Status
-        this.accountsService.getAccount(accountId).subscribe({
-          next: (res) => {
-            this.accountStatus.set(res.status);
-          },
-          error: (err) => {
-            console.error('Failed to load account', err);
-            if (err.status === 403) {
-              this.accountStatus.set('SUSPENDED');
-            } else {
-              this.accountStatus.set('ACTIVE'); // fallback
-            }
-          }
-        });
-
-        // Fetch Balance
-        this.accountsService.getBalance(accountId).subscribe({
-          next: (res) => {
-            this.accountCurrency.set(res.currency || 'USD');
-            this.portfolioSummary.set({
-              portfolioValue: res.cashBalance, // In real life, add position values
-              todayPnL: 0, // Mocked for now
-              todayPnLPercent: 0, // Mocked for now
-              availableBalance: res.cashBalance
-            });
-          },
-          error: (err) => {
-            console.error('Failed to load balance', err);
-          }
-        });
-        // Fetch Positions for Holdings view
-        this.accountsService.getPositions(accountId).subscribe({
-          next: (res) => {
-            // Map generated PositionResponse to our UI Position model
-            const mappedPositions = res.map(p => ({
-              symbol: p.symbol,
-              quantity: p.quantity,
-              averagePrice: p.averageCost,
-              ltp: p.averageCost, // Mock LTP as averageCost for now
-              pnl: 0 // Mock P&L for now
-            }));
-            // Treat holdings same as positions for the UI mock
-            this.holdings.set(mappedPositions);
-          },
-          error: (err) => {
-            console.error('Failed to load holdings', err);
-          }
-        });
-      } else {
-        // No accountId in JWT means the account isn't provisioned yet
-        this.accountStatus.set('PENDING');
-      }
+      this.refreshAccountData(payload.accountId);
     } catch (e) {
       console.error('Failed to parse token for dashboard data', e);
     }
+  }
+
+  refreshAccountData(accountIdFromToken?: unknown) {
+    const accountId = this.resolveAccountId(accountIdFromToken);
+
+    if (accountId === null) {
+      this.resetPortfolioData();
+      this.accountStatus.set('PENDING');
+      return;
+    }
+
+    // Fetch Account Status
+    this.accountsService.getAccount(accountId).subscribe({
+      next: (res) => {
+        this.accountStatus.set(res.status);
+      },
+      error: (err) => {
+        console.error('Failed to load account', err);
+        if (err.status === 403) {
+          this.accountStatus.set('SUSPENDED');
+        } else {
+          this.accountStatus.set('ACTIVE');
+        }
+      }
+    });
+
+    // Fetch Balance
+    this.accountsService.getBalance(accountId).subscribe({
+      next: (res) => {
+        this.accountCurrency.set(res.currency || 'USD');
+        this.portfolioSummary.set({
+          portfolioValue: res.cashBalance,
+          todayPnL: 0,
+          todayPnLPercent: 0,
+          availableBalance: res.cashBalance
+        });
+      },
+      error: (err) => {
+        console.error('Failed to load balance', err);
+      }
+    });
+
+    // Fetch Positions for Holdings view
+    this.accountsService.getPositions(accountId).subscribe({
+      next: (res) => {
+        const mappedPositions = res.map(p => ({
+          symbol: p.symbol,
+          quantity: p.quantity,
+          averagePrice: p.averageCost,
+          ltp: p.averageCost,
+          pnl: 0
+        }));
+        this.holdings.set(mappedPositions);
+      },
+      error: (err) => {
+        console.error('Failed to load holdings', err);
+      }
+    });
+  }
+
+  private resolveAccountId(accountIdFromToken?: unknown): number | null {
+    const directId = Number(accountIdFromToken);
+    if (Number.isInteger(directId) && directId > 0) {
+      return directId;
+    }
+
+    const token = this.session.token();
+    if (!token) {
+      return null;
+    }
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const tokenAccountId = Number(payload.accountId);
+      return Number.isInteger(tokenAccountId) && tokenAccountId > 0 ? tokenAccountId : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private resetPortfolioData() {
+    this.portfolioSummary.set({
+      portfolioValue: 0,
+      todayPnL: 0,
+      todayPnLPercent: 0,
+      availableBalance: 0
+    });
+    this.holdings.set([]);
+    this.accountCurrency.set('USD');
   }
 }
