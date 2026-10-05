@@ -34,7 +34,7 @@
           />
           <app-form-error
             [control]="form.get('username')"
-            message="Username is required and must be 50 characters or less"
+            [message]="usernameValidationMessage"
           />
         </div>
 
@@ -68,7 +68,7 @@
           />
           <app-form-error
             [control]="form.get('password')"
-            message="Password must be between 8 and 100 characters"
+            [message]="passwordValidationMessage"
           />
         </div>
 

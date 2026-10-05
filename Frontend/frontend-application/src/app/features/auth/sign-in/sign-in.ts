@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../../../generated/auth/api/auth.service';
@@ -9,6 +9,12 @@ import { ErrorCodeMapper } from '../../../core/error/error-code-mapper';
 import { sanitizeReturnTo } from '../../../core/auth/guards/return-to';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { FormErrorComponent } from '../../../shared/form-error/form-error.component';
+import {
+  loginPasswordValidationMessage,
+  loginPasswordValidators,
+  usernameValidationMessage,
+  usernameValidators,
+} from '../auth-validation';
 
 @Component({
   selector: 'app-sign-in',
@@ -25,9 +31,12 @@ export class SignIn {
   private readonly errorCodeMapper = inject(ErrorCodeMapper);
   private readonly toastService = inject(ToastService);
 
+  protected readonly usernameValidationMessage = usernameValidationMessage;
+  protected readonly passwordValidationMessage = loginPasswordValidationMessage;
+
   form = this.fb.nonNullable.group({
-    username: ['', [Validators.required, Validators.maxLength(64)]],
-    password: ['', [Validators.required, Validators.maxLength(128)]],
+    username: ['', usernameValidators],
+    password: ['', loginPasswordValidators],
   });
 
   isLoading = signal(false);
@@ -78,7 +87,7 @@ export class SignIn {
     } catch (e) {
       console.error('Failed to parse token in sign-in', e);
     }
-    
+
     // Standard User Redirect
     this.router.navigate(['/dashboard']);
   }
