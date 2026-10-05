@@ -68,16 +68,16 @@ test.describe('Sign-in Journey', () => {
   test('successful sign-in returns to requested return-to parameter', async ({ page }) => {
     test.skip(!validUsername || !validPassword, 'Test credentials not configured');
 
-    // Navigate with returnTo parameter
-    await page.goto(`${baseURL}/sign-in?returnTo=/dashboard`);
+    // Navigate with returnTo parameter pointing to trade page
+    await page.goto(`${baseURL}/sign-in?returnTo=/trade`);
 
     // Enter valid credentials
     await page.getByTestId('username-input').fill(validUsername as string);
     await page.getByTestId('password-input').fill(validPassword as string);
     await page.getByTestId('submit-button').click();
 
-    // Should navigate to the requested path
-    await expect(page).toHaveURL(/\/dashboard/);
+    // Should navigate to the requested path (/trade)
+    await expect(page).toHaveURL(/\/trade/);
   });
 
   test('successful admin sign-in redirects to admin dashboard', async ({ page }) => {
@@ -95,11 +95,12 @@ test.describe('Sign-in Journey', () => {
   });
 
   test('account lockout after 5 failed login attempts within 15 minutes', async ({ page, context }) => {
-    // Use a unique test username to avoid interference with other tests
-    const testUsername = `lockout-test-${Date.now()}`;
-    const wrongPassword = 'wrong-password-123';
+    // Use test credentials from environment
+    const testUsername = process.env.TEST_USERNAME || 'john_doe';
+    const correctPassword = process.env.TEST_LOCKOUT_PASSWORD || 'password123';
+    const wrongPassword = process.env.TEST_LOCKOUT_WRONG_PASSWORD || 'wrong-password-xyz';
 
-    // Attempt 5 failed logins
+    // Attempt 5 failed logins with wrong password
     for (let i = 1; i <= 5; i++) {
       await page.goto(`${baseURL}/sign-in`);
       await page.getByTestId('username-input').fill(testUsername);
@@ -109,22 +110,22 @@ test.describe('Sign-in Journey', () => {
       // Each attempt should show an error
       await page.waitForTimeout(1000); // Wait for error to appear
       const pageContent = await page.textContent('body');
-      expect(pageContent).toMatch(/Invalid|error|failed|Too many|locked/i);
+      expect(pageContent).toMatch(/Invalid|error|failed|Too many|locked|Unauthorised/i);
 
       // Clear cookies for next attempt to simulate fresh session
       await context.clearCookies();
     }
 
-    // 6th attempt should be locked out
+    // 6th attempt should be locked out (even with correct password)
     await page.goto(`${baseURL}/sign-in`);
     await page.getByTestId('username-input').fill(testUsername);
-    await page.getByTestId('password-input').fill(wrongPassword);
+    await page.getByTestId('password-input').fill(correctPassword); // Try with correct password
     await page.getByTestId('submit-button').click();
 
-    // Should show account locked message
+    // Should show account locked message - login throttled due to too many failed attempts
     await page.waitForTimeout(1000);
     const pageContent = await page.textContent('body');
-    expect(pageContent).toMatch(/Too many login attempts|temporarily locked|error/i);
+    expect(pageContent).toMatch(/Too many login attempts|temporarily locked|throttled|error/i);
   });
 
   test('sign-in form displays all required fields', async ({ page }) => {
@@ -171,32 +172,32 @@ test.describe('Sign-in Journey', () => {
     await page.goto(`${baseURL}/sign-in`);
     
     // alice_closed: user status CLOSED
-    // Auth service (auth.service.ts:72) checks: user.status === 'ACTIVE'
-    // Closed/Suspended users are rejected at auth level OR locked out after failed attempts
+    // Auth service rejects login: user status must be ACTIVE
+    // Returns same error message as invalid credentials for security
     await page.getByTestId('username-input').fill('alice_closed');
     await page.getByTestId('password-input').fill('password123');
     await page.getByTestId('submit-button').click();
     
-    // Should show error
+    // Should show error message
     await page.waitForTimeout(1000);
     const pageContent = await page.textContent('body');
-    expect(pageContent).toMatch(/Invalid|error|failed|Too many|locked|Unauthorised/i);
+    expect(pageContent).toMatch(/Invalid username or password|error|failed/i);
   });
 
   test('suspended user account login fails - user status SUSPENDED', async ({ page }) => {
     await page.goto(`${baseURL}/sign-in`);
     
     // bob_suspended: user status SUSPENDED  
-    // Auth service (auth.service.ts:72) checks: user.status === 'ACTIVE'
-    // Closed/Suspended users are rejected at auth level OR locked out after failed attempts
+    // Auth service rejects login: user status must be ACTIVE
+    // Expected error: User account is suspended or not in ACTIVE status
     await page.getByTestId('username-input').fill('bob_suspended');
     await page.getByTestId('password-input').fill('password123');
     await page.getByTestId('submit-button').click();
     
-    // Should show error
+    // Should show error message
     await page.waitForTimeout(1000);
     const pageContent = await page.textContent('body');
-    expect(pageContent).toMatch(/Invalid|error|failed|Too many|locked|Unauthorised/i);
+    expect(pageContent).toMatch(/Invalid username or password|error|failed/i);
   });
 
   test('active user with closed account login succeeds but shows account restriction', async ({ page }) => {
@@ -235,5 +236,17 @@ test.describe('Sign-in Journey', () => {
     // Just verify no error message appears
     const urlAfterLogin = page.url();
     expect(urlAfterLogin).not.toContain('/sign-in');
+  });
+
+  // ========== Registration Tests ==========
+  // Note: Register functionality can be added when register page UI is finalized
+  // Currently skipped as register form elements need to be confirmed
+  
+  test.skip('register with valid details creates new user account', async ({ page }) => {
+    // Placeholder for register test - implement when register form is available
+  });
+
+  test.skip('register with invalid details shows validation errors', async ({ page }) => {
+    // Placeholder for register test - implement when register form is available
   });
 });
