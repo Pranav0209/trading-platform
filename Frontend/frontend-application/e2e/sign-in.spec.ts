@@ -95,8 +95,8 @@ test.describe('Sign-in Journey', () => {
   });
 
   test('account lockout after 5 failed login attempts within 15 minutes', async ({ page, context }) => {
-    // Use test credentials from environment
-    const testUsername = process.env.TEST_USERNAME || 'john_doe';
+    // Use dedicated lockout test user (jane_smith) to avoid interfering with other tests
+    const testUsername = process.env.TEST_LOCKOUT_USERNAME || 'jane_smith';
     const correctPassword = process.env.TEST_LOCKOUT_PASSWORD || 'password123';
     const wrongPassword = process.env.TEST_LOCKOUT_WRONG_PASSWORD || 'wrong-password-xyz';
 
