@@ -36,6 +36,7 @@ const { AuthService } = require('../../src/auth/auth.service') as {
     usersService: unknown,
     jwtService: unknown,
     loginThrottleService: unknown,
+    configService: unknown,
     refreshTokenRepository: unknown,
   ) => any;
 };
@@ -70,6 +71,10 @@ describe('AuthService', () => {
     recordSuccessfulAttempt: jest.Mock;
   };
 
+  let configService: {
+    get: jest.Mock;
+  };
+
   let refreshTokenRepository: {
     findOne: jest.Mock;
     update: jest.Mock;
@@ -102,6 +107,20 @@ describe('AuthService', () => {
       recordSuccessfulAttempt: jest.fn().mockResolvedValue(undefined),
     };
 
+    configService = {
+      get: jest.fn((key: string) => {
+        if (key === 'JWT_REFRESH_TOKEN_EXPIRY_DAYS') {
+          return 7;
+        }
+
+        if (key === 'ACCESS_TOKEN_EXPIRES_IN_SECONDS') {
+          return 900;
+        }
+
+        return undefined;
+      }),
+    };
+
     refreshTokenRepository = {
       findOne: jest.fn(),
       update: jest.fn().mockResolvedValue(undefined),
@@ -114,6 +133,7 @@ describe('AuthService', () => {
       usersService as never,
       jwtService as never,
       loginThrottleService as never,
+      configService as never,
       refreshTokenRepository as never,
     );
 
@@ -183,6 +203,7 @@ describe('AuthService', () => {
       username: 'carol',
       passwordHash: 'stored-hash',
       role: 'MISSION_OPERATOR',
+      status: 'ACTIVE',
     });
     refreshTokenRepository.query.mockResolvedValue([{ id: '501' }]);
 
@@ -218,13 +239,14 @@ describe('AuthService', () => {
       username: 'carol',
       passwordHash: 'stored-hash',
       role: 'MISSION_OPERATOR',
+      status: 'ACTIVE',
     });
 
     await expect(
       service.login({ username: 'carol', password: 'mission123' }, '10.0.0.1'),
     ).rejects.toThrow(UnauthorizedException);
 
-    expect(loginThrottleService.recordFailedAttempt).toHaveBeenCalledWith('carol', '10.0.0.1');
+    expect(loginThrottleService.recordFailedAttempt).not.toHaveBeenCalled();
   });
 
   it('rejects login when password is incorrect', async () => {
@@ -234,6 +256,7 @@ describe('AuthService', () => {
       username: 'carol',
       passwordHash: 'stored-hash',
       role: 'MISSION_OPERATOR',
+      status: 'ACTIVE',
     });
 
     await expect(service.login({ username: 'carol', password: 'wrong' })).rejects.toThrow(
