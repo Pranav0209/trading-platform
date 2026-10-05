@@ -30,6 +30,9 @@ describe('LoginThrottleService', () => {
     save: jest.Mock;
     delete: jest.Mock;
   };
+  let configService: {
+    get: jest.Mock;
+  };
 
   beforeEach(() => {
     repository = {
@@ -40,7 +43,21 @@ describe('LoginThrottleService', () => {
       delete: jest.fn().mockResolvedValue(undefined),
     };
 
-    service = new LoginThrottleService(repository as never);
+    configService = {
+      get: jest.fn((key: string) => {
+        if (key === 'LOGIN_MAX_ATTEMPTS') {
+          return 5;
+        }
+
+        if (key === 'LOGIN_COOLDOWN_SECONDS') {
+          return 900;
+        }
+
+        return undefined;
+      }),
+    };
+
+    service = new LoginThrottleService(repository as never, configService as never);
   });
 
   it('returns false when failed attempt count is below threshold', async () => {
@@ -57,12 +74,12 @@ describe('LoginThrottleService', () => {
   });
 
   it('returns true and logs warning when failed attempt count reaches threshold', async () => {
-    repository.query.mockResolvedValue([{ count: LoginThrottleService.MAX_ATTEMPTS }]);
+    repository.query.mockResolvedValue([{ count: 5 }]);
 
     await expect(service.isThrottled('alice', '10.0.0.1')).resolves.toBe(true);
 
     expect(service.logger.warn).toHaveBeenCalledWith(
-      `Login throttled for alice from 10.0.0.1: ${LoginThrottleService.MAX_ATTEMPTS} failed attempts`,
+      'Login throttled for alice from 10.0.0.1: 5 failed attempts',
     );
   });
 
@@ -111,7 +128,7 @@ describe('LoginThrottleService', () => {
   });
 
   it('returns documented throttle configuration', () => {
-    expect(LoginThrottleService.getConfig()).toEqual({
+    expect(service.getConfig()).toEqual({
       maxAttempts: 5,
       cooldownSeconds: 900,
       cooldownMinutes: 15,

@@ -1,10 +1,26 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root',
 })
 export class Session {
   private tokenSignal = signal<string | null>(localStorage.getItem('token'));
+  private httpClient = inject(HttpClient);
+  private router = inject(Router);
+
+  constructor() {
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'token') {
+        this.tokenSignal.set(event.newValue);
+        if (!event.newValue) {
+          // If token was removed in another tab, redirect this tab to sign-in
+          this.router.navigate(['/sign-in']);
+        }
+      }
+    });
+  }
 
   get token() {
     return this.tokenSignal.asReadonly();
@@ -44,5 +60,15 @@ export class Session {
   clearToken() {
     localStorage.removeItem('token');
     this.tokenSignal.set(null);
+  }
+
+  async performLogout() {
+    try {
+      await this.httpClient.post('http://localhost:3000/auth/logout', {}, { withCredentials: true }).toPromise();
+    } catch (e) {
+      console.error('Backend logout failed', e);
+    }
+    this.clearToken();
+    this.router.navigate(['/sign-in']);
   }
 }

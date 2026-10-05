@@ -126,6 +126,19 @@ export class AuthService {
     return this.generateTokens(storedToken.user);
   }
 
+  async logout(refreshToken: string) {
+    if (!refreshToken) return;
+    const hashedPresentedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    const storedToken = await this.refreshTokenRepository.findOne({
+      where: { tokenHash: hashedPresentedToken },
+    });
+
+    if (storedToken && !storedToken.revoked) {
+      storedToken.revoked = true;
+      await this.refreshTokenRepository.save(storedToken);
+    }
+  }
+
   private async generateTokens(user: any) {
     // Attempt to get accountId if they have an account
     const accounts = await this.refreshTokenRepository.query('SELECT id FROM accounts WHERE user_id = $1 LIMIT 1', [user.id]);
