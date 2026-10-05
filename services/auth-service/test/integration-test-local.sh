@@ -26,6 +26,7 @@ TEST_EMAIL="${TEST_EMAIL:-auth_local_$RUN_ID@example.com}"
 TEST_PASSWORD="${TEST_PASSWORD:-Mission123!}"
 TEST_ACCOUNT_NUMBER="${TEST_ACCOUNT_NUMBER:-ACC-AUTH-LOCAL-$RUN_ID}"
 AUTH_LOG="${AUTH_LOG:-$REPO_DIR/test/auth-local.log}"
+COOKIE_JAR="${COOKIE_JAR:-$(mktemp)}"
 
 AUTH_PID=""
 TEST_USER_ID=""
@@ -33,6 +34,11 @@ TEST_USER_ID=""
 json_field() {
   local field="$1"
   node -e "let raw=''; process.stdin.on('data', chunk => raw += chunk).on('end', () => { const value = JSON.parse(raw)['$field']; process.stdout.write(value == null ? '' : String(value)); });"
+}
+
+cookie_field() {
+  local cookie_name="$1"
+  awk -v cookie_name="$cookie_name" 'NF >= 7 && $6 == cookie_name { print $7 }' "$COOKIE_JAR" | tail -n 1
 }
 
 fail_with_logs() {
@@ -60,6 +66,8 @@ cleanup() {
       -c "DELETE FROM auth.refresh_tokens WHERE user_id = $TEST_USER_ID; DELETE FROM accounts WHERE user_id = $TEST_USER_ID; DELETE FROM auth.users WHERE id = $TEST_USER_ID;" \
       >/dev/null 2>&1 || true
   fi
+
+  rm -f "$COOKIE_JAR"
 }
 trap cleanup EXIT
 
@@ -183,15 +191,15 @@ PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB
 echo "PASS: account row ensured for user $TEST_USER_ID"
 
 echo "== Stage: Login and obtain tokens =="
-LOGIN_RESPONSE=$(curl -s -X POST "http://localhost:$AUTH_PORT/auth/login" \
+LOGIN_RESPONSE=$(curl -s -c "$COOKIE_JAR" -X POST "http://localhost:$AUTH_PORT/auth/login" \
   -H "Content-Type: application/json" \
   -d "{\"username\":\"$TEST_USERNAME\",\"password\":\"$TEST_PASSWORD\"}")
 ACCESS_TOKEN=$(printf '%s' "$LOGIN_RESPONSE" | json_field accessToken)
-REFRESH_TOKEN=$(printf '%s' "$LOGIN_RESPONSE" | json_field refreshToken)
+REFRESH_TOKEN=$(cookie_field refreshToken)
 if [ -z "$ACCESS_TOKEN" ] || [ -z "$REFRESH_TOKEN" ]; then
   fail_with_logs "login failed. Response: $LOGIN_RESPONSE"
 fi
-echo "PASS: login issued access and refresh tokens"
+echo "PASS: login issued access token and refresh cookie"
 
 echo "== Stage: Use the issued JWT against /auth/me =="
 ME_RESPONSE=$(curl -s -H "Authorization: Bearer $ACCESS_TOKEN" "http://localhost:$AUTH_PORT/auth/me")
@@ -206,11 +214,9 @@ fi
 echo "PASS: /auth/me accepted the JWT and returned accountId $ME_ACCOUNT_ID"
 
 echo "== Stage: Refresh rotates tokens =="
-REFRESH_RESPONSE=$(curl -s -X POST "http://localhost:$AUTH_PORT/auth/refresh" \
-  -H "Content-Type: application/json" \
-  -d "{\"refreshToken\":\"$REFRESH_TOKEN\"}")
+REFRESH_RESPONSE=$(curl -s -b "$COOKIE_JAR" -c "$COOKIE_JAR" -X POST "http://localhost:$AUTH_PORT/auth/refresh")
 NEW_ACCESS_TOKEN=$(printf '%s' "$REFRESH_RESPONSE" | json_field accessToken)
-NEW_REFRESH_TOKEN=$(printf '%s' "$REFRESH_RESPONSE" | json_field refreshToken)
+NEW_REFRESH_TOKEN=$(cookie_field refreshToken)
 if [ -z "$NEW_ACCESS_TOKEN" ] || [ -z "$NEW_REFRESH_TOKEN" ]; then
   fail_with_logs "refresh failed. Response: $REFRESH_RESPONSE"
 fi
@@ -221,8 +227,7 @@ echo "PASS: refresh rotated both tokens"
 
 echo "== Stage: Reusing the old refresh token is rejected =="
 REUSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:$AUTH_PORT/auth/refresh" \
-  -H "Content-Type: application/json" \
-  -d "{\"refreshToken\":\"$REFRESH_TOKEN\"}")
+  -H "Cookie: refreshToken=$REFRESH_TOKEN")
 if [ "$REUSE_CODE" != "401" ]; then
   fail_with_logs "expected 401 when reusing a revoked refresh token, got $REUSE_CODE"
 fi
