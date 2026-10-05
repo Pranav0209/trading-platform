@@ -225,7 +225,7 @@ export class OrderBlotter implements OnInit, OnDestroy {
       this.expandedOrderId.set(orderId);
       this.editFormData.set({
         quantity: order.quantity,
-        price: order.price
+        price: order.price ?? 0
       });
     }
   }
@@ -250,6 +250,10 @@ export class OrderBlotter implements OnInit, OnDestroy {
    */
   canEditOrder(order: OrderHistoryEntry): boolean {
     return order.status === 'NEW';
+  }
+
+  isMarketOrder(order: OrderHistoryEntry): boolean {
+    return order.price == null;
   }
 
   /**
@@ -298,9 +302,12 @@ export class OrderBlotter implements OnInit, OnDestroy {
       const uuid = this.extractOrderUuid(order.orderId);
       
       const updateRequest: UpdateOrderRequest = {
-        quantity: formData.quantity,
-        limitPrice: formData.price
+        quantity: formData.quantity
       };
+
+      if (!this.isMarketOrder(order)) {
+        updateRequest.limitPrice = formData.price;
+      }
 
       this.ordersService.updateOrder(uuid, updateRequest)
         .pipe(
