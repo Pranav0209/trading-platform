@@ -21,9 +21,20 @@ test.describe('Order Management Journey', () => {
     await page.getByTestId('password-input').fill(validPassword as string);
     await page.getByTestId('submit-button').click();
     
-    // Wait for navigation and network to settle before checking URL
+    // Wait for navigation to dashboard or timeout
+    await Promise.race([
+      page.waitForURL(/\/dashboard/),
+      page.waitForTimeout(5000)
+    ]).catch(() => {});
+    
+    // Check current URL to determine if login succeeded
+    const currentUrl = page.url();
+    if (!currentUrl.includes('/dashboard')) {
+      throw new Error(`Login failed: Still on ${currentUrl}`);
+    }
+    
+    // Wait for network to settle
     await page.waitForLoadState('networkidle').catch(() => {});
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
   }
 
   test.beforeEach(async ({ context }) => {

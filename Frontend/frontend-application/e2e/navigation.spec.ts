@@ -20,26 +20,20 @@ test.describe('Navigation and Dashboard Journey', () => {
     await page.getByTestId('password-input').fill(validPassword as string);
     await page.getByTestId('submit-button').click();
     
-    // Wait for either successful navigation or error message
+    // Wait for navigation to dashboard or timeout
     await Promise.race([
-      page.waitForNavigation().catch(() => {}),
-      page.locator('[data-testid="error-message"]').waitFor({ timeout: 2000 }).catch(() => {})
-    ]);
+      page.waitForURL(/\/dashboard/),
+      page.waitForTimeout(5000)
+    ]).catch(() => {});
     
-    // Check if login succeeded or failed
-    const errorMessage = page.locator('[data-testid="error-message"]');
-    const isError = await errorMessage.isVisible().catch(() => false);
-    
-    if (isError) {
-      const errorText = await errorMessage.textContent();
-      throw new Error(`Login failed: ${errorText}`);
+    // Check current URL to determine if login succeeded
+    const currentUrl = page.url();
+    if (!currentUrl.includes('/dashboard')) {
+      throw new Error(`Login failed: Still on ${currentUrl}`);
     }
     
     // Wait for network to settle
     await page.waitForLoadState('networkidle').catch(() => {});
-    
-    // Verify we're on dashboard
-    await expect(page).toHaveURL(/\/dashboard/, { timeout: 10000 });
   }
 
   test.beforeEach(async ({ context }) => {
