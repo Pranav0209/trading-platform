@@ -249,7 +249,7 @@ export class OrderBlotter implements OnInit, OnDestroy {
    * Check if order can be edited (only NEW orders).
    */
   canEditOrder(order: OrderHistoryEntry): boolean {
-    return order.status === 'NEW';
+    return order.status === 'NEW' && !this.isMarketOrder(order);
   }
 
   isMarketOrder(order: OrderHistoryEntry): boolean {
