@@ -250,7 +250,7 @@ components:
         username:
           type: string
           minLength: 3
-          maxLength: 64
+          maxLength: 50
           pattern: '^[a-zA-Z0-9._-]+$'
           example: priya.menon
         email:
@@ -261,6 +261,7 @@ components:
           type: string
           minLength: 8
           maxLength: 128
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)\S+$'
           writeOnly: true
       example:
         username: priya.menon
@@ -274,7 +275,9 @@ components:
       properties:
         username:
           type: string
-          maxLength: 64
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9._-]+$'
         password:
           type: string
           maxLength: 128

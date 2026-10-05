@@ -7,6 +7,12 @@ import { AuthService } from '../../../../generated/auth/api/auth.service';
 import { ErrorCodeMapper } from '../../../core/error/error-code-mapper';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { FormErrorComponent } from '../../../shared/form-error/form-error.component';
+import {
+  registerPasswordValidationMessage,
+  registerPasswordValidators,
+  usernameValidationMessage,
+  usernameValidators,
+} from '../auth-validation';
 
 @Component({
   selector: 'app-register',
@@ -22,12 +28,15 @@ export class Register {
   private errorCodeMapper = inject(ErrorCodeMapper);
   private toastService = inject(ToastService);
 
+  protected readonly usernameValidationMessage = usernameValidationMessage;
+  protected readonly passwordValidationMessage = registerPasswordValidationMessage;
+
   isSubmitting = signal(false);
 
   form = this.fb.nonNullable.group({
-    username: ['', [Validators.required, Validators.maxLength(50)]],
+    username: ['', usernameValidators],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
-    password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(100)]],
+    password: ['', registerPasswordValidators],
   });
 
   onSubmit(): void {
