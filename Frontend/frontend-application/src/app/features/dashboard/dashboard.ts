@@ -45,7 +45,6 @@ export class Dashboard implements OnInit {
   }
 
   logout() {
-    this.session.clearToken();
-    this.router.navigate(['/sign-in']);
+    this.session.performLogout();
   }
 }

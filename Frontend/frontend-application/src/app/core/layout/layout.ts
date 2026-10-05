@@ -36,7 +36,6 @@ export class LayoutComponent implements OnInit {
 
   logout() {
     this.dashboardService.clearData();
-    this.session.clearToken();
-    this.router.navigate(['/sign-in']);
+    this.session.performLogout();
   }
 }
