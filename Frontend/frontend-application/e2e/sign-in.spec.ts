@@ -16,6 +16,9 @@ test.describe('Sign-in Journey', () => {
   const validUsername = process.env.TEST_USERNAME;
   const adminUsername = process.env.TEST_ADMIN_USERNAME;
   const validPassword = process.env.TEST_PASSWORD;
+  const registerUsername = process.env.TEST_REGISTER_USERNAME;
+  const registerPassword = process.env.TEST_REGISTER_PASSWORD;
+  const registerEmail = process.env.TEST_REGISTER_EMAIL;
 
   test.beforeEach(async ({ context }) => {
     // Clear all cookies and storage to ensure isolation
@@ -48,11 +51,9 @@ test.describe('Sign-in Journey', () => {
     expect(pageContent).toMatch(/Invalid username or password|Too many login attempts|temporarily locked|error|failed/i);
   });
 
-  test.skip('successful sign-in with valid credentials redirects to dashboard', async ({
+  test('successful sign-in with valid credentials redirects to dashboard', async ({
     page,
   }) => {
-    // Backend dependency: Auth service must return proper redirect/token response
-    // Currently login submission fails to navigate to dashboard
     test.skip(!validUsername || !validPassword, 'Test credentials not configured');
 
     await page.goto(`${baseURL}/sign-in`);
@@ -66,9 +67,7 @@ test.describe('Sign-in Journey', () => {
     await expect(page).toHaveURL(/\/dashboard/);
   });
 
-  test.skip('successful sign-in returns to requested return-to parameter', async ({ page }) => {
-    // Backend dependency: Auth service must return proper redirect/token response
-    // Currently login submission fails to navigate to specified returnTo path
+  test('successful sign-in returns to requested return-to parameter', async ({ page }) => {
     test.skip(!validUsername || !validPassword, 'Test credentials not configured');
 
     // Navigate with returnTo parameter pointing to trade page
@@ -242,14 +241,72 @@ test.describe('Sign-in Journey', () => {
   });
 
   // ========== Registration Tests ==========
-  // Note: Register functionality can be added when register page UI is finalized
-  // Currently skipped as register form elements need to be confirmed
+  // Note: Registration completes successfully but redirects to sign-in for user to login
   
-  test.skip('register with valid details creates new user account', async ({ page }) => {
-    // Placeholder for register test - implement when register form is available
+  test('register with valid details creates new user account and redirects to sign-in', async ({ page }) => {
+    test.skip(!registerUsername, 'Register test credentials not configured');
+    
+    await page.goto(`${baseURL}/sign-in`);
+    
+    // Look for register link or button to navigate to registration
+    const registerLink = page.locator('a, button').filter({ hasText: /register|sign up/i }).first();
+    if (await registerLink.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await registerLink.click();
+    } else {
+      // Direct navigation if no visible link
+      await page.goto(`${baseURL}/register`);
+    }
+    
+    // Wait for registration form to load
+    await page.getByTestId('username-input').waitFor({ state: 'visible', timeout: 10000 });
+    
+    // Fill registration form
+    await page.getByTestId('username-input').fill(registerUsername as string);
+    await page.getByTestId('email-input').fill(registerEmail as string);
+    await page.getByTestId('password-input').fill(registerPassword as string);
+    
+    // Submit registration
+    await page.getByTestId('submit-button').click();
+    
+    // Should redirect to sign-in after successful registration
+    await expect(page).toHaveURL(/\/sign-in/, { timeout: 10000 });
   });
 
-  test.skip('register with invalid details shows validation errors', async ({ page }) => {
-    // Placeholder for register test - implement when register form is available
+  test('register form displays validation errors for invalid data', async ({ page }) => {
+    test.skip(!registerUsername, 'Register test credentials not configured');
+    
+    await page.goto(`${baseURL}/sign-in`);
+    
+    // Look for register link or button to navigate to registration
+    const registerLink = page.locator('a, button').filter({ hasText: /register|sign up/i }).first();
+    if (await registerLink.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await registerLink.click();
+    } else {
+      // Direct navigation if no visible link
+      await page.goto(`${baseURL}/register`);
+    }
+    
+    // Wait for registration form to load
+    await page.getByTestId('username-input').waitFor({ state: 'visible', timeout: 10000 });
+    
+    // Try to submit with invalid email
+    await page.getByTestId('username-input').fill(registerUsername as string);
+    await page.getByTestId('email-input').fill('invalid-email');
+    await page.getByTestId('password-input').fill(registerPassword as string);
+    
+    // Submit button should be disabled for invalid email or submission should fail
+    const submitButton = page.getByTestId('submit-button');
+    
+    if (await submitButton.isEnabled().catch(() => true)) {
+      await submitButton.click();
+      
+      // Should show error message
+      await page.waitForTimeout(1000);
+      const pageContent = await page.textContent('body');
+      expect(pageContent).toMatch(/email|valid|error/i);
+    } else {
+      // Button is disabled for invalid form - that's also valid
+      await expect(submitButton).toBeDisabled();
+    }
   });
 });
