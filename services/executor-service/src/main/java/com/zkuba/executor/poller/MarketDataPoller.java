@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.zkuba.executor.client.BatchQuoteResponse;
+import com.zkuba.executor.client.CurrencyConversionClient;
 import com.zkuba.executor.client.FauxnanceQuoteClient;
+import com.zkuba.executor.client.QuoteResponse;
 import com.zkuba.executor.repository.PositionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +15,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Component
@@ -22,15 +25,18 @@ public class MarketDataPoller {
     private static final int BATCH_SIZE = 25;
 
     private final FauxnanceQuoteClient quoteClient;
+    private final CurrencyConversionClient conversionClient;
     private final PositionRepository positionRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
     public MarketDataPoller(FauxnanceQuoteClient quoteClient,
+            CurrencyConversionClient conversionClient,
             PositionRepository positionRepository,
             KafkaTemplate<String, String> kafkaTemplate,
             ObjectMapper objectMapper) {
         this.quoteClient = quoteClient;
+        this.conversionClient = conversionClient;
         this.positionRepository = positionRepository;
         this.kafkaTemplate = kafkaTemplate;
         this.objectMapper = objectMapper;
@@ -71,7 +77,31 @@ public class MarketDataPoller {
             if (response != null && response.data() != null && response.data().quotes() != null) {
                 for (BatchQuoteResponse.QuoteItem item : response.data().quotes()) {
                     if (item.quote() != null) {
-                        String json = objectMapper.writeValueAsString(item.quote());
+                        QuoteResponse.Data quote = item.quote();
+                        
+                        // Convert to USD if needed
+                        if (quote.currency() != null && !quote.currency().equalsIgnoreCase("USD")) {
+                            try {
+                                BigDecimal rate = conversionClient.getConversionRate(quote.currency(), "USD");
+                                quote = new QuoteResponse.Data(
+                                        quote.symbol(),
+                                        quote.price().multiply(rate),
+                                        quote.bid() != null ? quote.bid().multiply(rate) : null,
+                                        quote.ask() != null ? quote.ask().multiply(rate) : null,
+                                        "USD",
+                                        quote.change() != null ? quote.change().multiply(rate) : null,
+                                        quote.changePercent(),
+                                        quote.previousClose() != null ? quote.previousClose().multiply(rate) : null,
+                                        quote.asOf(),
+                                        quote.marketState()
+                                );
+                            } catch (Exception e) {
+                                log.warn("Failed to convert currency for {} from {}", quote.symbol(), quote.currency(), e);
+                                // Fallback to raw quote if conversion fails
+                            }
+                        }
+                        
+                        String json = objectMapper.writeValueAsString(quote);
                         kafkaTemplate.send("market-data", item.symbol(), json);
                     }
                 }
