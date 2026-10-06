@@ -32,11 +32,17 @@ export class Register {
   protected readonly passwordValidationMessage = registerPasswordValidationMessage;
 
   isSubmitting = signal(false);
+  isOtpStep = signal(false);
+  registeredEmail = signal('');
 
   form = this.fb.nonNullable.group({
     username: ['', usernameValidators],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     password: ['', registerPasswordValidators],
+  });
+
+  otpForm = this.fb.nonNullable.group({
+    otpCode: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]],
   });
 
   onSubmit(): void {
@@ -53,7 +59,32 @@ export class Register {
       password: val.password
     }).subscribe({
       next: (res: any) => {
-        this.toastService.success('Account created successfully! Please sign in.');
+        this.toastService.success('User created! Please check your email for the OTP.');
+        this.registeredEmail.set(val.email);
+        this.isOtpStep.set(true);
+        this.isSubmitting.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        const errorMsg = this.errorCodeMapper.mapErrorToMessage(err);
+        this.toastService.error(errorMsg);
+        this.isSubmitting.set(false);
+      }
+    });
+  }
+
+  onVerifyOtp(): void {
+    if (this.otpForm.invalid) {
+      this.toastService.warning('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.authService.verifyOtp({
+      email: this.registeredEmail(),
+      otpCode: this.otpForm.getRawValue().otpCode
+    }).subscribe({
+      next: () => {
+        this.toastService.success('Account activated successfully! Please sign in.');
         this.router.navigate(['/sign-in']);
       },
       error: (err: HttpErrorResponse) => {
