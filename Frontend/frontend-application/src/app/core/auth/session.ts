@@ -53,6 +53,17 @@ export class Session {
     }
   });
 
+  accountId = computed(() => {
+    const token = this.tokenSignal();
+    if (!token) return 0;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.accountId || 0;
+    } catch {
+      return 0;
+    }
+  });
+
   setToken(token: string) {
     localStorage.setItem('token', token);
     this.tokenSignal.set(token);

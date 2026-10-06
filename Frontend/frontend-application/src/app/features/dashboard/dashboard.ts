@@ -4,11 +4,12 @@ import { Router, RouterLink } from '@angular/router';
 import { DashboardService } from './dashboard.service';
 import { Session } from '../../core/auth/session';
 import { PositionsComponent } from '../trade/positions/positions';
+import { RealisedPnlComponent } from '../trade/realised-pnl/realised-pnl';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, PositionsComponent],
+  imports: [CommonModule, PositionsComponent, RealisedPnlComponent],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css'],
   encapsulation: ViewEncapsulation.None
@@ -23,6 +24,7 @@ export class Dashboard implements OnInit {
   holdings = this.dashboardService.holdings;
   accountStatus = this.dashboardService.accountStatus;
   accountCurrency = this.dashboardService.accountCurrency;
+  accountId = this.session.accountId;
 
   userName = this.session.userName;
   userInitial = computed(() => this.userName().charAt(0));

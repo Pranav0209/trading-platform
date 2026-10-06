@@ -256,6 +256,122 @@ paths:
         '503':
           $ref: '#/components/responses/PricingUnavailable'
 
+  /api/v1/portfolio/{accountId}/pnl/realised:
+    get:
+      tags: [P&L]
+      operationId: getRealisedPnlHistory
+      summary: Get realised profit and loss history
+      description: |
+        Transaction-by-transaction history of realised profit and loss for the account.
+        Each row represents one completed SELL order. Realised P&L is booked at the moment of sale
+        and never changes. Results are ordered by realised date, most recent first.
+
+        The `averageCost` field is the weighted average cost of the position at the time of the
+        SELL, captured before the position was updated. Realised P&L is calculated as:
+        `(sellPrice - averageCost) * quantity`.
+
+        All money and quantity values use NUMERIC precision to avoid floating-point rounding errors.
+        The backend verifies that {accountId} equals the accountId claim in the JWT and returns 403 otherwise.
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+        - name: symbol
+          in: query
+          required: false
+          description: Restrict results to one instrument.
+          schema:
+            type: string
+            maxLength: 20
+        - name: from
+          in: query
+          required: false
+          description: Include realised profit and loss booked on or after this date (inclusive, ISO 8601 date in UTC). When specified without `to`, unbounded above.
+          schema:
+            type: string
+            format: date
+          example: '2026-09-01'
+        - name: to
+          in: query
+          required: false
+          description: Include realised profit and loss booked on or before this date (inclusive, ISO 8601 date in UTC). When specified without `from`, unbounded below.
+          schema:
+            type: string
+            format: date
+          example: '2026-10-19'
+        - name: page
+          in: query
+          required: false
+          description: Zero-indexed page number.
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          description: Number of records per page. Maximum 100.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Realised profit and loss history, paginated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RealisedPnlHistoryResponse'
+              examples:
+                history:
+                  value:
+                    accountId: 1
+                    baseCurrency: USD
+                    from: '2026-09-01'
+                    to: '2026-10-19'
+                    records:
+                      - pnlId: 1
+                        orderId: 6f2b1c2a-6a1e-4a4f-9c0d-2f7a1b3c4d5e
+                        symbol: AAPL
+                        quantity: 100
+                        sellPrice: 240.50
+                        averageCost: 228.40
+                        realisedPnl: 1210.00
+                        realisedAt: '2026-10-19T14:05:11Z'
+                      - pnlId: 2
+                        orderId: 7f3c2d3b-7b2f-5b5f-0d1e-3g8b2c4d6e9f
+                        symbol: AAPL
+                        quantity: 50
+                        sellPrice: 235.00
+                        averageCost: 228.40
+                        realisedPnl: 330.00
+                        realisedAt: '2026-10-18T10:30:22Z'
+                    summary:
+                      totalCount: 25
+                      pageCount: 2
+                      currentPage: 0
+                      pageSize: 20
+                      totalRealisedPnl: 5420.75
+                    asOf: '2026-10-19T14:05:11Z'
+        '400':
+          description: Invalid query parameters, for example `from` is after `to` or `size` exceeds maximum.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid:
+                  value:
+                    errorCode: VAL-422
+                    message: Invalid input
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/AccountNotFound'
+
   /health:
     get:
       tags: [Operations]
@@ -586,3 +702,107 @@ components:
             against a market feed. The four codes above it are the platform codes, used unchanged.
         message:
           type: string
+
+    RealisedPnlHistoryResponse:
+      type: object
+      additionalProperties: false
+      required: [accountId, baseCurrency, records, summary, asOf]
+      properties:
+        accountId:
+          type: integer
+          format: int64
+        baseCurrency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: ISO 4217 code the totals are expressed in.
+        from:
+          type: [string, 'null']
+          format: date
+          description: Lower bound filter applied to realised date. Null when unbounded.
+        to:
+          type: [string, 'null']
+          format: date
+          description: Upper bound filter applied to realised date. Null when unbounded.
+        records:
+          type: array
+          description: Realised P&L transaction history, ordered by realisedAt descending.
+          items:
+            $ref: '#/components/schemas/RealisedPnlRecord'
+        summary:
+          $ref: '#/components/schemas/RealisedPnlSummary'
+        asOf:
+          type: string
+          format: date-time
+          description: Observation time of this response.
+
+    RealisedPnlRecord:
+      type: object
+      additionalProperties: false
+      required: [pnlId, orderId, symbol, quantity, sellPrice, averageCost, realisedPnl, realisedAt]
+      properties:
+        pnlId:
+          type: integer
+          format: int64
+          description: Primary key of the realised P&L record.
+        orderId:
+          type: string
+          format: uuid
+          description: The order ID of the SELL that triggered this realised P&L.
+        symbol:
+          type: string
+          maxLength: 20
+          description: The instrument symbol.
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Number of units sold.
+        sellPrice:
+          type: number
+          description: |
+            The execution price per unit, in the account's base currency.
+            NUMERIC precision, no floating-point rounding errors.
+        averageCost:
+          type: number
+          description: |
+            Weighted average cost per unit at the time of the SELL, captured before the position
+            was updated. NUMERIC precision.
+        realisedPnl:
+          type: number
+          description: |
+            Booked profit or loss: `(sellPrice - averageCost) * quantity`.
+            Positive = profit, negative = loss. NUMERIC precision.
+        realisedAt:
+          type: string
+          format: date-time
+          description: The moment the SELL order was filled (UTC).
+
+    RealisedPnlSummary:
+      type: object
+      additionalProperties: false
+      required: [totalCount, totalPages, currentPage, pageSize, totalRealisedPnl]
+      properties:
+        totalCount:
+          type: integer
+          format: int64
+          description: Total number of realised P&L records matching the filters.
+        totalPages:
+          type: integer
+          format: int32
+          description: Total number of pages. Computed as ceil(totalCount / pageSize). Zero when totalCount is zero.
+        currentPage:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Zero-indexed current page returned in this response.
+        pageSize:
+          type: integer
+          format: int32
+          description: Number of records per page in this response.
+        totalRealisedPnl:
+          type: number
+          description: |
+            Sum of all realised P&L across all matching records (not just this page).
+            Positive = cumulative profit, negative = cumulative loss. NUMERIC precision.
+

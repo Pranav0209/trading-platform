@@ -7,6 +7,7 @@ import com.zkuba.executor.client.QuoteResponse;
 import com.zkuba.executor.domain.entity.Account;
 import com.zkuba.executor.domain.entity.Order;
 import com.zkuba.executor.domain.entity.Position;
+import com.zkuba.executor.domain.entity.RealisedPnl;
 import com.zkuba.executor.engine.FillDecision;
 import com.zkuba.executor.engine.FillRuleEngine;
 import com.zkuba.executor.event.TradeEventPayload;
@@ -38,6 +39,9 @@ public class TradeExecutionService {
 
     @Autowired
     private PositionRepository positionRepository;
+
+    @Autowired
+    private RealisedPnlRepository realisedPnlRepository;
 
     @Autowired
     private FauxnanceQuoteClient quoteClient;
@@ -141,9 +145,28 @@ public class TradeExecutionService {
             updateAccount(account, newBalance);
             updateBuyPosition(account.getId(), order.getSymbol(), order.getQuantity(), executedPriceInAccountCurrency, position);
         } else {
+            // For SELL orders: capture average cost BEFORE updating position
+            // (position row is deleted when qty reaches 0, so we must record P&L now)
+            BigDecimal averageCostBeforeSell = position != null ? position.getAverageCost() : BigDecimal.ZERO;
+            
             BigDecimal newBalance = account.getCashBalance().add(totalValueInAccountCurrency);
             updateAccount(account, newBalance);
             updateSellPosition(position, order.getQuantity());
+            
+            // Record realised P&L in same transaction
+            BigDecimal realisedPnl = executedPriceInAccountCurrency.subtract(averageCostBeforeSell)
+                    .multiply(BigDecimal.valueOf(order.getQuantity()));
+            RealisedPnl pnlRecord = new RealisedPnl(
+                    order.getId(),
+                    account.getId(),
+                    order.getSymbol(),
+                    order.getQuantity(),
+                    executedPriceInAccountCurrency,
+                    averageCostBeforeSell,
+                    realisedPnl,
+                    executedOn
+            );
+            realisedPnlRepository.save(pnlRecord);
         }
 
         return Optional.of(buildFilledEvent(order, account.getCashBalance(), position, totalValueInAccountCurrency));

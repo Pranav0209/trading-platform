@@ -95,5 +95,12 @@
 
     <!-- HOLDINGS (Summary) -->
     <app-positions title="Holdings" [showViewAll]="true"></app-positions>
+
+    <!-- REALISED P&L (Summary) -->
+    <app-realised-pnl
+      title="Recent Realised P&L"
+      [showViewAll]="true"
+      [accountId]="accountId()"
+    ></app-realised-pnl>
   </section>
 </div>

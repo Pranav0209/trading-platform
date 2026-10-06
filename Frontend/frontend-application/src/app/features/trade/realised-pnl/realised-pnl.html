@@ -1,0 +1,185 @@
+@if (isStandalone()) {
+  <div class="standalone-wrapper">
+    <header class="page-header">
+      <h1>{{ pageTitle() }}</h1>
+      <p class="subtitle">{{ pageSubtitle() }}</p>
+    </header>
+    <div class="content-container">
+      <ng-container *ngTemplateOutlet="tableContent"></ng-container>
+    </div>
+  </div>
+} @else {
+  <ng-container *ngTemplateOutlet="tableContent"></ng-container>
+}
+
+<ng-template #tableContent>
+  <div class="card data-card">
+    <!-- Card Header -->
+    <div class="card-header">
+      <h3 class="card-title">{{ title }}</h3>
+      @if (showViewAll) {
+        <a routerLink="/realised-pnl" class="view-all">View all</a>
+      }
+    </div>
+
+    <!-- Filters Section (only in standalone mode) -->
+    @if (isStandalone()) {
+      <div class="filters-section">
+        <div class="filter-group">
+          <label for="symbol-filter">Symbol</label>
+          <input
+            id="symbol-filter"
+            type="text"
+            class="filter-input"
+            [(ngModel)]="symbol"
+            placeholder="e.g., AAPL"
+            (keyup.enter)="applyFilters()"
+          />
+        </div>
+
+        <div class="filter-group">
+          <label for="from-date">From Date</label>
+          <input
+            id="from-date"
+            type="date"
+            class="filter-input"
+            [(ngModel)]="fromDate"
+          />
+        </div>
+
+        <div class="filter-group">
+          <label for="to-date">To Date</label>
+          <input
+            id="to-date"
+            type="date"
+            class="filter-input"
+            [(ngModel)]="toDate"
+          />
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn btn-primary" (click)="applyFilters()" [disabled]="loading()">
+            {{ loading() ? 'Loading...' : 'Apply' }}
+          </button>
+          <button class="btn btn-secondary" (click)="resetFilters()">Reset</button>
+        </div>
+      </div>
+
+      <!-- Summary Section -->
+      <div class="summary-section">
+        <div class="summary-item">
+          <span class="summary-label">Total P&L:</span>
+          <span class="summary-value" [class]="getPnlClass(totalRealisedPnl())">
+            {{ getPnlPrefix(totalRealisedPnl()) }}{{ formatCurrency(totalRealisedPnl()) }} {{ baseCurrency() }}
+          </span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total Records:</span>
+          <span class="summary-value">{{ totalCount() }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- Loading State -->
+    @if (loading()) {
+      <div class="loading-state">
+        <p>Loading P&L history...</p>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (error()) {
+      <div class="error-message">
+        <p>{{ error() }}</p>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (hasNoRecords && !error()) {
+      <div class="empty-state">
+        <p>No realised P&L records found.</p>
+        @if (isStandalone()) {
+          <p class="empty-hint">Try adjusting your filters or start by placing SELL orders.</p>
+        }
+      </div>
+    }
+
+    <!-- Table -->
+    @if (!loading() && !error() && pnlRecords().length > 0) {
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Symbol</th>
+              <th class="text-right">Quantity</th>
+              <th class="text-right">Sell Price</th>
+              <th class="text-right">Avg Cost</th>
+              <th class="text-right">Realised P&L</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (record of pnlRecords(); track record.orderId) {
+              <tr>
+                <td class="date">
+                  {{ record.realisedAt | date: 'short' }}
+                </td>
+                <td class="symbol">{{ record.symbol }}</td>
+                <td class="text-right quantity">{{ record.quantity }}</td>
+                <td class="text-right price">
+                  {{ formatCurrency(record.sellPrice) }} {{ baseCurrency() }}
+                </td>
+                <td class="text-right price">
+                  {{ formatCurrency(record.averageCost) }} {{ baseCurrency() }}
+                </td>
+                <td
+                  class="text-right pnl"
+                  [class]="getPnlClass(record.realisedPnl)"
+                >
+                  {{ getPnlPrefix(record.realisedPnl) }}{{ formatCurrency(record.realisedPnl) }} {{ baseCurrency() }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Section -->
+      @if (isStandalone() && totalPages() > 1) {
+        <div class="pagination-section">
+          <button
+            class="btn btn-small"
+            (click)="previousPage()"
+            [disabled]="currentPage() === 0"
+          >
+            Previous
+          </button>
+
+          <div class="page-numbers">
+            @for (pageNum of pageNumbers; track pageNum) {
+              <button
+                class="page-btn"
+                [class.active]="pageNum === currentPage()"
+                (click)="goToPage(pageNum)"
+              >
+                {{ pageNum + 1 }}
+              </button>
+            }
+          </div>
+
+          <button
+            class="btn btn-small"
+            (click)="nextPage()"
+            [disabled]="currentPage() === totalPages() - 1"
+          >
+            Next
+          </button>
+        </div>
+
+        <div class="pagination-info">
+          <p>Page {{ currentPage() + 1 }} of {{ totalPages() }} · Showing {{ pnlRecords().length }} of {{ totalCount() }} records</p>
+        </div>
+      }
+    }
+  </div>
+</ng-template>
