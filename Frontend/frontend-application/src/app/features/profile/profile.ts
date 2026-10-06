@@ -43,6 +43,13 @@ export class Profile {
   notificationChannel = signal<string>('EMAIL');
   isUpdatingPreference = signal<boolean>(false);
 
+  // Email update state
+  newEmail = signal<string>('');
+  emailUpdateStep = signal<'input' | 'otp'>('input');
+  otpCode = signal<string>('');
+  isUpdatingEmail = signal<boolean>(false);
+  isEditingEmail = signal<boolean>(false);
+
   // Computed values
   userRole = computed(() => this.roles()[0] || 'User');
   roleDisplay = computed(() => {
@@ -153,5 +160,70 @@ export class Profile {
           this.toastService.error('Failed to update notification preference');
         }
       });
+  }
+
+  /**
+   * Request email update
+   */
+  requestEmailUpdate(): void {
+    if (!this.newEmail() || !this.newEmail().includes('@')) {
+      this.toastService.error('Please enter a valid email address');
+      return;
+    }
+
+    this.isUpdatingEmail.set(true);
+    this.profileService.requestEmailUpdate({ newEmail: this.newEmail() })
+      .subscribe({
+        next: () => {
+          this.toastService.success(`OTP sent to ${this.newEmail()}`);
+          this.emailUpdateStep.set('otp');
+          this.isUpdatingEmail.set(false);
+        },
+        error: (err) => {
+          console.error('Failed to request email update:', err);
+          this.toastService.error(err.error?.message || 'Failed to request email update');
+          this.isUpdatingEmail.set(false);
+        }
+      });
+  }
+
+  /**
+   * Verify OTP and complete email update
+   */
+  verifyEmailUpdate(): void {
+    if (!this.otpCode() || this.otpCode().length < 6) {
+      this.toastService.error('Please enter a valid OTP');
+      return;
+    }
+
+    this.isUpdatingEmail.set(true);
+    this.profileService.verifyEmailUpdate({ 
+      newEmail: this.newEmail(),
+      otpCode: this.otpCode() 
+    }).subscribe({
+        next: () => {
+          this.toastService.success('Email updated successfully!');
+          this.email.set(this.newEmail());
+          
+          // Reset state
+          this.newEmail.set('');
+          this.otpCode.set('');
+          this.emailUpdateStep.set('input');
+          this.isUpdatingEmail.set(false);
+          this.isEditingEmail.set(false);
+        },
+        error: (err) => {
+          console.error('Failed to verify OTP:', err);
+          this.toastService.error(err.error?.message || 'Invalid or expired OTP');
+          this.isUpdatingEmail.set(false);
+        }
+      });
+  }
+
+  cancelEmailUpdate(): void {
+    this.newEmail.set('');
+    this.otpCode.set('');
+    this.emailUpdateStep.set('input');
+    this.isEditingEmail.set(false);
   }
 }
