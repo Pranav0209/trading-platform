@@ -4,6 +4,9 @@ import { Session } from '../../core/auth/session';
 import { AccountsService } from '../../../generated/trade/api/accounts.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ErrorCodeMapper } from '../../core/error/error-code-mapper';
+import { ProfileService } from '../../../generated/auth/api/profile.service';
+import { ToastService } from '../../core/notifications/toast.service';
+import { FormsModule } from '@angular/forms';
 
 /**
  * User Profile Page - displays personal information
@@ -13,7 +16,7 @@ import { ErrorCodeMapper } from '../../core/error/error-code-mapper';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
 })
@@ -22,6 +25,8 @@ export class Profile {
   private readonly accountsService = inject(AccountsService);
   private readonly errorCodeMapper = inject(ErrorCodeMapper);
   private readonly ngZone = inject(NgZone);
+  private readonly profileService = inject(ProfileService);
+  private readonly toastService = inject(ToastService);
 
   // Signals for JWT payload data
   username = signal<string>('');
@@ -33,6 +38,10 @@ export class Profile {
   accountNumber = signal<string>('');
   isLoading = signal<boolean>(true);
   error = signal<string>('');
+  
+  // Preferences data
+  notificationChannel = signal<string>('EMAIL');
+  isUpdatingPreference = signal<boolean>(false);
 
   // Computed values
   userRole = computed(() => this.roles()[0] || 'User');
@@ -49,6 +58,7 @@ export class Profile {
 
   constructor() {
     this.initializeFromToken();
+    this.loadPreferences();
   }
 
   /**
@@ -105,5 +115,43 @@ export class Profile {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  /**
+   * Fetch user preferences
+   */
+  private loadPreferences(): void {
+    this.profileService.getPreferences()
+      .subscribe({
+        next: (prefs) => {
+          this.notificationChannel.set(prefs.notificationChannel);
+        },
+        error: (err) => {
+          console.error('Failed to load preferences:', err);
+        }
+      });
+  }
+
+  /**
+   * Update notification channel preference
+   */
+  updatePreference(channel: string): void {
+    if (this.notificationChannel() === channel) return;
+    
+    this.isUpdatingPreference.set(true);
+    // TypeScript might expect an object matching UpdatePreferenceRequest or similar
+    this.profileService.updatePreferences({ notificationChannel: channel as any })
+      .subscribe({
+        next: (prefs) => {
+          this.notificationChannel.set(prefs.notificationChannel);
+          this.isUpdatingPreference.set(false);
+          this.toastService.success(`Notification preference updated to ${channel === 'EMAIL' ? 'Email' : 'Push'}`);
+        },
+        error: (err) => {
+          console.error('Failed to update preference:', err);
+          this.isUpdatingPreference.set(false);
+          this.toastService.error('Failed to update notification preference');
+        }
+      });
   }
 }

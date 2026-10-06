@@ -116,7 +116,7 @@ public class NotificationListener {
         Map<String, String> templateParams = new HashMap<>();
         templateParams.put("to_email", toEmail);
         templateParams.put("message", msg);
-        templateParams.put("otp_code", ""); // Reuse existing OTP template's message param
+        templateParams.put("subject", "Trading Alert: Order " + status);
         body.put("template_params", templateParams);
 
         HttpHeaders headers = new HttpHeaders();

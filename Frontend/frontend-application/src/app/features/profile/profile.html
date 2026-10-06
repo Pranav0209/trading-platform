@@ -47,6 +47,34 @@
           <span class="detail-value">{{ getCurrentDate() }}</span>
         </div>
       </div>
+
+      <!-- Preferences Section -->
+      <div class="profile-header" style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+        <div class="profile-title">
+          <h2>Preferences</h2>
+        </div>
+      </div>
+      
+      <div class="profile-details">
+        <!-- Notification Channel Row -->
+        <div class="detail-row" style="align-items: center;">
+          <div class="detail-label">
+            <span class="material-icons detail-icon">notifications</span>
+            <span>Trade Notifications</span>
+          </div>
+          <div class="preference-control">
+            <select 
+              [ngModel]="notificationChannel()" 
+              (ngModelChange)="updatePreference($event)"
+              [disabled]="isUpdatingPreference()"
+              class="preference-select">
+              <option value="EMAIL">Email</option>
+              <option value="PUSH">Push Notification</option>
+            </select>
+            <span *ngIf="isUpdatingPreference()" class="loading-spinner material-icons" style="font-size: 16px; margin-left: 8px; animation: spin 1s linear infinite;">sync</span>
+          </div>
+        </div>
+      </div>
     </section>
   </div>
 </div>
