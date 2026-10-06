@@ -25,5 +25,6 @@ import { EmailJSService } from '../core/emailjs.service';
   ],
   providers: [AuthService, LoginThrottleService, EmailJSService],
   controllers: [AuthController],
+  exports: [JwtModule],
 })
 export class AuthModule {}

@@ -15,6 +15,9 @@ public class User {
 
     private String email;
 
+    @jakarta.persistence.Column(name = "notification_channel")
+    private String notificationChannel;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -23,4 +26,7 @@ public class User {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getNotificationChannel() { return notificationChannel; }
+    public void setNotificationChannel(String notificationChannel) { this.notificationChannel = notificationChannel; }
 }

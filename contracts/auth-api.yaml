@@ -292,6 +292,41 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorised'
 
+  /preferences:
+    get:
+      tags: [Profile]
+      operationId: getPreferences
+      summary: Get current user preferences
+      description: Returns the user's notification channel preference based on the verified JWT token.
+      responses:
+        '200':
+          description: User preferences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferenceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+    put:
+      tags: [Profile]
+      operationId: updatePreferences
+      summary: Update current user preferences
+      description: Updates the user's notification channel preference. Scoped to the verified JWT token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferenceRequest'
+      responses:
+        '200':
+          description: Updated user preferences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferenceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
 components:
 
   securitySchemes:
@@ -503,6 +538,24 @@ components:
           type: string
           minLength: 6
           maxLength: 6
+
+    UpdatePreferenceRequest:
+      type: object
+      additionalProperties: false
+      required: [notificationChannel]
+      properties:
+        notificationChannel:
+          type: string
+          enum: [EMAIL, PUSH]
+
+    PreferenceResponse:
+      type: object
+      additionalProperties: false
+      required: [notificationChannel]
+      properties:
+        notificationChannel:
+          type: string
+          enum: [EMAIL, PUSH]
 
 security:
   - bearerAuth: []
