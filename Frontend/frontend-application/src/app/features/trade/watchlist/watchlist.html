@@ -12,7 +12,7 @@
   </div>
 
   <!-- Tabs -->
-  <div class="watchlist-tabs" *ngIf="watchlists().length > 0">
+  <div class="watchlist-tabs">
     <button *ngFor="let list of watchlists()" 
             class="watchlist-tab" 
             [class.active]="activeWatchlist()?.id === list.id"
@@ -99,6 +99,16 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Global Empty State when 0 watchlists exist -->
+  <div class="watchlist-table" *ngIf="!activeWatchlist() && watchlists().length === 0">
+    <div class="empty-state">
+      <span class="material-icons empty-icon">view_list</span>
+      <p>No watchlists found</p>
+      <span class="empty-subtitle">Create your first watchlist to start tracking instruments.</span>
+      <button class="btn-primary mt-3" (click)="isCreatingList = true; focusCreateInput()">+ Create Watchlist</button>
     </div>
   </div>
 </div>
