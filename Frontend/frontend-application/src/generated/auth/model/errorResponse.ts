@@ -15,17 +15,18 @@
  */
 export interface ErrorResponse { 
     /**
-     * | Code | HTTP | Meaning | |---|---|---| | `AUTH-401` | 401 | Unauthorised or invalid token | | `AUTH-409` | 409 | Username already taken | | `VAL-422` | 422 | Invalid input |  `AUTH-409` extends the platform error catalogue and is scoped to this service. The catalogue in `trade-api.yaml` has no registration-conflict code because registration is not a trading operation. 
+     * | Code | HTTP | Meaning | |---|---|---| | `AUTH-401` | 401 | Unauthorised or invalid token | | `AUTH-409` | 409 | Username already taken | | `AUTH-429` | 429 | Too many login attempts (rate limited) | | `VAL-422` | 422 | Invalid input |  `AUTH-409` and `AUTH-429` extend the platform error catalogue and are scoped to this service. The catalogue in `trade-api.yaml` has no registration-conflict code because registration is not a trading operation. `AUTH-429` is returned when login throttle is triggered (5 failed attempts per 15 minutes per username+IP). 
      */
     errorCode: ErrorResponseErrorCodeEnum;
     /**
-     * Deliberately vague on this service. `Unauthorised` and `Registration failed` are the only two messages that should appear on a failure path, because a more helpful message tells an attacker which half of the credential pair was wrong. 
+     * Deliberately vague on this service for login failures. Returns different codes for throttle (AUTH-429) vs auth failure (AUTH-401) so frontend can show appropriate messaging. 
      */
     message: string;
 }
 export enum ErrorResponseErrorCodeEnum {
     Auth401 = 'AUTH-401',
     Auth409 = 'AUTH-409',
+    Auth429 = 'AUTH-429',
     Val422 = 'VAL-422'
 };
 

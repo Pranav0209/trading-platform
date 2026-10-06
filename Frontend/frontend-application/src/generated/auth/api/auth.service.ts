@@ -103,7 +103,7 @@ export class AuthService {
 
     /**
      * Log in and receive tokens
-     * Verifies the credentials and issues an access token and a refresh token. Every failure, whatever its cause, returns the same &#x60;AUTH-401&#x60; body. 
+     * Verifies the credentials and issues an access token and a refresh token. Returns &#x60;AUTH-401&#x60; for invalid credentials/inactive account, or &#x60;AUTH-429&#x60; if throttled (too many failed attempts). 
      * @param loginRequest 
      * @param observe set whether or not to return the data Observable as the body, response or events. defaults to returning the body.
      * @param reportProgress flag to report request and response progress.

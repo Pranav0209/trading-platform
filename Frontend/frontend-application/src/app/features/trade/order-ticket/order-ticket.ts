@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OrdersService } from '../../../../generated/trade/api/orders.service';
 import { OrderSide } from '../../../../generated/trade/model/orderSide';
@@ -29,6 +29,7 @@ export class OrderTicket implements OnInit {
   private readonly errorCodeMapper = inject(ErrorCodeMapper);
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly orderSides = [OrderSide.Buy, OrderSide.Sell];
   readonly orderTypes = ['LIMIT', 'MARKET'];
@@ -48,6 +49,12 @@ export class OrderTicket implements OnInit {
 
   ngOnInit(): void {
     this.accountId.set(this.parseAccountId(this.session.token()));
+    
+    // Read symbol from query parameters
+    const symbolParam = this.route.snapshot.queryParamMap.get('symbol');
+    if (symbolParam) {
+      this.form.controls.symbol.setValue(symbolParam);
+    }
     
     // Dynamically require or hide the price field based on order type
     this.form.controls.orderType.valueChanges.subscribe(type => {

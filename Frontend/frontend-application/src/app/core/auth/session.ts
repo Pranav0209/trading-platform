@@ -1,6 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
@@ -64,7 +65,7 @@ export class Session {
 
   async performLogout() {
     try {
-      await this.httpClient.post('http://localhost:3000/auth/logout', {}, { withCredentials: true }).toPromise();
+      await this.httpClient.post(`${environment.authApiUrl}/auth/logout`, {}, { withCredentials: true }).toPromise();
     } catch (e) {
       console.error('Backend logout failed', e);
     }

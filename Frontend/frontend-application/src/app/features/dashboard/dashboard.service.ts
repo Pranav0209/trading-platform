@@ -1,9 +1,10 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, inject, signal, computed } from '@angular/core';
 import { PortfolioSummary, Holding } from './models';
 import { AccountsService } from '../../../generated/trade/api/accounts.service';
 import { ProfileService } from '../../../generated/auth/api/profile.service';
+import { PositionResponse } from '../../../generated/trade/model/positionResponse';
 import { Session } from '../../core/auth/session';
-
+import { MarketDataService } from '../../core/services/market-data.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,19 +13,53 @@ export class DashboardService {
   private readonly accountsService = inject(AccountsService);
   private readonly profileService = inject(ProfileService);
   private readonly session = inject(Session);
+  private readonly marketData = inject(MarketDataService);
   
-  // Signals
-  portfolioSummary = signal<PortfolioSummary>({
-    portfolioValue: 0,
-    todayPnL: 0,
-    todayPnLPercent: 0,
-    availableBalance: 0
-  });
-  holdings = signal<Holding[]>([]);
+  // Base State
+  private basePositions = signal<PositionResponse[]>([]);
+  private baseBalance = signal<number>(0);
+  
   userName = signal<string>('User');
   userEmail = signal<string | null>(null);
   accountStatus = signal<string | null>(null);
   accountCurrency = signal<string>('USD');
+
+  // Computed Real-Time State
+  holdings = computed(() => {
+    const quotes = this.marketData.quotes();
+    return this.basePositions().map(p => {
+      const quote = quotes[p.symbol];
+      const ltp = quote ? quote.price : p.averageCost;
+      const pnl = (ltp - p.averageCost) * p.quantity;
+      return {
+        symbol: p.symbol,
+        quantity: p.quantity,
+        averagePrice: p.averageCost,
+        ltp: ltp,
+        pnl: pnl
+      };
+    });
+  });
+
+  portfolioSummary = computed(() => {
+    let totalValue = this.baseBalance();
+    let totalPnl = 0;
+    
+    this.holdings().forEach(h => {
+       totalValue += h.ltp * h.quantity;
+       totalPnl += h.pnl;
+    });
+
+    const previousValue = totalValue - totalPnl;
+    const pnlPercent = previousValue > 0 ? (totalPnl / previousValue) * 100 : 0;
+
+    return {
+      portfolioValue: totalValue,
+      todayPnL: totalPnl,
+      todayPnLPercent: Number(pnlPercent.toFixed(2)),
+      availableBalance: this.baseBalance()
+    };
+  });
   
 
   constructor() {
@@ -32,13 +67,8 @@ export class DashboardService {
   }
 
   clearData() {
-    this.portfolioSummary.set({
-      portfolioValue: 0,
-      todayPnL: 0,
-      todayPnLPercent: 0,
-      availableBalance: 0
-    });
-    this.holdings.set([]);
+    this.baseBalance.set(0);
+    this.basePositions.set([]);
     this.userName.set('User');
     this.userEmail.set(null);
     this.accountStatus.set(null);
@@ -99,12 +129,7 @@ export class DashboardService {
     this.accountsService.getBalance(accountId).subscribe({
       next: (res) => {
         this.accountCurrency.set(res.currency || 'USD');
-        this.portfolioSummary.set({
-          portfolioValue: res.cashBalance,
-          todayPnL: 0,
-          todayPnLPercent: 0,
-          availableBalance: res.cashBalance
-        });
+        this.baseBalance.set(res.cashBalance);
       },
       error: (err) => {
         console.error('Failed to load balance', err);
@@ -114,14 +139,7 @@ export class DashboardService {
     // Fetch Positions for Holdings view
     this.accountsService.getPositions(accountId).subscribe({
       next: (res) => {
-        const mappedPositions = res.map(p => ({
-          symbol: p.symbol,
-          quantity: p.quantity,
-          averagePrice: p.averageCost,
-          ltp: p.averageCost,
-          pnl: 0
-        }));
-        this.holdings.set(mappedPositions);
+        this.basePositions.set(res);
       },
       error: (err) => {
         console.error('Failed to load holdings', err);
@@ -150,13 +168,8 @@ export class DashboardService {
   }
 
   private resetPortfolioData() {
-    this.portfolioSummary.set({
-      portfolioValue: 0,
-      todayPnL: 0,
-      todayPnLPercent: 0,
-      availableBalance: 0
-    });
-    this.holdings.set([]);
+    this.baseBalance.set(0);
+    this.basePositions.set([]);
     this.accountCurrency.set('USD');
   }
 }

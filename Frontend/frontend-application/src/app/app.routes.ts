@@ -16,6 +16,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard').then(m => m.Dashboard), canActivate: [customerGuard] },
+      { path: 'watchlist', loadComponent: () => import('./features/trade/watchlist/watchlist').then(m => m.WatchlistComponent), canActivate: [customerGuard] },
       { path: 'trade', component: OrderTicket, canActivate: [customerGuard] },
       { path: 'admin', loadComponent: () => import('./features/admin/admin-dashboard').then(m => m.AdminDashboard), canActivate: [adminGuard] },
       { path: 'orders', loadComponent: () => import('./features/trade/order-blotter/order-blotter').then(m => m.OrderBlotter), canActivate: [customerGuard] },

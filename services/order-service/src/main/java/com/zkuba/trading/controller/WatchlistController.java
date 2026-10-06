@@ -15,12 +15,22 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.http.MediaType;
+import com.zkuba.trading.service.MarketDataStreamService;
 @RestController
 @RequestMapping("/api/v1/watchlists")
 public class WatchlistController {
     @Autowired
     private WatchlistService watchlistService;
+
+    @Autowired
+    private MarketDataStreamService marketDataStreamService;
+
+    @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamPrices() {
+        return marketDataStreamService.subscribe();
+    }
 
     @GetMapping
     public List<WatchlistResponse> all(@AuthenticationPrincipal AuthenticatedUser user) {
