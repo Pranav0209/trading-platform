@@ -1,0 +1,75 @@
+<div class="login-page">
+  <!-- Left Side: Branding -->
+  <div class="login-brand">
+    <div class="brand-content">
+      <div class="logo">
+        <div class="logo-icon">Z</div>
+        <div class="logo-text">Zkuba Trading</div>
+      </div>
+      <h1>Trade with <span>Confidence</span></h1>
+      <p>
+        Access global markets, advanced analytics, and lightning-fast execution in one secure
+        platform.
+      </p>
+    </div>
+  </div>
+
+  <!-- Right Side: Login -->
+  <div class="login-section">
+    <div class="login-card">
+      <h2>Sign In</h2>
+      <p class="login-subtitle">Welcome back! Please enter your details.</p>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" data-testid="sign-in-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            id="username"
+            type="text"
+            formControlName="username"
+            data-testid="username-input"
+            placeholder="Enter your username"
+            autocomplete="username"
+            [disabled]="isLoading()"
+          />
+          <app-form-error
+            [control]="form.get('username')"
+            [message]="usernameValidationMessage"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            data-testid="password-input"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            [disabled]="isLoading()"
+          />
+          <app-form-error
+            [control]="form.get('password')"
+            [message]="passwordValidationMessage"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="login-button"
+          [disabled]="form.invalid || isLoading()"
+          data-testid="submit-button"
+        >
+          @if (isLoading()) {
+            Signing in...
+          } @else {
+            Sign In
+          }
+        </button>
+      </form>
+
+      <div class="register-text">Don't have an account? <a routerLink="/register">Sign up</a></div>
+    </div>
+  </div>
+</div>

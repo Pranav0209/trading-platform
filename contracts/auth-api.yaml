@@ -123,8 +123,9 @@ paths:
       security: []
       summary: Log in and receive tokens
       description: |
-        Verifies the credentials and issues an access token and a refresh token. Every failure,
-        whatever its cause, returns the same `AUTH-401` body.
+        Verifies the credentials and issues an access token and a refresh token.
+        Returns `AUTH-401` for invalid credentials/inactive account, or `AUTH-429` if throttled
+        (too many failed attempts).
       requestBody:
         required: true
         content:
@@ -145,6 +146,12 @@ paths:
                 $ref: '#/components/schemas/TokenResponse'
         '401':
           $ref: '#/components/responses/Unauthorised'
+        '429':
+          description: Too many login attempts. Account temporarily locked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
           $ref: '#/components/responses/InvalidInput'
 
@@ -238,41 +245,28 @@ components:
     RegisterRequest:
       type: object
       additionalProperties: false
-      required: [username, password, accountId]
+      required: [username, email, password]
       properties:
         username:
           type: string
           minLength: 3
-          maxLength: 64
+          maxLength: 50
           pattern: '^[a-zA-Z0-9._-]+$'
           example: priya.menon
+        email:
+          type: string
+          format: email
+          example: priya.menon@example.com
         password:
           type: string
-          minLength: 12
+          minLength: 8
           maxLength: 128
-          description: |
-            Minimum twelve characters. Length beats character-class rules, so do not impose a
-            symbol requirement that pushes users towards a shorter password.
+          pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)\S+$'
           writeOnly: true
-        accountId:
-          type: integer
-          format: int64
-          minimum: 1
-          description: The numeric trading account key, `ACCOUNTS.id`, that this user will trade.
-          example: 1
-        roles:
-          type: array
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/Role'
-          description: |
-            Optional. Defaults to `["CUSTOMER"]`. Ignore this field on a public registration route
-            unless the caller already holds an `ADMIN` token. Accepting a self-declared role is a
-            privilege-escalation bug, and the Sprint 8 security review looks for it.
       example:
         username: priya.menon
+        email: priya.menon@example.com
         password: 'correct horse battery staple'
-        accountId: 1
 
     LoginRequest:
       type: object
@@ -281,7 +275,9 @@ components:
       properties:
         username:
           type: string
-          maxLength: 64
+          minLength: 3
+          maxLength: 50
+          pattern: '^[a-zA-Z0-9._-]+$'
         password:
           type: string
           maxLength: 128
@@ -320,7 +316,7 @@ components:
     UserResponse:
       type: object
       additionalProperties: false
-      required: [id, username, accountId, roles]
+      required: [id, username, roles]
       properties:
         id:
           type: string
@@ -330,9 +326,14 @@ components:
         username:
           type: string
           example: priya.menon
+        email:
+          type: string
+          format: email
+          example: priya.menon@example.com
         accountId:
           type: integer
           format: int64
+          nullable: true
           description: The numeric trading account key, `ACCOUNTS.id`.
           example: 1
         roles:
@@ -359,24 +360,25 @@ components:
       properties:
         errorCode:
           type: string
-          enum: [AUTH-401, AUTH-409, VAL-422]
+          enum: [AUTH-401, AUTH-409, AUTH-429, VAL-422]
           description: |
             | Code | HTTP | Meaning |
             |---|---|---|
             | `AUTH-401` | 401 | Unauthorised or invalid token |
             | `AUTH-409` | 409 | Username already taken |
+            | `AUTH-429` | 429 | Too many login attempts (rate limited) |
             | `VAL-422` | 422 | Invalid input |
 
-            `AUTH-409` extends the platform error catalogue and is scoped to this service. The
-            catalogue in `trade-api.yaml` has no registration-conflict code because registration is
-            not a trading operation.
+            `AUTH-409` and `AUTH-429` extend the platform error catalogue and are scoped to this service.
+            The catalogue in `trade-api.yaml` has no registration-conflict code because registration is
+            not a trading operation. `AUTH-429` is returned when login throttle is triggered (5 failed
+            attempts per 15 minutes per username+IP).
           example: AUTH-401
         message:
           type: string
           description: |
-            Deliberately vague on this service. `Unauthorised` and `Registration failed` are the
-            only two messages that should appear on a failure path, because a more helpful message
-            tells an attacker which half of the credential pair was wrong.
+            Deliberately vague on this service for login failures. Returns different codes for throttle
+            (AUTH-429) vs auth failure (AUTH-401) so frontend can show appropriate messaging.
           example: Unauthorised
 
 security:

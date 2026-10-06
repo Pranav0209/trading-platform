@@ -1,0 +1,648 @@
+/* ==========================================================================
+   ZKUBA TRADING THEME - GLOBAL TEMPLATE
+   ========================================================================== */
+
+:root {
+  /* Zkuba brand palette */
+  --primary-green-light: #006747;
+  --primary-green-dark: #005339;
+  --primary-green-dark-mode: #00D084;
+  --accent-beige: #F5F5DC;
+
+  /* Light neutrals */
+  --background-light: #FFFFFF;
+  --surface-light: #FDFDF8;
+  --surface-alt-light: #F5F5DC;
+  --border-light: #D8D8CF;
+  --text-primary-light: #1A1A1A;
+  --text-secondary-light: #43433D;
+  --text-tertiary-light: #69695F;
+
+  /* Dark neutrals */
+  --background-dark: #121212;
+  --surface-dark: #1A1A1A;
+  --surface-alt-dark: #232323;
+  --border-dark: #343434;
+  --text-primary-dark: #F5F5DC;
+  --text-secondary-dark: #CFCEC1;
+  --text-tertiary-dark: #A3A295;
+
+  /* Semantic system */
+  --success-light: #1F8E58;
+  --warning-light: #B7791F;
+  --error-light: #C54131;
+  --info-light: #0D63A5;
+
+  --success-dark: #56D18F;
+  --warning-dark: #FFBF62;
+  --error-dark: #FF7D6D;
+  --info-dark: #6FB7FF;
+
+  /* Auth accent helpers */
+  --auth-divider-light: rgba(0, 103, 71, 0.2);
+  --auth-divider-dark: rgba(0, 208, 132, 0.24);
+  --auth-focus-ring-light: rgba(0, 103, 71, 0.18);
+  --auth-focus-ring-dark: rgba(0, 208, 132, 0.26);
+
+  /* Layout and spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 12px;
+  --spacing-lg: 16px;
+  --spacing-xl: 24px;
+  --spacing-2xl: 32px;
+
+  --border-width: 1px;
+  --border-radius: 6px;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-2: 0 4px 16px rgba(0, 0, 0, 0.10);
+
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  --header-height: 64px;
+  --sidebar-width: 280px;
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark-theme {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  background-color: var(--background-light);
+  color: var(--text-primary-light);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html.dark-theme body {
+  background-color: var(--background-dark);
+  color: var(--text-primary-dark);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Accessibility */
+:where(a, button, input, select, textarea, [tabindex], [role='button']):focus-visible {
+  outline: 2px solid var(--primary-green-light);
+  outline-offset: 2px;
+}
+
+html.dark-theme :where(a, button, input, select, textarea, [tabindex], [role='button']):focus-visible {
+  outline-color: var(--primary-green-dark-mode);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
+  line-height: 1.25;
+  font-weight: 600;
+}
+
+p {
+  margin: 0;
+}
+
+.financial-value,
+.symbol,
+.price,
+.executed-price,
+.order-id,
+.price-positive,
+.price-negative {
+  font-family: var(--font-mono);
+}
+
+/* Buttons */
+button,
+.mat-mdc-button,
+.mat-mdc-unelevated-button,
+.mat-mdc-raised-button,
+.mat-mdc-icon-button {
+  border: none;
+  border-radius: var(--border-radius);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+/* Inputs */
+input,
+textarea,
+select {
+  border: var(--border-width) solid;
+  border-radius: var(--border-radius);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 10px 12px;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+html:not(.dark-theme) input,
+html:not(.dark-theme) textarea,
+html:not(.dark-theme) select {
+  background: var(--background-light);
+  border-color: var(--border-light);
+  color: var(--text-primary-light);
+}
+
+html:not(.dark-theme) input::placeholder,
+html:not(.dark-theme) textarea::placeholder {
+  color: var(--text-tertiary-light);
+}
+
+html:not(.dark-theme) input:focus,
+html:not(.dark-theme) textarea:focus,
+html:not(.dark-theme) select:focus {
+  border-color: var(--primary-green-light);
+  background: #F9FBF8;
+}
+
+html.dark-theme input,
+html.dark-theme textarea,
+html.dark-theme select {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+  color: var(--text-primary-dark);
+}
+
+html.dark-theme input::placeholder,
+html.dark-theme textarea::placeholder {
+  color: var(--text-tertiary-dark);
+}
+
+html.dark-theme input:focus,
+html.dark-theme textarea:focus,
+html.dark-theme select:focus {
+  border-color: var(--primary-green-dark-mode);
+  background: #1E1E1E;
+}
+
+/* Shared card/table primitives */
+.card,
+.mat-mdc-card,
+.data-card {
+  border: var(--border-width) solid;
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-1);
+}
+
+html:not(.dark-theme) .card,
+html:not(.dark-theme) .mat-mdc-card,
+html:not(.dark-theme) .data-card {
+  background: var(--surface-light);
+  border-color: var(--border-light);
+}
+
+html.dark-theme .card,
+html.dark-theme .mat-mdc-card,
+html.dark-theme .data-card {
+  background: var(--surface-dark);
+  border-color: var(--border-dark);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-md);
+  border-bottom: var(--border-width) solid;
+}
+
+html:not(.dark-theme) .card-header {
+  border-bottom-color: var(--border-light);
+}
+
+html.dark-theme .card-header {
+  border-bottom-color: var(--border-dark);
+}
+
+.card-title {
+  font-size: 14px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+html:not(.dark-theme) .card-title {
+  color: var(--primary-green-light);
+}
+
+html.dark-theme .card-title {
+  color: var(--primary-green-dark-mode);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 10px 8px;
+  text-align: left;
+}
+
+th {
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+html:not(.dark-theme) th {
+  color: var(--text-secondary-light);
+  border-bottom: 1px solid var(--border-light);
+}
+
+html.dark-theme th {
+  color: var(--text-secondary-dark);
+  border-bottom: 1px solid var(--border-dark);
+}
+
+html:not(.dark-theme) td {
+  color: var(--text-primary-light);
+  border-bottom: 1px solid #ECECE6;
+}
+
+html.dark-theme td {
+  color: var(--text-primary-dark);
+  border-bottom: 1px solid #2B2B2B;
+}
+
+.table-container {
+  overflow: auto;
+  max-width: 100%;
+}
+
+tbody tr {
+  transition: background-color 140ms ease;
+}
+
+html:not(.dark-theme) tbody tr:hover {
+  background: rgba(0, 103, 71, 0.05);
+}
+
+html.dark-theme tbody tr:hover {
+  background: rgba(0, 208, 132, 0.10);
+}
+
+/* Standalone pages */
+.standalone-wrapper {
+  min-height: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+}
+
+.page-header {
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-md);
+  border-bottom: var(--border-width) solid;
+}
+
+html:not(.dark-theme) .page-header {
+  border-bottom-color: var(--border-light);
+}
+
+html.dark-theme .page-header {
+  border-bottom-color: var(--border-dark);
+}
+
+.page-header h1 {
+  margin-bottom: var(--spacing-xs);
+  font-size: 28px;
+}
+
+html:not(.dark-theme) .page-header h1 {
+  color: var(--primary-green-light);
+}
+
+html.dark-theme .page-header h1 {
+  color: var(--primary-green-dark-mode);
+}
+
+.subtitle {
+  font-size: 14px;
+}
+
+html:not(.dark-theme) .subtitle {
+  color: var(--text-secondary-light);
+}
+
+html.dark-theme .subtitle {
+  color: var(--text-secondary-dark);
+}
+
+.back-link {
+  display: inline-flex;
+  margin-bottom: var(--spacing-sm);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+html:not(.dark-theme) .back-link {
+  color: var(--primary-green-light);
+}
+
+html.dark-theme .back-link {
+  color: var(--primary-green-dark-mode);
+}
+
+.content-container {
+  flex: 1;
+  min-height: 0;
+}
+
+/* Semantic text and badges */
+.text-success,
+.positive {
+  color: var(--success-light);
+}
+
+.text-warning {
+  color: var(--warning-light);
+}
+
+.text-error,
+.negative {
+  color: var(--error-light);
+}
+
+.text-info {
+  color: var(--info-light);
+}
+
+html.dark-theme .text-success,
+html.dark-theme .positive {
+  color: var(--success-dark);
+}
+
+html.dark-theme .text-warning {
+  color: var(--warning-dark);
+}
+
+html.dark-theme .text-error,
+html.dark-theme .negative {
+  color: var(--error-dark);
+}
+
+html.dark-theme .text-info {
+  color: var(--info-dark);
+}
+
+.muted {
+  color: var(--text-tertiary-light);
+}
+
+html.dark-theme .muted {
+  color: var(--text-tertiary-dark);
+}
+
+/* Utility */
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .standalone-wrapper {
+    padding: var(--spacing-lg);
+  }
+}
+
+@media (max-width: 600px) {
+  .standalone-wrapper {
+    padding: var(--spacing-md);
+  }
+}
+
+/* ==========================================================================
+   TOAST NOTIFICATIONS - MATERIAL SNACKBAR
+   ========================================================================== */
+
+/* Light Theme Toast Styling - zkuba Trading Theme */
+html:not(.dark-theme) .toast-success {
+  --snack-bar-background: #006747 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html:not(.dark-theme) .toast-success .mdc-snackbar__surface {
+  background-color: #006747 !important;
+}
+
+html:not(.dark-theme) .toast-success .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+html:not(.dark-theme) .toast-error {
+  --snack-bar-background: #c54531 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html:not(.dark-theme) .toast-error .mdc-snackbar__surface {
+  background-color: #c54531 !important;
+}
+
+html:not(.dark-theme) .toast-error .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+html:not(.dark-theme) .toast-warning {
+  --snack-bar-background: #ff6b35 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html:not(.dark-theme) .toast-warning .mdc-snackbar__surface {
+  background-color: #ff6b35 !important;
+}
+
+html:not(.dark-theme) .toast-warning .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+html:not(.dark-theme) .toast-info {
+  --snack-bar-background: #006747 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html:not(.dark-theme) .toast-info .mdc-snackbar__surface {
+  background-color: #006747 !important;
+}
+
+html:not(.dark-theme) .toast-info .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+/* Dark Theme Toast Styling - zkuba Trading Theme */
+html.dark-theme .toast-success {
+  --snack-bar-background: #00D084 !important;
+  --snack-bar-color: #121212 !important;
+}
+
+html.dark-theme .toast-success .mdc-snackbar__surface {
+  background-color: #00D084 !important;
+}
+
+html.dark-theme .toast-success .mat-mdc-snack-bar-label {
+  color: #121212 !important;
+  font-weight: 500;
+}
+
+html.dark-theme .toast-error {
+  --snack-bar-background: #ff6b6b !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html.dark-theme .toast-error .mdc-snackbar__surface {
+  background-color: #ff6b6b !important;
+}
+
+html.dark-theme .toast-error .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+html.dark-theme .toast-warning {
+  --snack-bar-background: #ff8c00 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html.dark-theme .toast-warning .mdc-snackbar__surface {
+  background-color: #ff8c00 !important;
+}
+
+html.dark-theme .toast-warning .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+html.dark-theme .toast-info {
+  --snack-bar-background: #00D084 !important;
+  --snack-bar-color: #ffffff !important;
+}
+
+html.dark-theme .toast-info .mdc-snackbar__surface {
+  background-color: #00D084 !important;
+}
+
+html.dark-theme .toast-info .mat-mdc-snack-bar-label {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+/* Toast Close Button Styling */
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button {
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  background-color: transparent !important;
+  pointer-events: auto !important;
+}
+
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button:hover {
+  background-color: transparent !important;
+}
+
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button:hover::before,
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button:hover::after {
+  background-color: transparent !important;
+  opacity: 0 !important;
+}
+
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button::before,
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button::after {
+  background-color: transparent !important;
+  opacity: 0 !important;
+}
+
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button:focus,
+.mat-mdc-snack-bar-container .mdc-snackbar__close-button:active {
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}
+
+.mdc-button__ripple {
+  display: none !important;
+}
+
+/* Material Snackbar Close Button */
+.mdc-snackbar__action {
+  color: inherit;
+  opacity: 0.9;
+}
+
+.mdc-snackbar__action:hover {
+  opacity: 0.9;
+}
+
+.mdc-snackbar {
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.20);
+}
+
+html.dark-theme .mdc-snackbar {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.40);
+}
+
+.mdc-snackbar__surface {
+  border-radius: 8px;
+  padding: 16px 20px !important;
+  min-height: 48px;
+}
+
+.mat-mdc-snack-bar-label {
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: 0.3px;
+  word-break: break-word;
+}
+

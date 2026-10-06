@@ -1,0 +1,92 @@
+<div class="login-page">
+  <!-- Left Side: Branding -->
+  <div class="login-brand">
+    <div class="brand-content">
+      <div class="logo">
+        <div class="logo-icon">Z</div>
+        <div class="logo-text">Zkuba Trading</div>
+      </div>
+      <h1>Join the <span>Platform</span></h1>
+      <p>
+        Create an account to access global markets, advanced analytics, and lightning-fast
+        execution.
+      </p>
+    </div>
+  </div>
+
+  <!-- Right Side: Login -->
+  <div class="login-section">
+    <div class="login-card">
+      <h2>Sign Up</h2>
+      <p class="login-subtitle">Create a new trading account.</p>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            id="username"
+            type="text"
+            formControlName="username"
+            data-testid="username-input"
+            placeholder="Choose a username"
+            autocomplete="username"
+            [disabled]="isSubmitting()"
+          />
+          <app-form-error
+            [control]="form.get('username')"
+            [message]="usernameValidationMessage"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            data-testid="email-input"
+            placeholder="Enter your email address"
+            autocomplete="email"
+            [disabled]="isSubmitting()"
+          />
+          <app-form-error
+            [control]="form.get('email')"
+            message="Please enter a valid email address (max 255 characters)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            data-testid="password-input"
+            placeholder="Create a password (min 8 chars)"
+            autocomplete="new-password"
+            [disabled]="isSubmitting()"
+          />
+          <app-form-error
+            [control]="form.get('password')"
+            [message]="passwordValidationMessage"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="login-button"
+          [disabled]="form.invalid || isSubmitting()"
+          data-testid="submit-button"
+        >
+          @if (isSubmitting()) {
+            Creating Account...
+          } @else {
+            Create Account
+          }
+        </button>
+      </form>
+
+      <div class="register-text">Already have an account? <a routerLink="/sign-in">Sign in</a></div>
+    </div>
+  </div>
+</div>

@@ -1,72 +1,125 @@
-# Zkuba Trading Platform
+# Kafka Event-Driven Flow: Complete Demonstration Guide
 
-A working trading platform built one component per sprint. Customers hold accounts, place buy and sell orders against real instruments, and see their positions and cash move.
+This guide walks you through setting up and demonstrating the full asynchronous trading flow across the **Order Service**, **Event Backbone Executor**, and the **Frontend Application**, entirely from scratch.
 
-## Project Structure
+By following this guide, you will observe the complete lifecycle of a trade event:
+`HTTP Request -> Order Service -> Kafka (orders) -> Executor -> Kafka (trade-events)`
 
-This is a multi-sprint capstone project with the following sprint folders:
+## Prerequisites
 
-| Sprint | Component              | Folder                     |
-| ------ | ---------------------- | -------------------------- |
-| 3      | Trade database         | `sprint-03-trade-database` |
-| 4      | Analytics ETL pipeline | `sprint-04-analytics-etl`  |
-| 5      | Domain engine          | `sprint-05-domain-engine`  |
-| 6      | Trade API              | `sprint-06-trade-api`      |
+1. **Clean Environment**: Make sure no other instances of the applications are currently running (kill them in your terminal or IDE).
+2. **Ports**: Ensure ports `8081` (Order Service), `8082` (Executor), `5432` (PostgreSQL), `9092` (Kafka), `3000` (Auth Service), and `4200` (Frontend) are free.
 
-Each sprint includes a README with component details, deliverables, and acceptance criteria. Work for that sprint goes in the corresponding folder.
+---
 
-## Repository Organization
+## Step 1: Wipe and Recreate Infrastructure
 
+We have updated the Docker Compose file to use the default `trading` database with the `postgres` user, so you no longer need to pass environment variables when starting the Java apps!
+
+Open **Terminal 1** and run:
+
+```bash
+cd Infrastructure/kafka/scripts
+docker-compose down -v
+docker-compose up -d
 ```
-contracts/    Binding interface definitions. See contracts/README.md.
-infra/        Infrastructure requirements. See infra/README.md.
-.env.example  Environment template. Copy to .env before running.
+
+_(Wait 10-15 seconds for PostgreSQL and Kafka to fully initialize)._
+
+---
+
+## Step 2: Create Kafka Topics
+
+Kafka does not automatically create topics in this project. You must run the provisioning script.
+
+Still in **Terminal 1**, run:
+
+```bash
+./create-topics.sh
 ```
 
-Each sprint folder contains its own README with component reasoning, deliverables, and acceptance criteria.
+You should see `orders`, `trade-events`, `market-data`, and their `DLT` counterparts created successfully.
 
-## Market data: the Fauxnance API
+---
 
-Prices come from Fauxnance, a REST API provided for the programme. You will
-receive a personal key. Send it in the `X-Api-Key` header.
+## Step 3: Start the Order Service (Trade API)
 
-| Endpoint                    | Use                                                                             |
-| --------------------------- | ------------------------------------------------------------------------------- |
-| `GET /candles/{symbol}`     | End-of-day OHLCV history. Sprint 4 analytics, Sprint 10 signals.                |
-| `GET /quotes/{symbol}`      | One delayed quote. The Trade Executor prices a fill with this.                  |
-| `GET /quotes?symbols=A,B,C` | Batch quotes, up to 25 symbols, counting as one request.                        |
-| `GET /usage`                | Your own quota status. Check it before assuming a 429 is somebody else's fault. |
-| `GET /health`               | No key required. Rules out "is it the API or is it me".                         |
+Open **Terminal 2** and run:
 
-The base URL is in `.env.example` and Swagger UI is at `/v1/docs` on that
-host.
+```bash
+cd services/order-service
+mvn spring-boot:run
+```
 
-Three things about it shape your design.
+_(Wait until you see the application has successfully started in the logs)._
 
-The quota is 2000 requests per day per key. That is a real constraint and it
-is meant to be. A poller that fetches every symbol every second exhausts a key
-before lunch. Poll only the symbols someone holds or is watching, batch up to
-25 per call, and cache what you have already asked for.
+---
 
-The key lives in an environment variable and is read from there at runtime. It
-is never committed, never hard-coded, and never reaches the browser: the
-Angular application does not call Fauxnance, because anything the browser
-sends is visible to whoever is using it. If a key does reach a commit, say so
-immediately and have it rotated. A quiet fix leaves it in the history.
+## Step 4: Start the Event Backbone Executor
 
-There is no price stream. Fauxnance answers requests; it does not push. The
-real-time behaviour in this platform is something you build in Sprint 7, with
-a poller inside the Trade Executor that calls the batch endpoint on an interval
-and publishes each quote onto `market-data`. Everything downstream, including
-the watchlist alerts in Sprint 10, consumes what that poller produces.
+The Executor consumes from the `orders` topic and publishes to the `trade-events` topic. It also polls live market data.
 
-Fauxnance covers NSE and BSE symbols alongside US equities, FX and crypto, so
-`INFY.NS`, `RELIANCE.NS` and `TATASTEEL.BO` all price. Trade instruments you
-recognise. A dashboard is easier to sanity-check when you already know roughly
-what the numbers should look like.
+Open **Terminal 3** and run:
 
-## Env Handling
+```bash
+cd services/executor-service
+mvn spring-boot:run
+```
 
-Keep secrets out of the repository. `.env` is git-ignored and stays that way.
-Commit `.env.example` with placeholders when you add a variable, so the next
-person knows what to set.
+_(Wait until you see the application has successfully started in the logs)._
+
+---
+
+## Step 5: Start the Auth Service
+
+The Auth Service issues JWT tokens. We must start it so users can authenticate.
+
+Open **Terminal 4** and run:
+
+```bash
+cd services/auth-service
+npm run start
+```
+
+_(Wait until you see the application successfully started in the logs)._
+
+---
+
+## Step 6: Start the Frontend Application
+
+Open **Terminal 5** and run:
+
+```bash
+cd Frontend/frontend-application
+npm run start
+```
+
+_(Wait until the frontend compiles and starts, usually accessible at http://localhost:4200)._
+
+---
+
+## Step 7: Monitor the Kafka Streams
+
+To visually prove that events are flowing asynchronously through the broker, we can attach consumers directly to the Kafka container.
+
+Open **Terminal 6** (Watch Orders):
+
+```bash
+docker exec -it kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic orders
+```
+
+Open **Terminal 7** (Watch Trade Events):
+
+```bash
+docker exec -it kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic trade-events
+```
+
+---
+
+## Step 8: Access the Application
+
+Once all services are running, you can access the full trading application from your browser!
+
+1. Open your browser and navigate to the frontend URL (e.g., `http://localhost:4200`).
+2. Log in using the available test credentials or register a new user.
+3. Start placing trades and watch them execute in real-time through the event-driven backbone!

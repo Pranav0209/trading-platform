@@ -1,0 +1,111 @@
+<div class="dashboard-layout">
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-icon">Z</div>
+      <div class="brand-text">zkuba</div>
+    </div>
+
+    <nav class="nav-menu">
+      @if (!isAdmin()) {
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" data-testid="nav-dashboard">
+          <span class="material-icons icon" aria-hidden="true">dashboard</span>
+          Dashboard
+        </a>
+        <a routerLink="/watchlist" routerLinkActive="active" class="nav-item" data-testid="nav-watchlist">
+          <span class="material-icons icon" aria-hidden="true">visibility</span>
+          Watchlist
+        </a>
+        <a routerLink="/trade" routerLinkActive="active" class="nav-item" data-testid="nav-order-ticket">
+          <span class="material-icons icon" aria-hidden="true">candlestick_chart</span>
+          Trade
+        </a>
+        <a routerLink="/orders" routerLinkActive="active" class="nav-item" data-testid="nav-orders">
+          <span class="material-icons icon" aria-hidden="true">receipt_long</span>
+          Orders
+        </a>
+        <a routerLink="/positions" routerLinkActive="active" class="nav-item" data-testid="nav-positions">
+          <span class="material-icons icon" aria-hidden="true">show_chart</span>
+          Positions
+        </a>
+        <a routerLink="/holdings" routerLinkActive="active" class="nav-item" data-testid="nav-holdings">
+          <span class="material-icons icon" aria-hidden="true">account_balance_wallet</span>
+          Holdings
+        </a>
+      } @else {
+        <a routerLink="/admin" routerLinkActive="active" class="nav-item">
+          <span class="material-icons icon" aria-hidden="true">admin_panel_settings</span>
+          Admin Panel
+        </a>
+      }
+
+      <div class="nav-divider"></div>
+
+      <a routerLink="/account" routerLinkActive="active" class="nav-item">
+        <span class="material-icons icon" aria-hidden="true">person</span>
+        Account
+      </a>
+      <a routerLink="/profile" routerLinkActive="active" class="nav-item">
+        <span class="material-icons icon" aria-hidden="true">settings</span>
+        Profile
+      </a>
+    </nav>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div class="user-controls">
+        <app-theme-toggle></app-theme-toggle>
+        <button class="icon-btn" type="button" aria-label="View notifications">
+          <span class="material-icons" aria-hidden="true">notifications</span>
+        </button>
+        <div class="user-profile" (click)="toggleDropdown()">
+          <div class="avatar">{{ userInitial() | uppercase }}</div>
+          <span class="name">
+            <span class="user-name-text">{{ userName() }}</span>
+            <span class="material-icons dropdown-arrow" aria-hidden="true">expand_more</span>
+          </span>
+
+          @if (isDropdownOpen()) {
+            <div class="dropdown-menu">
+              <a routerLink="/profile" (click)="toggleDropdown()" class="dropdown-item">Profile</a>
+              <a routerLink="/account" (click)="toggleDropdown()" class="dropdown-item">Account</a>
+              <div class="dropdown-divider"></div>
+              <a
+                href="#"
+                class="dropdown-item text-danger"
+                (click)="logout(); $event.preventDefault()"
+              >
+                <span class="material-icons icon" aria-hidden="true">logout</span>
+                Logout
+              </a>
+            </div>
+          }
+        </div>
+      </div>
+    </header>
+
+    <!-- ROUTER OUTLET FOR SCROLLABLE DASHBOARD AREA -->
+    @if (isAdmin() || accountStatus() === 'ACTIVE') {
+      <router-outlet></router-outlet>
+    } @else if (accountStatus() === 'SUSPENDED' || accountStatus() === 'CLOSED') {
+      <div class="inactive-account-prompt">
+        <h2>Account {{ accountStatus() }}</h2>
+        <p>
+          Your trading account is currently {{ accountStatus() | lowercase }}. Please contact
+          support or resolve your account issues to resume trading.
+        </p>
+      </div>
+    } @else if (accountStatus() === 'PENDING') {
+      <div class="inactive-account-prompt">
+        <h2>Account Pending</h2>
+        <p>
+          Your registration is complete, but your trading account has not been fully provisioned by
+          an administrator yet. Please check back later.
+        </p>
+      </div>
+    }
+  </main>
+</div>

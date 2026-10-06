@@ -1,0 +1,57 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+# compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
+
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
+
+# Miscellaneous
+/.angular/cache
+.sass-cache/
+/connect.lock
+/coverage
+/libpeerconnect.log
+testem.log
+/typings
+wwwroot/*.js
+
+# Playwright e2e tests
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Environment files (local configuration)
+.env
+.env.local
+.env.*.local
+
+# Generated environment file (auto-generated from .env during build)
+src/environments/environment.ts
+
+# System files
+.DS_Store
+Thumbs.db

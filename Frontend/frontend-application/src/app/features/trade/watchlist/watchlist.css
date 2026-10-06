@@ -1,0 +1,368 @@
+.watchlist-container {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-color, #ffffff);
+  border-radius: 4px;
+  width: 100%;
+}
+
+/* 1. Header */
+.watchlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.watchlist-title-section h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.watchlist-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.market-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dot.green {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+}
+
+.watchlist-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.add-instrument-btn {
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* 2. Tabs */
+.watchlist-tabs {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  padding: 0 12px;
+  overflow-x: auto;
+}
+
+.watchlist-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  padding: 14px 16px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.watchlist-tab:hover {
+  color: var(--text-primary);
+}
+
+.watchlist-tab.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  font-weight: 600;
+}
+
+.instrument-count {
+  font-size: 11px;
+  background: var(--surface-hover);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.create-tab-wrapper {
+  margin-left: 8px;
+}
+
+.create-watchlist {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.create-watchlist:hover {
+  background: var(--surface-hover);
+}
+
+.tab-input {
+  border: none;
+  border-bottom: 1px solid var(--primary-color);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  padding: 4px 0;
+  width: 120px;
+  outline: none;
+}
+
+/* 3. Toolbar */
+.watchlist-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 52px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+.instrument-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+}
+
+.search-icon {
+  font-size: 18px;
+}
+
+.search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  width: 200px;
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* 4. Table Grid Structure */
+.watchlist-table-header, .watchlist-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) 1fr 1fr 1fr 80px;
+  align-items: center;
+  padding: 0 20px;
+}
+
+/* 5. Table Header */
+.watchlist-table-header {
+  height: 38px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+}
+
+/* 6. Instrument Row */
+.watchlist-row {
+  height: 56px;
+  border-bottom: 1px solid var(--border-color, #e0e0e0);
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.watchlist-row:hover {
+  background: var(--surface-hover);
+}
+
+.watchlist-row.selected {
+  background: var(--surface-hover);
+  border-left: 3px solid var(--primary-color);
+  padding-left: 17px; /* 20px - 3px */
+}
+
+/* 7. Column Alignments & Typography */
+.col-instrument {
+  display: flex;
+  flex-direction: column;
+}
+
+.col-price, .col-change, .col-percent {
+  text-align: right;
+}
+
+.symbol {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.company-name {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.col-price {
+  font-weight: 600;
+  color: var(--text-primary);
+  position: relative;
+}
+
+/* 8. Colors & Indicators */
+.positive { color: #00D084; }
+.negative { color: #ef4444; }
+
+.price-arrow {
+  font-size: 12px;
+  margin-right: 2px;
+}
+
+/* 9. Live Flash Animations */
+@keyframes price-up-flash {
+  0% { background: rgba(0, 208, 132, 0.20); }
+  100% { background: transparent; }
+}
+
+@keyframes price-down-flash {
+  0% { background: rgba(239, 68, 68, 0.20); }
+  100% { background: transparent; }
+}
+
+.price-up-flash {
+  animation: price-up-flash 500ms ease-out;
+  border-radius: 4px;
+}
+
+.price-down-flash {
+  animation: price-down-flash 500ms ease-out;
+  border-radius: 4px;
+}
+
+/* 10. Actions & Hover States */
+.col-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.watchlist-row:hover .row-actions {
+  opacity: 1;
+}
+
+
+
+/* 11. Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 32px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.empty-state p {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.empty-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.mt-3 {
+  margin-top: 16px;
+}
+
+/* Utilities */
+.btn-text {
+  background: none;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Shimmer */
+.shimmer-block {
+  height: 14px;
+  width: 60px;
+  background: linear-gradient(90deg, var(--surface-hover) 0px, var(--border-color) 40px, var(--surface-hover) 80px);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .watchlist-table-header, .watchlist-row {
+    grid-template-columns: minmax(120px, 2fr) 1fr 1fr 60px;
+  }
+  .col-percent { display: none; }
+}
+
+@media (max-width: 480px) {
+  .watchlist-table-header, .watchlist-row {
+    grid-template-columns: 1fr 1fr 40px;
+  }
+  .col-change { display: none; }
+}

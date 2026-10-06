@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "event-etl"
+version = "0.1.0"
+description = "Incremental ETL pipeline for trade data: Postgres -> DuckDB star schema"
+requires-python = ">=3.11"
+dependencies = [
+    "duckdb>=1.1",
+    "psycopg2-binary>=2.9",
+    "python-dotenv>=1.0",
+    "pytz",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+]
+
+[project.scripts]
+trade-etl = "event_etl.cli:main"
+
+[tool.setuptools]
+packages = ["event_etl"]
+
+[tool.setuptools.package-dir]
+"" = "src"

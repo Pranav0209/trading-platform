@@ -58,3 +58,5 @@ artefacts
 
 # Logs
 *.log
+*.log*
+logs/
