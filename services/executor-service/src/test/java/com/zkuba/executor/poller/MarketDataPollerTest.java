@@ -5,6 +5,7 @@ import com.zkuba.executor.client.BatchQuoteResponse;
 import com.zkuba.executor.client.FauxnanceQuoteClient;
 import com.zkuba.executor.client.QuoteResponse;
 import com.zkuba.executor.repository.PositionRepository;
+import com.zkuba.executor.client.CurrencyConversionClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.when;
 class MarketDataPollerTest {
 
     private FauxnanceQuoteClient quoteClient;
+    private CurrencyConversionClient conversionClient;
     private PositionRepository positionRepository;
     private KafkaTemplate<String, String> kafkaTemplate;
     private ObjectMapper objectMapper;
@@ -35,10 +37,11 @@ class MarketDataPollerTest {
     @BeforeEach
     void setUp() {
         quoteClient = mock(FauxnanceQuoteClient.class);
+        conversionClient = mock(CurrencyConversionClient.class);
         positionRepository = mock(PositionRepository.class);
         kafkaTemplate = mock(KafkaTemplate.class);
         objectMapper = new ObjectMapper();
-        poller = new MarketDataPoller(quoteClient, positionRepository, kafkaTemplate, objectMapper);
+        poller = new MarketDataPoller(quoteClient, conversionClient, positionRepository, kafkaTemplate, objectMapper);
     }
 
 
