@@ -27,7 +27,7 @@ export class EmailJSService {
         {
           to_email: toEmail,
           otp_code: otpCode,
-          message: `Your verification code is: ${otpCode}. It will expire in 10 minutes.`
+          message: `Your secure verification code is: ${otpCode}. This code is valid for the next 2 minutes. Please do not share this code with anyone.`
         },
         {
           publicKey: publicKey,

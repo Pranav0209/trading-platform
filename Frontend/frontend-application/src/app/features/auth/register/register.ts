@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -45,6 +45,34 @@ export class Register {
     otpCode: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]],
   });
 
+  // Timer state
+  timerSeconds = signal(120);
+  timerDisplay = computed(() => {
+    const mins = Math.floor(this.timerSeconds() / 60);
+    const secs = this.timerSeconds() % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  });
+  private timerInterval: any;
+
+  ngOnDestroy(): void {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+  }
+
+  private startTimer(): void {
+    this.timerSeconds.set(120);
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    
+    this.timerInterval = setInterval(() => {
+      if (this.timerSeconds() > 0) {
+        this.timerSeconds.update(s => s - 1);
+      } else {
+        clearInterval(this.timerInterval);
+      }
+    }, 1000);
+  }
+
   onSubmit(): void {
     if (this.form.invalid) {
       this.toastService.warning('Please correct the form errors before submitting');
@@ -63,6 +91,7 @@ export class Register {
         this.registeredEmail.set(val.email);
         this.isOtpStep.set(true);
         this.isSubmitting.set(false);
+        this.startTimer();
       },
       error: (err: HttpErrorResponse) => {
         const errorMsg = this.errorCodeMapper.mapErrorToMessage(err);

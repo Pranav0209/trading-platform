@@ -88,7 +88,14 @@
         </form>
       } @else {
         <h2>Verify Email</h2>
-        <p class="login-subtitle">Please enter the 6-digit OTP sent to your email.</p>
+        <p class="login-subtitle">
+          Please enter the 6-digit OTP sent to your email.
+          @if (timerSeconds() > 0) {
+            <span class="timer-text" style="color: var(--accent); font-weight: bold;">(Expires in {{ timerDisplay() }})</span>
+          } @else {
+            <span class="timer-text" style="color: var(--error); font-weight: bold;">(Code Expired)</span>
+          }
+        </p>
 
         <form [formGroup]="otpForm" (ngSubmit)="onVerifyOtp()">
           <div class="form-group">
@@ -98,7 +105,7 @@
               type="text"
               formControlName="otpCode"
               placeholder="123456"
-              [disabled]="isSubmitting()"
+              [disabled]="isSubmitting() || timerSeconds() === 0"
             />
             <app-form-error
               [control]="otpForm.get('otpCode')"
@@ -109,10 +116,12 @@
           <button
             type="submit"
             class="login-button"
-            [disabled]="otpForm.invalid || isSubmitting()"
+            [disabled]="otpForm.invalid || isSubmitting() || timerSeconds() === 0"
           >
             @if (isSubmitting()) {
               Verifying...
+            } @else if (timerSeconds() === 0) {
+              Code Expired
             } @else {
               Verify OTP
             }
