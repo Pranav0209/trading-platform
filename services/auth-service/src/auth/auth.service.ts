@@ -48,13 +48,17 @@ export class AuthService {
     
     if (targetUser) {
       // User is PENDING, we can just update their record to allow re-registration
-      targetUser = await this.usersService.update(targetUser.id, {
+      const updatedUser = await this.usersService.update(targetUser.id, {
         username: registerDto.username,
         email: registerDto.email,
         passwordHash,
         otpCode,
         otpExpiresAt,
       });
+      if (!updatedUser) {
+        throw new ConflictException({ errorCode: 'AUTH-500', message: 'Failed to update pending user' });
+      }
+      targetUser = updatedUser;
     } else {
       targetUser = await this.usersService.create({
         username: registerDto.username,
