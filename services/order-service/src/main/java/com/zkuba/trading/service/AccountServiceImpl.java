@@ -13,7 +13,7 @@ import com.zkuba.trading.dto.request.CreateAccountRequest;
 import com.zkuba.trading.dto.response.AccountResponse;
 import com.zkuba.trading.dto.response.BalanceResponse;
 import com.zkuba.trading.dto.response.OrderHistoryEntry;
-import com.zkuba.trading.dto.response.PositionResponse;
+import com.zkuba.trading.dto.response.PortfolioResponse;
 import com.zkuba.trading.mapper.OrderMapper;
 import com.zkuba.trading.repository.AccountRepository;
 import com.zkuba.trading.repository.PositionRepository;
@@ -94,12 +94,12 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public List<PositionResponse> getPositionsResponse(Long accountId, Long userId) {
+    public List<PortfolioResponse> getPortfolioResponse(Long accountId, Long userId) {
         Account account = getAccountAndValidateAccess(accountId, userId);
         List<Position> positions = positionRepository.findByAccountId(account.getId());
         return positions.stream()
                 .filter(p -> p.getQuantity() > 0)
-                .map(p -> new PositionResponse(account.getId(), p.getSymbol(), p.getQuantity(), p.getAverageCost()))
+                .map(p -> new PortfolioResponse(account.getId(), p.getSymbol(), p.getQuantity(), p.getAverageCost()))
                 .toList();
     }
 

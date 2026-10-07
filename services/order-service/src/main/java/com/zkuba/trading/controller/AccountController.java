@@ -4,7 +4,7 @@ import com.zkuba.trading.domain.enums.OrderStatus;
 import com.zkuba.trading.dto.response.AccountResponse;
 import com.zkuba.trading.dto.response.BalanceResponse;
 import com.zkuba.trading.dto.response.OrderHistoryEntry;
-import com.zkuba.trading.dto.response.PositionResponse;
+import com.zkuba.trading.dto.response.PortfolioResponse;
 import com.zkuba.trading.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.zkuba.trading.service.AccountService;
 import java.time.OffsetDateTime;
@@ -39,11 +39,11 @@ public class AccountController {
         return accountService.getBalance(id, user.userId());
     }
 
-    @GetMapping("/{id}/positions")
-    public List<PositionResponse> getPositions(
+    @GetMapping("/{id}/portfolio")
+    public List<PortfolioResponse> getPortfolio(
             @PathVariable Long id,
             @AuthenticationPrincipal AuthenticatedUser user) {
-        return accountService.getPositionsResponse(id, user.userId());
+        return accountService.getPortfolioResponse(id, user.userId());
     }
 
     @GetMapping("/{id}/orders")

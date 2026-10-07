@@ -4,13 +4,13 @@ import { Router, RouterLink } from '@angular/router';
 import { DashboardService } from '../../dashboard/dashboard.service';
 
 @Component({
-  selector: 'app-positions',
+  selector: 'app-portfolio',
   standalone: true,
   imports: [CommonModule, RouterLink],
-  templateUrl: './positions.html',
-  styleUrls: ['./positions.css']
+  templateUrl: './portfolio.html',
+  styleUrls: ['./portfolio.css']
 })
-export class PositionsComponent implements OnInit {
+export class PortfolioComponent implements OnInit {
   private router = inject(Router);
   private dashboardService = inject(DashboardService);
   
@@ -28,12 +28,12 @@ export class PositionsComponent implements OnInit {
 
   ngOnInit() {
     const url = this.router.url;
-    this.isStandalone.set(url === '/positions' || url === '/holdings');
+    this.isStandalone.set(url === '/portfolio');
     
-    if (url === '/holdings') {
-      this.pageTitle.set('Your Holdings');
-      this.pageSubtitle.set('View and manage your market holdings.');
-      this.title = 'Holdings'; // Update card title too
+    if (url === '/portfolio') {
+      this.pageTitle.set('Your Portfolio');
+      this.pageSubtitle.set('View and manage your market portfolio.');
+      this.title = 'Portfolio'; // Update card title too
     }
     
     // Trigger data load if it's not already loaded

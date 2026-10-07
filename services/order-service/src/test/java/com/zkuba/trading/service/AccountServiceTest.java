@@ -68,10 +68,7 @@ class AccountServiceTest {
         void setUp() {
                 defaultBalance = new BigDecimal("10000.00");
 
-                ReflectionTestUtils.setField(
-                                accountService,
-                                "defaultBalance",
-                                defaultBalance);
+
 
                 activeAccount = new Account();
                 activeAccount.setId(100L);

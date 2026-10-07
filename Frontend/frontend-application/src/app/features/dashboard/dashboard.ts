@@ -3,13 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { DashboardService } from './dashboard.service';
 import { Session } from '../../core/auth/session';
-import { PositionsComponent } from '../trade/positions/positions';
+import { PortfolioComponent } from '../trade/portfolio/portfolio';
 import { RealisedPnlComponent } from '../trade/realised-pnl/realised-pnl';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, PositionsComponent, RealisedPnlComponent],
+  imports: [CommonModule, PortfolioComponent, RealisedPnlComponent],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css'],
   encapsulation: ViewEncapsulation.None

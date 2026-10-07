@@ -2,7 +2,7 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { PortfolioSummary, Holding } from './models';
 import { AccountsService } from '../../../generated/trade/api/accounts.service';
 import { ProfileService } from '../../../generated/auth/api/profile.service';
-import { PositionResponse } from '../../../generated/trade/model/positionResponse';
+import { PortfolioResponse } from '../../../generated/trade/model/portfolioResponse';
 import { Session } from '../../core/auth/session';
 import { MarketDataService } from '../../core/services/market-data.service';
 
@@ -16,7 +16,7 @@ export class DashboardService {
   private readonly marketData = inject(MarketDataService);
   
   // Base State
-  private basePositions = signal<PositionResponse[]>([]);
+  private basePositions = signal<PortfolioResponse[]>([]);
   private baseBalance = signal<number>(0);
   
   userName = signal<string>('User');
@@ -137,7 +137,7 @@ export class DashboardService {
     });
 
     // Fetch Positions for Holdings view
-    this.accountsService.getPositions(accountId).subscribe({
+    this.accountsService.getPortfolio(accountId).subscribe({
       next: (res) => {
         this.basePositions.set(res);
       },
