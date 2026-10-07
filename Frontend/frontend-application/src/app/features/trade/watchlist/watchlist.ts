@@ -98,6 +98,21 @@ export class WatchlistComponent implements OnInit {
     });
   }
 
+  deleteWatchlist() {
+    const list = this.activeWatchlist();
+    if (!list) return;
+    
+    if (confirm(`Are you sure you want to delete the watchlist "${list.name}"?`)) {
+      this.watchlistsService.deleteWatchlist(list.id).subscribe({
+        next: () => {
+          this.activeWatchlist.set(null);
+          this.loadWatchlists();
+        },
+        error: (e) => console.error('Failed to delete watchlist', e)
+      });
+    }
+  }
+
   selectedSymbol: string | null = null;
   isCreatingList = false;
 

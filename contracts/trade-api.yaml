@@ -539,6 +539,26 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorised'
 
+  /api/v1/watchlists/{id}:
+    delete:
+      tags: [Watchlists]
+      operationId: deleteWatchlist
+      summary: Delete a watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Watchlist deleted successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/v1/watchlists/{id}/symbols/{symbol}:
     post:
       tags: [Watchlists]

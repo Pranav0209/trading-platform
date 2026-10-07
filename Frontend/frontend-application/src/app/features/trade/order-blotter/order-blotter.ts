@@ -53,7 +53,7 @@ export class OrderBlotter implements OnInit, OnDestroy {
   
   // Filter state signals
   searchSymbol = signal<string>('');
-  selectedStatuses = signal<Set<string>>(new Set(['NEW', 'FILLED', 'CANCELLED', 'REJECTED']));
+  selectedStatuses = signal<Set<string>>(new Set());
 
   private refreshIntervalId: number | null = null;
   private refreshAbortController: AbortController | null = null;
@@ -182,7 +182,7 @@ export class OrderBlotter implements OnInit, OnDestroy {
    */
   clearFilters(): void {
     this.searchSymbol.set('');
-    this.selectedStatuses.set(new Set(['NEW', 'FILLED', 'CANCELLED', 'REJECTED']));
+    this.selectedStatuses.set(new Set());
     this.applyFilters();
   }
 

@@ -5,9 +5,11 @@
       <h2>My Watchlist</h2>
       <span class="watchlist-subtitle" *ngIf="activeWatchlist()">{{ activeWatchlist()!.symbols.length }} instruments • <span class="market-status"><span class="dot green"></span> Market Open</span></span>
     </div>
-    <div class="watchlist-actions">
+    <div class="watchlist-actions" *ngIf="activeWatchlist()">
       <button class="btn-text add-instrument-btn" (click)="focusSearch()">+ Add Instrument</button>
-      <button class="icon-btn">⋮</button>
+      <button class="icon-btn delete-watchlist-btn" (click)="deleteWatchlist()" title="Delete Watchlist">
+        <span class="material-icons" style="color: var(--error-light);">delete</span>
+      </button>
     </div>
   </div>
 

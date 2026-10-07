@@ -65,6 +65,14 @@ public class WatchlistController {
         watchlistService.addSymbol(user.userId(), id, symbol);
     }
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long id) {
+        watchlistService.delete(user.userId(), id);
+    }
+
     @DeleteMapping("/{id}/symbols/{symbol}")
     public void remove(
             @AuthenticationPrincipal AuthenticatedUser user,

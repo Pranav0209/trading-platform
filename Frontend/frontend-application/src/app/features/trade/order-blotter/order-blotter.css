@@ -3,6 +3,19 @@
   gap: var(--spacing-lg);
 }
 
+.blotter-header {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.header-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
 .blotter-controls {
   display: flex;
   gap: var(--spacing-md);
@@ -512,33 +525,63 @@ html.dark-theme .symbol-search-input:focus {
   align-items: center;
 }
 
-.status-checkboxes {
+.status-chips {
   display: flex;
-  gap: var(--spacing-md);
+  gap: 8px;
   flex-wrap: wrap;
 }
 
-.checkbox-label {
+.status-chip {
   display: flex;
   align-items: center;
-  gap: 6px;
-  cursor: pointer;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid;
+  background-color: transparent;
   font-size: 13px;
-  user-select: none;
-  transition: all 160ms ease;
-}
-
-.checkbox-label input[type="checkbox"] {
+  font-weight: 500;
   cursor: pointer;
-  accent-color: var(--primary-green-light);
+  transition: all 160ms ease;
+  user-select: none;
 }
 
-html.dark-theme .checkbox-label input[type="checkbox"] {
-  accent-color: var(--primary-green-dark-mode);
+html:not(.dark-theme) .status-chip {
+  border-color: #E0D9CF;
+  color: var(--text-secondary-light);
 }
 
-.checkbox-label:hover {
-  opacity: 0.8;
+html.dark-theme .status-chip {
+  border-color: #404040;
+  color: var(--text-secondary-dark);
+}
+
+.status-chip:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+html.dark-theme .status-chip:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.status-chip.active {
+  background-color: var(--primary-green-light);
+  color: #fff;
+  border-color: var(--primary-green-light);
+}
+
+html.dark-theme .status-chip.active {
+  background-color: var(--primary-green-dark-mode);
+  color: #121212;
+  border-color: var(--primary-green-dark-mode);
+}
+
+.hidden-checkbox {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
 }
 
 /* Clear Filters Button */
