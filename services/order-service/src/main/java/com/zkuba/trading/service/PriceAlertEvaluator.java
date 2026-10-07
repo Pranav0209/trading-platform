@@ -209,10 +209,13 @@ public class PriceAlertEvaluator {
                 entity.setDeliveryStatus(DeliveryStatus.PENDING);
                 entity.setUpdatedAt(OffsetDateTime.now());
 
-                // Delivery runs outside of a transaction context because evaluateAlerts isn't @Transactional
-                deliverAlert(entity, priceInAccountCurrency);
-
                 alertRepository.save(entity);
+
+                final BigDecimal finalPrice = priceInAccountCurrency;
+                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                    deliverAlert(entity, finalPrice);
+                    alertRepository.save(entity);
+                });
             }
 
         } catch (Exception e) {

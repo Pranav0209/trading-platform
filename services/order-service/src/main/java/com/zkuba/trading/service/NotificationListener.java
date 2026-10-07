@@ -28,28 +28,12 @@ public class NotificationListener {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationListener.class);
     
-    private final AccountRepository accountRepository;
-    private final UserRepository userRepository;
+    private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
-    private final RestTemplate restTemplate;
 
-    @Value("${emailjs.service-id}")
-    private String serviceId;
-
-    @Value("${emailjs.template-id}")
-    private String templateId;
-
-    @Value("${emailjs.public-key}")
-    private String publicKey;
-
-    @Value("${emailjs.private-key}")
-    private String privateKey;
-
-    public NotificationListener(AccountRepository accountRepository, UserRepository userRepository, ObjectMapper objectMapper) {
-        this.accountRepository = accountRepository;
-        this.userRepository = userRepository;
+    public NotificationListener(NotificationService notificationService, ObjectMapper objectMapper) {
+        this.notificationService = notificationService;
         this.objectMapper = objectMapper;
-        this.restTemplate = new RestTemplate();
     }
 
     @KafkaListener(topics = "orders", groupId = "order-service-notifications-group")
@@ -61,10 +45,9 @@ public class NotificationListener {
                 OrderPlacedPayload payload = envelope.payload();
                 
                 String status = payload.status();
-                // We only care about CANCELLED from the orders topic, because FILLED/REJECTED come from trade-events
                 if ("CANCELLED".equals(status)) {
                     log.info("Processing notification for cancelled order {}", payload.orderId());
-                    processNotification(payload.accountId(), payload.orderId().toString(), payload.side(), payload.quantity(), payload.symbol(), status);
+                    processNotificationAsync(payload.accountId(), payload.orderId().toString(), payload.side(), payload.quantity(), payload.symbol(), status);
                 }
             }
         } catch (Exception e) {
@@ -81,53 +64,18 @@ public class NotificationListener {
                 TradeEventPayload payload = envelope.payload();
                 
                 log.info("Processing notification for filled/rejected order {}", payload.orderId());
-                processNotification(payload.accountId(), payload.orderId().toString(), payload.side(), payload.quantity(), payload.symbol(), payload.status());
+                processNotificationAsync(payload.accountId(), payload.orderId().toString(), payload.side(), payload.quantity(), payload.symbol(), payload.status());
             }
         } catch (Exception e) {
             log.error("Failed to process trade event for notifications", e);
         }
     }
 
-    private void processNotification(Long accountId, String orderId, String side, Integer quantity, String symbol, String status) {
-        Optional<Account> accountOpt = accountRepository.findById(accountId);
-        if (accountOpt.isEmpty()) return;
-        
-        Optional<User> userOpt = userRepository.findById(accountOpt.get().getUserId());
-        if (userOpt.isEmpty()) return;
-        
-        User user = userOpt.get();
-        if ("EMAIL".equals(user.getNotificationChannel())) {
-            sendEmail(user.getEmail(), orderId, side, quantity, symbol, status);
-        } else if ("PUSH".equals(user.getNotificationChannel())) {
-            log.info("PUSH notification requested for order {}. (In-app notification system handles this).", orderId);
-        }
-    }
-
-    private void sendEmail(String toEmail, String orderId, String side, Integer quantity, String symbol, String status) {
-        String msg = String.format("Your order to %s %d %s was %s.", 
-                side, quantity, symbol, status);
-
-        Map<String, Object> body = new HashMap<>();
-        body.put("service_id", serviceId);
-        body.put("template_id", templateId);
-        body.put("user_id", publicKey);
-        body.put("accessToken", privateKey);
-        
-        Map<String, String> templateParams = new HashMap<>();
-        templateParams.put("to_email", toEmail);
-        templateParams.put("message", msg);
-        templateParams.put("subject", "Trading Alert: Order " + status);
-        body.put("template_params", templateParams);
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-
-        try {
-            restTemplate.postForEntity("https://api.emailjs.com/api/v1.0/email/send", request, String.class);
-            log.info("Email notification sent to {} for order {}", toEmail, orderId);
-        } catch (Exception e) {
-            log.error("Failed to send EmailJS notification to {}", toEmail, e);
-        }
+    private void processNotificationAsync(Long accountId, String orderId, String side, Integer quantity, String symbol, String status) {
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            notificationService.sendOrderNotification(new NotificationService.OrderNotificationPayload(
+                    accountId, orderId, side, quantity, symbol, status
+            ));
+        });
     }
 }

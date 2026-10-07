@@ -26,7 +26,7 @@ export class AuthService {
   ) {}
 
   private generateOtp(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return crypto.randomInt(100000, 1000000).toString();
   }
 
   async register(registerDto: RegisterDto) {
@@ -139,6 +139,7 @@ export class AuthService {
     await this.usersService.update(userId, {
       otpCode,
       otpExpiresAt,
+      pendingNewEmail: newEmail,
     });
 
     await this.emailJSService.sendOtpEmail(newEmail, otpCode);
@@ -151,6 +152,10 @@ export class AuthService {
       throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'User not found' });
     }
 
+    if (user.pendingNewEmail !== newEmail) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
+    }
+
     if (user.otpCode !== otpCode || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
       throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
     }
@@ -159,6 +164,7 @@ export class AuthService {
       email: newEmail,
       otpCode: null,
       otpExpiresAt: null,
+      pendingNewEmail: null,
     });
 
     return { message: 'Email updated successfully' };

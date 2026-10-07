@@ -54,6 +54,18 @@ public class SmartRuleEvaluator {
         }
     }
 
+    private final ConcurrentHashMap<String, CandleCacheEntry> candleCache = new ConcurrentHashMap<>();
+    private static final long CANDLE_CACHE_TTL_MS = 60000;
+
+    private static class CandleCacheEntry {
+        final List<CandleResponse.Candle> candles;
+        final long timestamp;
+        CandleCacheEntry(List<CandleResponse.Candle> candles, long timestamp) {
+            this.candles = candles;
+            this.timestamp = timestamp;
+        }
+    }
+
     public SmartRuleEvaluator(
             SmartRuleRepository smartRuleRepository,
             PositionRepository positionRepository,
@@ -102,16 +114,35 @@ public class SmartRuleEvaluator {
                 return;
             }
 
-            CandleResponse candleResponse = needsCandleData(rules) ? candleClient.getCandles(symbol) : null;
-            List<CandleResponse.Candle> candles = candleResponse != null && candleResponse.data() != null
-                    ? candleResponse.data().candles()
-                    : null;
-                    
+            List<CandleResponse.Candle> candles = null;
+            if (needsCandleData(rules)) {
+                CandleCacheEntry cce = candleCache.get(symbol);
+                if (cce != null && (now - cce.timestamp) < CANDLE_CACHE_TTL_MS) {
+                    candles = cce.candles;
+                } else if (cce == null || (now - cce.timestamp) >= CANDLE_CACHE_TTL_MS) {
+                    // Prevent concurrent background fetches for the same symbol
+                    candleCache.put(symbol, new CandleCacheEntry(cce != null ? cce.candles : null, now + CANDLE_CACHE_TTL_MS));
+                    java.util.concurrent.CompletableFuture.runAsync(() -> {
+                        try {
+                            CandleResponse resp = candleClient.getCandles(symbol);
+                            if (resp != null && resp.data() != null) {
+                                candleCache.put(symbol, new CandleCacheEntry(resp.data().candles(), System.currentTimeMillis()));
+                            }
+                        } catch (Exception e) {
+                            log.error("Failed to fetch candles in background", e);
+                            candleCache.remove(symbol);
+                        }
+                    });
+                    if (cce != null) {
+                        candles = cce.candles;
+                    }
+                }
+            }
             // Bulk-load positions for all accounts involved in these rules
             List<Long> accountIds = rules.stream().map(r -> r.getAccount().getId()).distinct().toList();
             Map<Long, Position> positionsByAccount = positionRepository.findByAccountIdInAndSymbol(accountIds, symbol)
                     .stream()
-                    .collect(java.util.stream.Collectors.toMap(p -> p.getAccount().getId(), p -> p));
+                    .collect(java.util.stream.Collectors.toMap(p -> p.getAccountId(), p -> p));
 
             for (SmartRule rule : rules) {
                 Position position = positionsByAccount.get(rule.getAccount().getId());
@@ -241,13 +272,20 @@ public class SmartRuleEvaluator {
         }
 
         try {
-            internalOrderClient.placeMarketOrder(
-                    rule.getAccount().getUserId(),
-                    rule.getAccount().getId(),
-                    rule.getSymbol(),
-                    rule.getAction() == RuleAction.BUY ? com.zkuba.executor.domain.enums.OrderSide.BUY : com.zkuba.executor.domain.enums.OrderSide.SELL,
-                    quantity,
-                    "smart-rule-" + rule.getId() + "-" + UUID.randomUUID());
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    internalOrderClient.placeMarketOrder(
+                            rule.getAccount().getUserId(),
+                            rule.getAccount().getId(),
+                            rule.getSymbol(),
+                            rule.getAction() == RuleAction.BUY ? com.zkuba.executor.domain.enums.OrderSide.BUY : com.zkuba.executor.domain.enums.OrderSide.SELL,
+                            quantity,
+                            "smart-rule-" + rule.getId() + "-" + UUID.randomUUID());
+                } catch (Exception exception) {
+                    log.error("Failed to place internal order for smart rule {}", rule.getId(), exception);
+                }
+            });
+
             rule.setLastTriggeredAt(OffsetDateTime.now());
 
             if (rule.getParentRule() != null && rule.getAction() == RuleAction.SELL) {
