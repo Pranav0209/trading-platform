@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class SmartRuleEvaluator {
@@ -54,7 +53,6 @@ public class SmartRuleEvaluator {
     }
 
     @KafkaListener(topics = "market-data", groupId = "smart-rule-service")
-    @Transactional
     public void evaluateRules(String message) {
         try {
             Map<?, ?> quote = objectMapper.readValue(message, Map.class);

@@ -5,6 +5,8 @@ import { Session } from '../../../core/auth/session';
 import { ToastService } from '../../../core/notifications/toast.service';
 import { CreateSmartRuleRequest, SmartRule, SmartRuleAction, SmartRuleMetricType, SmartRuleOperator, SmartRuleQuantityMode } from '../../../core/trade/models/smart-rule.models';
 import { SmartRuleService } from '../../../core/trade/services/smart-rule.service';
+import { InstrumentsService } from '../../../../generated/trade/api/instruments.service';
+import { InstrumentResponse } from '../../../../generated/trade/model/instrumentResponse';
 
 interface RuleDraft {
   symbol: string;
@@ -32,6 +34,7 @@ export class SmartRulesComponent implements OnInit {
   private readonly smartRuleService = inject(SmartRuleService);
   private readonly session = inject(Session);
   private readonly toastService = inject(ToastService);
+  private readonly instrumentsService = inject(InstrumentsService);
 
   readonly accountId = this.session.accountId;
 
@@ -39,6 +42,10 @@ export class SmartRulesComponent implements OnInit {
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly deletingRuleId = signal<number | null>(null);
+
+  availableInstruments = signal<InstrumentResponse[]>([]);
+  filteredInstruments = signal<InstrumentResponse[]>([]);
+  showDropdown = signal(false);
 
   draft: RuleDraft = this.createDraft();
 
@@ -65,6 +72,14 @@ export class SmartRulesComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadRules();
+    this.instrumentsService.getInstruments().subscribe({
+      next: (instruments) => {
+        const tradable = instruments.filter(i => i.tradable);
+        this.availableInstruments.set(tradable);
+        this.filteredInstruments.set(tradable);
+      },
+      error: (e) => console.error('Failed to load instruments', e)
+    });
   }
 
   loadRules(): void {
@@ -164,6 +179,34 @@ export class SmartRulesComponent implements OnInit {
       child.symbol = rule.symbol;
       this.onActionChange(child);
     }
+  }
+
+  onSymbolInput(rule: RuleDraft, value: string): void {
+    rule.symbol = value;
+    this.onActionChange(rule); // propagate to children
+    if (!value) {
+      this.filteredInstruments.set(this.availableInstruments());
+      return;
+    }
+    const lower = value.toLowerCase();
+    this.filteredInstruments.set(
+      this.availableInstruments().filter(i => 
+        i.symbol.toLowerCase().includes(lower) || 
+        i.displayName.toLowerCase().includes(lower)
+      )
+    );
+  }
+
+  selectInstrument(rule: RuleDraft, symbol: string): void {
+    rule.symbol = symbol;
+    this.onActionChange(rule); // propagate to children
+    this.showDropdown.set(false);
+  }
+
+  hideDropdown(): void {
+    setTimeout(() => {
+      this.showDropdown.set(false);
+    }, 200);
   }
 
   onQuantityModeChange(rule: RuleDraft): void {

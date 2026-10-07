@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -72,7 +71,6 @@ public class PriceAlertEvaluator {
      * }
      */
     @KafkaListener(topics = "market-data", groupId = "price-alert-service")
-    @Transactional
     public void evaluateAlerts(String message) {
         try {
             Map<String, Object> quoteData = objectMapper.readValue(message, new TypeReference<Map<String, Object>>() {});
