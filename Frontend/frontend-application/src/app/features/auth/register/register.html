@@ -2,10 +2,18 @@
   <!-- Left Side: Branding -->
   <div class="login-brand">
     <div class="brand-content">
-      <div class="logo">
-        <div class="logo-icon">Z</div>
-        <div class="logo-text">Zkuba Trading</div>
-      </div>
+      <button 
+        type="button"
+        class="logo-button"
+        (click)="goBack()"
+        aria-label="Go back to sign in"
+        title="Go back to sign in"
+      >
+        <div class="logo">
+          <div class="logo-icon">Z</div>
+          <div class="logo-text">Zkuba Trading</div>
+        </div>
+      </button>
       <h1>Join the <span>Platform</span></h1>
       <p>
         Create an account to access global markets, advanced analytics, and lightning-fast
@@ -124,6 +132,19 @@
               Code Expired
             } @else {
               Verify OTP
+            }
+          </button>
+
+          <button
+            type="button"
+            class="resend-button"
+            (click)="onResendOtp()"
+            [disabled]="isResending() || isSubmitting()"
+          >
+            @if (isResending()) {
+              Sending OTP...
+            } @else {
+              Resend OTP
             }
           </button>
         </form>

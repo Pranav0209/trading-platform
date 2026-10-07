@@ -93,6 +93,9 @@
 
         <div class="col-actions">
           <div class="row-actions">
+            <button class="btn-icon" (click)="goToCreateAlert(symbol); $event.stopPropagation()" title="Create Price Alert" aria-label="Create Price Alert">
+              🔔
+            </button>
             <button class="btn-icon" (click)="removeSymbol(symbol); $event.stopPropagation()" title="Remove" aria-label="Remove">
               ⋮
             </button>

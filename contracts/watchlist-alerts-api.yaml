@@ -1,0 +1,685 @@
+openapi: 3.1.0
+
+info:
+  title: Watchlist & Price Alerts API
+  version: 1.0.0
+  summary: Manage watchlists and price alerts for instruments.
+  description: |
+    Binding contract for the Watchlist & Price Alerts module. Handles instrument watchlists
+    and price alert thresholds that trigger when crossed.
+    
+    ## Watchlists
+    
+    A watchlist is a named collection of instruments a customer is tracking. Instruments on
+    a watchlist may be positions the customer owns or instruments they are curious about.
+    
+    ## Price Alerts
+    
+    A price alert has a direction (ABOVE or BELOW) and a threshold price. When the market
+    price crosses the threshold, the alert fires and is delivered to the customer's configured
+    notification channel through the Customer Notifications module.
+    
+    ### Alert Lifecycle
+    
+    1. **ACTIVE**: Alert is monitoring prices. Fires when threshold is crossed.
+    2. **TRIGGERED**: Alert threshold was crossed and notification was sent (or delivery failed).
+    3. **DORMANT**: After triggering, alert stops monitoring until customer resets it.
+    
+    The choice to go dormant after triggering prevents alert fatigue: a customer is not sent
+    forty messages in a minute when price oscillates around a level. They see the alert state
+    changed to TRIGGERED and can reset it manually when ready.
+    
+    ### Delivery Behavior
+    
+    Alerts are delivered in-process through the Customer Notifications module. Delivery can fail
+    if the channel is unknown, the provider refuses, or the record cannot be written. The alert
+    state reflects whether the alert has triggered, independent of delivery outcome. A customer
+    looking at an alert state can determine whether it fired, and investigate failures in their
+    notification settings.
+    
+    ## Access Control
+    
+    Every route validates that the `accountId` claim in the JWT token matches the resource being
+    accessed. The bearer token proves who you are; the accountId claim proves what you may reach.
+    
+    ## Per-Account Limits
+    
+    An account is limited to 100 active alerts to prevent:
+    1. One account filling the alert table
+    2. The market-data consumer becoming the thing that takes down the Trade Service
+    3. Database query performance degradation
+    
+    Limits are soft (warnings returned) but enforced (409 on exceed).
+    
+  contact:
+    name: Enterprise Trading Platform, programme materials
+  license:
+    name: Instructional use only
+
+servers:
+  - url: http://localhost:8080
+    description: Local development, run from Docker Compose
+  - url: http://trade-api:8080
+    description: Service name inside the Docker Compose network
+
+tags:
+  - name: Watchlists
+    description: Manage watchlists.
+  - name: Price Alerts
+    description: Manage price alerts on instruments.
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/v1/accounts/{accountId}/watchlists:
+    get:
+      tags: [Watchlists]
+      operationId: getWatchlists
+      summary: List all watchlists for an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: List of watchlists
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  watchlists:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WatchlistResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/AccountNotFound'
+
+    post:
+      tags: [Watchlists]
+      operationId: createWatchlist
+      summary: Create a new watchlist
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWatchlistRequest'
+      responses:
+        '201':
+          description: Watchlist created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchlistResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/AccountNotFound'
+
+  /api/v1/accounts/{accountId}/watchlists/{watchlistId}:
+    get:
+      tags: [Watchlists]
+      operationId: getWatchlist
+      summary: Get a specific watchlist with current prices
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: watchlistId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Watchlist details with live prices
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WatchlistDetailsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Watchlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Watchlists]
+      operationId: deleteWatchlist
+      summary: Delete a watchlist
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: watchlistId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Watchlist deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Watchlist not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/accounts/{accountId}/watchlists/{watchlistId}/instruments/{symbol}:
+    post:
+      tags: [Watchlists]
+      operationId: addInstrumentToWatchlist
+      summary: Add an instrument to a watchlist
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: watchlistId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+            example: AAPL
+      responses:
+        '204':
+          description: Instrument added to watchlist
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Watchlist or instrument not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Watchlists]
+      operationId: removeInstrumentFromWatchlist
+      summary: Remove an instrument from a watchlist
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: watchlistId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+            example: AAPL
+      responses:
+        '204':
+          description: Instrument removed from watchlist
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Watchlist or instrument not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/accounts/{accountId}/alerts:
+    get:
+      tags: [Price Alerts]
+      operationId: getAlerts
+      summary: List all price alerts for an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: state
+          in: query
+          required: false
+          description: Filter by alert state (ACTIVE, TRIGGERED, DORMANT)
+          schema:
+            type: string
+            enum: [ACTIVE, TRIGGERED, DORMANT]
+      responses:
+        '200':
+          description: List of price alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AlertResponse'
+                  count:
+                    type: integer
+                  limit:
+                    type: integer
+                    description: Maximum alerts allowed per account
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/AccountNotFound'
+
+    post:
+      tags: [Price Alerts]
+      operationId: createAlert
+      summary: Create a new price alert
+      description: Creates an ACTIVE price alert. Limit is 100 per account.
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAlertRequest'
+      responses:
+        '201':
+          description: Alert created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/AccountNotFound'
+        '409':
+          description: Alert limit exceeded for account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/accounts/{accountId}/alerts/{alertId}:
+    get:
+      tags: [Price Alerts]
+      operationId: getAlert
+      summary: Get a specific price alert
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Alert details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Alert not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Price Alerts]
+      operationId: deleteAlert
+      summary: Delete (cancel) a price alert
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Alert deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Alert not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/accounts/{accountId}/alerts/{alertId}/reset:
+    post:
+      tags: [Price Alerts]
+      operationId: resetAlert
+      summary: Reset a triggered alert back to ACTIVE
+      description: Transitions alert from TRIGGERED back to ACTIVE so it monitors again.
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: alertId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Alert reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '400':
+          description: Alert is not in TRIGGERED state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Alert not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    CreateWatchlistRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Name of the watchlist
+          example: "Tech Stocks"
+
+    WatchlistResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        accountId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        instrumentCount:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    WatchlistDetailsResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        accountId:
+          type: integer
+          format: int64
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        instruments:
+          type: array
+          items:
+            $ref: '#/components/schemas/WatchlistInstrument'
+
+    WatchlistInstrument:
+      type: object
+      properties:
+        symbol:
+          type: string
+          example: AAPL
+        displayName:
+          type: string
+          example: Apple Inc.
+        currency:
+          type: string
+          example: USD
+        price:
+          type: number
+          format: double
+          description: Latest quoted price, null if not yet received
+        change:
+          type: number
+          format: double
+          description: Absolute change from previous close, null if not available
+        changePercent:
+          type: number
+          format: double
+          description: Percentage change from previous close, null if not available
+        asOf:
+          type: string
+          format: date-time
+          description: Timestamp when price was last updated
+        addedAt:
+          type: string
+          format: date-time
+
+    CreateAlertRequest:
+      type: object
+      required: [symbol, direction, threshold]
+      properties:
+        symbol:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: Instrument symbol
+          example: AAPL
+        direction:
+          type: string
+          enum: [ABOVE, BELOW]
+          description: |
+            ABOVE: Alert fires when price rises through the threshold.
+            BELOW: Alert fires when price falls through the threshold.
+          example: ABOVE
+        threshold:
+          type: number
+          format: double
+          description: Price level for the alert
+          example: 150.00
+
+    AlertResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        accountId:
+          type: integer
+          format: int64
+        symbol:
+          type: string
+        displayName:
+          type: string
+        direction:
+          type: string
+          enum: [ABOVE, BELOW]
+        threshold:
+          type: number
+          format: double
+        state:
+          type: string
+          enum: [ACTIVE, TRIGGERED, DORMANT]
+          description: |
+            ACTIVE: Monitoring prices, will fire when threshold is crossed.
+            TRIGGERED: Threshold was crossed and notification was sent (may have failed).
+            DORMANT: After triggering, waits for customer to reset.
+        lastFiredAt:
+          type: string
+          format: date-time
+          description: When alert last transitioned to TRIGGERED, null if never fired
+        deliveryStatus:
+          type: string
+          enum: [PENDING, DELIVERED, FAILED]
+          description: Status of the last notification delivery attempt
+        failureReason:
+          type: string
+          description: If deliveryStatus is FAILED, reason why (channel unknown, provider error, etc.)
+        createdAt:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required: [errorCode, message]
+      properties:
+        errorCode:
+          type: string
+          description: Platform error code
+          example: "WLT-404"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Watchlist not found"
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            instrumentNotFound:
+              value:
+                errorCode: "INS-404"
+                message: "Instrument not found: INVALID"
+            invalidThreshold:
+              value:
+                errorCode: "VAL-422"
+                message: "Threshold must be greater than zero"
+
+    Unauthorized:
+      description: Missing, malformed, expired or wrongly signed token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            errorCode: "AUTH-401"
+            message: "Unauthorized"
+
+    Forbidden:
+      description: Token valid but does not authorize this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            errorCode: "ACC-403"
+            message: "Forbidden"
+
+    AccountNotFound:
+      description: Account does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            errorCode: "ACC-404"
+            message: "Account not found"

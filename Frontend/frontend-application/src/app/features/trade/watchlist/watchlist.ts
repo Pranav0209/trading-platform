@@ -164,4 +164,8 @@ export class WatchlistComponent implements OnInit {
   abs(value: number): number {
     return Math.abs(value);
   }
+
+  goToCreateAlert(symbol: string) {
+    this.router.navigate(['/alerts'], { queryParams: { symbol: symbol } });
+  }
 }

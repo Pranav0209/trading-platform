@@ -1,0 +1,146 @@
+<div class="watchlist-container">
+  <div class="watchlist-header">
+    <h2>My Watchlists</h2>
+    <p class="subtitle">Track instruments and get real-time price updates</p>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = null"></button>
+  </div>
+
+  <!-- Create New Watchlist -->
+  <div class="create-watchlist card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Create New Watchlist</h5>
+      <div class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Enter watchlist name (e.g., Tech Stocks, Blue Chips)"
+          [(ngModel)]="newWatchlistName"
+          [disabled]="isCreatingWatchlist"
+          (keyup.enter)="createWatchlist()"
+        />
+        <button
+          class="btn btn-primary"
+          type="button"
+          (click)="createWatchlist()"
+          [disabled]="isCreatingWatchlist"
+        >
+          <span
+            *ngIf="isCreatingWatchlist"
+            class="spinner-border spinner-border-sm me-2"
+          ></span>
+          Create
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Watchlists List -->
+  <div class="watchlists-section">
+    <div *ngIf="isLoadingWatchlists" class="text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <div *ngIf="!isLoadingWatchlists && watchlists.length === 0" class="alert alert-info">
+      No watchlists yet. Create one to start tracking instruments!
+    </div>
+
+    <div *ngFor="let watchlist of watchlists" class="card mb-3">
+      <div class="card-header watchlist-header-item">
+        <div class="watchlist-title" (click)="toggleWatchlist(watchlist)">
+          <h5>{{ watchlist.name }}</h5>
+          <small class="text-muted">{{ watchlist.instrumentCount }} instruments</small>
+        </div>
+        <button
+          class="btn btn-sm btn-danger"
+          (click)="deleteWatchlist(watchlist)"
+          title="Delete watchlist"
+        >
+          Delete
+        </button>
+      </div>
+
+      <!-- Watchlist Details (Expanded) -->
+      <div *ngIf="selectedWatchlist?.id === watchlist.id" class="card-body">
+        <div *ngIf="isLoadingDetails" class="text-center">
+          <div class="spinner-border spinner-border-sm text-primary"></div>
+        </div>
+
+        <!-- Instruments Table -->
+        <div *ngIf="!isLoadingDetails && selectedWatchlist" class="instruments-table">
+          <table class="table table-hover" *ngIf="!isWatchlistEmpty(selectedWatchlist)">
+            <thead class="table-light">
+              <tr>
+                <th>Symbol</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Change</th>
+                <th>Currency</th>
+                <th>Updated</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let instrument of selectedWatchlist.instruments">
+                <td>
+                  <strong>{{ instrument.symbol }}</strong>
+                </td>
+                <td>{{ instrument.displayName }}</td>
+                <td>
+                  {{ instrument.price ? (instrument.price | currency) : 'N/A' }}
+                </td>
+                <td [ngClass]="getChangeClass(instrument.change)">
+                  {{ formatChange(instrument.change, instrument.changePercent) }}
+                </td>
+                <td>{{ instrument.currency }}</td>
+                <td>
+                  <small>{{
+                    instrument.asOf ? (instrument.asOf | date: 'short') : 'N/A'
+                  }}</small>
+                </td>
+                <td>
+                  <button
+                    class="btn btn-sm btn-outline-danger"
+                    (click)="removeInstrument(watchlist.id, instrument.symbol)"
+                  >
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div *ngIf="isWatchlistEmpty(selectedWatchlist)" class="alert alert-info">
+            No instruments in this watchlist yet.
+          </div>
+
+          <!-- Add Instrument Form -->
+          <div class="add-instrument mt-3">
+            <div class="input-group">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Add instrument (e.g., AAPL, MSFT)"
+                [(ngModel)]="watchlist.newInstrumentSymbol"
+                (keyup.enter)="addInstrument(watchlist)"
+              />
+              <button
+                class="btn btn-outline-primary"
+                type="button"
+                (click)="addInstrument(watchlist)"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

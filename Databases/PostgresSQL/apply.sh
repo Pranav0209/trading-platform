@@ -34,7 +34,7 @@ echo "Port:     $PORT"
 echo "Database: $DATABASE"
 echo "User:     $USER"
 
-# apply schema then seed data
+# apply schema then seed data, then price alerts
 psql \
     --host="$HOST" \
     --port="$PORT" \
@@ -43,7 +43,7 @@ psql \
     -v ON_ERROR_STOP=1 \
     -f "$MIGRATIONS_DIR/01-schema.sql" \
     -f "$MIGRATIONS_DIR/02-seed-data.sql" \
-    -f "$MIGRATIONS_DIR/03-realised-pnl-table.sql"
+    -f "$MIGRATIONS_DIR/03-price-alerts.sql"
 
 echo "Database setup completed successfully."
 
