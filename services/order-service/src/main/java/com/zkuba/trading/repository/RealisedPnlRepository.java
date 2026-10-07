@@ -26,14 +26,14 @@ public interface RealisedPnlRepository extends JpaRepository<RealisedPnl, Long> 
      * @param pageable     Pagination info
      * @return Page of RealisedPnl records matching the criteria
      */
-    @Query("""
-        SELECT p FROM RealisedPnl p
-        WHERE p.accountId = :accountId
-        AND (:symbol IS NULL OR p.symbol = :symbol)
-        AND (:fromDate IS NULL OR p.realisedAt >= :fromDate)
-        AND (:toDate IS NULL OR p.realisedAt <= :toDate)
-        ORDER BY p.realisedAt DESC
-    """)
+    @Query(value = """
+        SELECT rp.* FROM pnl rp
+        WHERE rp.account_id = :accountId
+        AND (:symbol IS NULL OR rp.symbol = :symbol)
+        AND (CAST(:fromDate AS timestamp with time zone) IS NULL OR rp.realised_at >= CAST(:fromDate AS timestamp with time zone))
+        AND (CAST(:toDate AS timestamp with time zone) IS NULL OR rp.realised_at <= CAST(:toDate AS timestamp with time zone))
+        ORDER BY rp.realised_at DESC
+    """, nativeQuery = true)
     Page<RealisedPnl> findRealisedPnlHistory(
             @Param("accountId") Long accountId,
             @Param("symbol") String symbol,
@@ -52,14 +52,14 @@ public interface RealisedPnlRepository extends JpaRepository<RealisedPnl, Long> 
      * @param toDate       To date inclusive (optional, null means unbounded above)
      * @return Sum of all realised_pnl for matching records, or 0 if none found
      */
-    @Query("""
-        SELECT COALESCE(SUM(p.realisedPnl), 0)
-        FROM RealisedPnl p
-        WHERE p.accountId = :accountId
-        AND (:symbol IS NULL OR p.symbol = :symbol)
-        AND (:fromDate IS NULL OR p.realisedAt >= :fromDate)
-        AND (:toDate IS NULL OR p.realisedAt <= :toDate)
-    """)
+    @Query(value = """
+        SELECT COALESCE(SUM(rp.realised_pnl), 0)
+        FROM pnl rp
+        WHERE rp.account_id = :accountId
+        AND (:symbol IS NULL OR rp.symbol = :symbol)
+        AND (CAST(:fromDate AS timestamp with time zone) IS NULL OR rp.realised_at >= CAST(:fromDate AS timestamp with time zone))
+        AND (CAST(:toDate AS timestamp with time zone) IS NULL OR rp.realised_at <= CAST(:toDate AS timestamp with time zone))
+    """, nativeQuery = true)
     java.math.BigDecimal sumRealisedPnl(
             @Param("accountId") Long accountId,
             @Param("symbol") String symbol,

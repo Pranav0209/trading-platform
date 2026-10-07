@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { Session } from '../../../core/auth/session';
 import { PLService } from '../../../../generated/portfolio/api/pL.service';
 import { RealisedPnlHistoryResponse } from '../../../../generated/portfolio/model/realisedPnlHistoryResponse';
 import { RealisedPnlRecord } from '../../../../generated/portfolio/model/realisedPnlRecord';
@@ -16,8 +17,9 @@ import { RealisedPnlRecord } from '../../../../generated/portfolio/model/realise
 export class RealisedPnlComponent implements OnInit {
   private router = inject(Router);
   private pnlService = inject(PLService);
+  private session = inject(Session);
   
-  @Input() accountId: number = 0;
+  @Input() accountId: number | null = null;
   @Input() title = 'Realised P&L History';
   @Input() showViewAll = false;
   
@@ -48,8 +50,33 @@ export class RealisedPnlComponent implements OnInit {
     const url = this.router.url;
     this.isStandalone.set(url === '/pnl' || url === '/realised-pnl');
     
-    // Load data if accountId is provided
-    if (this.accountId > 0) {
+    // Get account ID from Input, or extract from JWT token
+    if (!this.accountId || this.accountId <= 0) {
+      // Try to get account ID from JWT token
+      const token = this.session.token();
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          const tokenAccountId = Number(payload.accountId);
+          if (Number.isInteger(tokenAccountId) && tokenAccountId > 0) {
+            this.accountId = tokenAccountId;
+          }
+        } catch (e) {
+          console.error('Failed to parse JWT token for account ID:', e);
+        }
+      }
+      
+      // Fallback to sessionStorage if token parsing failed
+      if (!this.accountId || this.accountId <= 0) {
+        const storedAccountId = sessionStorage.getItem('selectedAccountId');
+        if (storedAccountId) {
+          this.accountId = parseInt(storedAccountId, 10);
+        }
+      }
+    }
+    
+    // Load data if accountId is available
+    if (this.accountId && this.accountId > 0) {
       this.loadPnlHistory();
     }
   }
@@ -58,7 +85,7 @@ export class RealisedPnlComponent implements OnInit {
    * Load P&L history from the API
    */
   loadPnlHistory() {
-    if (this.accountId <= 0) {
+    if (!this.accountId || this.accountId <= 0) {
       this.error.set('Account ID is required');
       return;
     }
@@ -84,7 +111,7 @@ export class RealisedPnlComponent implements OnInit {
     }
 
     this.pnlService.getRealisedPnlHistory(
-      this.accountId,
+      this.accountId as number,
       params.symbol,
       params.from,
       params.to,
