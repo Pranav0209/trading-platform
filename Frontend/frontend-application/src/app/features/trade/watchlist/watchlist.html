@@ -1,15 +1,21 @@
-<div class="watchlist-container">
-  <!-- Header -->
-  <div class="watchlist-header">
-    <div class="watchlist-title-section">
-      <h2>My Watchlist</h2>
-      <span class="watchlist-subtitle" *ngIf="activeWatchlist()">{{ activeWatchlist()!.symbols.length }} instruments • <span class="market-status"><span class="dot green"></span> Market Open</span></span>
+<div class="standalone-wrapper">
+  <header class="page-header">
+    <h1>Watchlists</h1>
+    <p class="subtitle">Organize and track your favorite instruments with live market streaming.</p>
+  </header>
+
+  <div class="content-container">
+    <div class="watchlist-container">
+      <!-- Header -->
+      <div class="watchlist-header">
+        <div class="watchlist-title-section">
+          <h2 *ngIf="activeWatchlist()">{{ activeWatchlist()!.name }}</h2>
+          <h2 *ngIf="!activeWatchlist()">Watchlists</h2>
+          <span class="watchlist-subtitle" *ngIf="activeWatchlist()">{{ activeWatchlist()!.symbols.length }} instruments • <span class="market-status"><span class="dot green"></span> Market Open</span></span>
     </div>
     <div class="watchlist-actions" *ngIf="activeWatchlist()">
       <button class="btn-text add-instrument-btn" (click)="focusSearch()">+ Add Instrument</button>
-      <button class="icon-btn delete-watchlist-btn" (click)="deleteWatchlist()" title="Delete Watchlist">
-        <span class="material-icons" style="color: var(--error-light);">delete</span>
-      </button>
+      <button class="btn-text danger" (click)="deleteWatchlist()">Delete Watchlist</button>
     </div>
   </div>
 
@@ -52,9 +58,6 @@
       <button (click)="addSymbol()" class="icon-btn" [disabled]="!newSymbol" *ngIf="newSymbol">
         <span class="material-icons">add</span>
       </button>
-    </div>
-    <div class="sort-controls">
-      <button class="btn-text">↕ Sort</button>
     </div>
   </div>
 
@@ -124,6 +127,7 @@
       <p>No watchlists found</p>
       <span class="empty-subtitle">Create your first watchlist to start tracking instruments.</span>
       <button class="btn-primary mt-3" (click)="isCreatingList = true; focusCreateInput()">+ Create Watchlist</button>
+    </div>
     </div>
   </div>
 </div>
