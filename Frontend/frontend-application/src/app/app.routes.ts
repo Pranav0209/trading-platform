@@ -24,6 +24,7 @@ export const routes: Routes = [
       { path: 'holdings', loadComponent: () => import('./features/trade/positions/positions').then(m => m.PositionsComponent), canActivate: [customerGuard] },
       { path: 'profile', loadComponent: () => import('./features/profile/profile').then(m => m.Profile), canActivate: [customerGuard] },
       { path: 'account', loadComponent: () => import('./features/account/account').then(m => m.Account), canActivate: [customerGuard] },
+      { path: 'advice', loadComponent: () => import('./features/advice/advice').then(m => m.Advice), canActivate: [customerGuard] },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

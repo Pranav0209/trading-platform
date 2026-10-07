@@ -1,0 +1,117 @@
+<div class="advice-container">
+  <header class="advice-header">
+    <div class="header-title">
+      <h1>AI Trading Advice</h1>
+      <p class="subtitle">Research-driven BUY / SELL / HOLD signals against your holdings and watchlist.</p>
+    </div>
+    <button class="refresh-btn" (click)="loadAdvice()" [disabled]="loading()">
+      <span class="material-icons" [class.spin]="loading()">refresh</span>
+      Refresh Signals
+    </button>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Analyzing market data and computing technical indicators...</p>
+    </div>
+  } @else if (error()) {
+    <div class="error-state">
+      <span class="material-icons error-icon">error_outline</span>
+      <p>{{ error() }}</p>
+      <button class="btn-retry" (click)="loadAdvice()">Retry</button>
+    </div>
+  } @else if (advice()) {
+    <div class="advice-content">
+      <div class="metadata-bar">
+        <span class="metadata-item">
+          <span class="material-icons">schedule</span>
+          Generated at: {{ advice()?.generatedAt | date:'medium' }}
+        </span>
+        <span class="metadata-item">
+          <span class="material-icons">analytics</span>
+          Total Signals: {{ advice()?.signals?.length || 0 }}
+        </span>
+      </div>
+
+      @if (advice()?.signals?.length === 0) {
+        <div class="empty-state">
+          <span class="material-icons">insights</span>
+          <h3>No Signals Available</h3>
+          <p>Add symbols to your watchlist or buy assets to start receiving AI trade advice.</p>
+        </div>
+      } @else {
+        <div class="signals-grid">
+          @for (signal of advice()?.signals; track signal.symbol) {
+            <div class="signal-card" [class.is-stale]="signal.stale">
+              <div class="card-header">
+                <div class="symbol-info">
+                  <h2>{{ signal.symbol }}</h2>
+                  <span class="source-tag" [ngClass]="signal.source.toLowerCase()">
+                    {{ signal.source === 'BOTH' ? 'HOLDING & WATCHLIST' : signal.source }}
+                  </span>
+                </div>
+                <div class="signal-badge" [ngClass]="getSignalBadgeClass(signal.signal)">
+                  {{ signal.signal }}
+                </div>
+              </div>
+
+              <div class="score-section">
+                <div class="score-indicator" [ngClass]="getScoreClass(signal.score)">
+                  <span class="score-value">{{ signal.score > 0 ? '+' + signal.score : signal.score }}</span>
+                  <span class="score-label">Confidence Score</span>
+                </div>
+                @if (signal.stale) {
+                  <div class="stale-warning" title="Market data may be delayed">
+                    <span class="material-icons">warning</span> Stale Data
+                  </div>
+                }
+              </div>
+
+              <div class="reasons-section">
+                <h4>Analysis Details</h4>
+                @if (signal.reasons && signal.reasons.length > 0) {
+                  <ul class="reasons-list">
+                    @for (reason of signal.reasons; track reason) {
+                      <li>
+                        <span class="material-icons bullet-icon" [ngClass]="{'bullish-icon': reason.includes('Bullish') || reason.includes('positive') || reason.includes('above'), 'bearish-icon': reason.includes('Bearish') || reason.includes('negative') || reason.includes('below')}">
+                          {{ (reason.includes('Bullish') || reason.includes('positive') || reason.includes('above')) ? 'trending_up' : ((reason.includes('Bearish') || reason.includes('negative') || reason.includes('below')) ? 'trending_down' : 'info') }}
+                        </span>
+                        {{ reason }}
+                      </li>
+                    }
+                  </ul>
+                } @else {
+                  <p class="no-reasons">Not enough data to compute reasons.</p>
+                }
+              </div>
+
+              <div class="indicators-section">
+                <h4>Key Indicators</h4>
+                <div class="indicators-grid">
+                  <div class="indicator-box">
+                    <span class="indicator-label">Price</span>
+                    <span class="indicator-value">{{ $any(signal.indicatorValues)['currentPrice'] | number:'1.2-2' }}</span>
+                  </div>
+                  <div class="indicator-box">
+                    <span class="indicator-label">RSI (14)</span>
+                    <span class="indicator-value">{{ $any(signal.indicatorValues)['rsi14'] | number:'1.1-1' }}</span>
+                  </div>
+                  <div class="indicator-box">
+                    <span class="indicator-label">SMA (20)</span>
+                    <span class="indicator-value">{{ $any(signal.indicatorValues)['sma20'] | number:'1.2-2' }}</span>
+                  </div>
+                  <div class="indicator-box">
+                    <span class="indicator-label">MACD</span>
+                    <span class="indicator-value">{{ $any(signal.indicatorValues)['macd'] | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
