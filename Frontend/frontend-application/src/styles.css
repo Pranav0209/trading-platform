@@ -339,20 +339,11 @@ html.dark-theme tbody tr:hover {
 .page-header {
   margin-bottom: var(--spacing-xl);
   padding-bottom: var(--spacing-md);
-  border-bottom: var(--border-width) solid;
-}
-
-html:not(.dark-theme) .page-header {
-  border-bottom-color: var(--border-light);
-}
-
-html.dark-theme .page-header {
-  border-bottom-color: var(--border-dark);
 }
 
 .page-header h1 {
   margin-bottom: var(--spacing-xs);
-  font-size: 28px;
+  font-size: 24px;
 }
 
 html:not(.dark-theme) .page-header h1 {
@@ -646,3 +637,43 @@ html.dark-theme .mdc-snackbar {
   word-break: break-word;
 }
 
+
+/* Common Refresh Button (moved from order-blotter) */
+.refresh-button {
+  padding: 8px 14px;
+  background-color: var(--primary-green-light);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--border-radius);
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--shadow-1);
+  transition: background-color 160ms ease, box-shadow 160ms ease;
+  cursor: pointer;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background-color: var(--primary-green-dark);
+  box-shadow: var(--shadow-2);
+}
+
+html.dark-theme .refresh-button {
+  background-color: var(--primary-green-dark-mode);
+  color: #121212;
+}
+
+html.dark-theme .refresh-button:hover:not(:disabled) {
+  background-color: #00B674;
+}
+
+.refresh-button:disabled {
+  background-color: #BDC2B6;
+  color: #556055;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+html.dark-theme .refresh-button:disabled {
+  background-color: #303030;
+  color: #8E8E8A;
+}

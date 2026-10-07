@@ -13,16 +13,11 @@
 }
 
 <ng-template #pnlContent>
-  <div class="card data-card pnl-card" [class.span-2]="!isStandalone()">
+  <div class="card data-card" [class.span-2]="!isStandalone()">
     <!-- Card Header with Summary -->
-    <div class="card-header pnl-header">
-      <div class="header-left">
-        <h3 class="card-title">{{ title }}</h3>
-        @if (showViewAll && !isStandalone()) {
-          <a routerLink="/realised-pnl" class="view-all-link">View all</a>
-        }
-      </div>
-      <div class="header-right">
+    <div class="card-header">
+      <h3 class="card-title">{{ title }}</h3>
+      <div style="display: flex; gap: 16px; align-items: center;">
         <div class="summary-pills">
           <div class="pill total-pnl" [class.positive]="totalRealisedPnl() >= 0" [class.negative]="totalRealisedPnl() < 0">
             <span class="label">Total P&L</span>
@@ -35,6 +30,9 @@
             <span class="value">{{ totalCount() }}</span>
           </div>
         </div>
+        @if (showViewAll && !isStandalone()) {
+          <a routerLink="/realised-pnl" class="view-all">View all</a>
+        }
       </div>
     </div>
 
@@ -124,43 +122,27 @@
     <!-- Data Table -->
     @if (!loading() && !error() && pnlRecords().length > 0) {
       <div class="table-container">
-        <table class="pnl-table">
+        <table>
           <thead>
             <tr>
-              <th class="col-date">Date</th>
-              <th class="col-symbol">Symbol</th>
-              <th class="col-qty text-right">Qty</th>
-              <th class="col-sell text-right">Sell Price</th>
-              <th class="col-cost text-right">Avg Cost</th>
-              <th class="col-pnl text-right">Realised P&L</th>
+              <th>Date</th>
+              <th>Symbol</th>
+              <th class="text-right">Qty</th>
+              <th class="text-right">Sell Price</th>
+              <th class="text-right">Avg Cost</th>
+              <th class="text-right">Realised P&L</th>
             </tr>
           </thead>
           <tbody>
             @for (record of pnlRecords(); track record.orderId) {
-              <tr class="data-row">
-                <td class="col-date">
-                  <span class="cell-value">{{ record.realisedAt | date: 'MMM dd, yyyy' }}</span>
-                </td>
-                <td class="col-symbol">
-                  <span class="symbol-badge">{{ record.symbol }}</span>
-                </td>
-                <td class="col-qty text-right">
-                  <span class="cell-value">{{ record.quantity | number }}</span>
-                </td>
-                <td class="col-sell text-right">
-                  <span class="cell-value price">{{ formatCurrency(record.sellPrice) }}</span>
-                </td>
-                <td class="col-cost text-right">
-                  <span class="cell-value price">{{ formatCurrency(record.averageCost) }}</span>
-                </td>
-                <td class="col-pnl text-right">
-                  <span 
-                    class="cell-value pnl-value"
-                    [class.positive]="record.realisedPnl >= 0"
-                    [class.negative]="record.realisedPnl < 0"
-                  >
-                    {{ getPnlPrefix(record.realisedPnl) }}{{ formatCurrency(record.realisedPnl) }}
-                  </span>
+              <tr>
+                <td class="muted">{{ record.realisedAt | date: 'MMM dd, yyyy' }}</td>
+                <td class="symbol">{{ record.symbol }}</td>
+                <td class="text-right">{{ record.quantity | number }}</td>
+                <td class="text-right">{{ formatCurrency(record.sellPrice) }}</td>
+                <td class="text-right">{{ formatCurrency(record.averageCost) }}</td>
+                <td class="text-right" [class.positive]="record.realisedPnl > 0" [class.negative]="record.realisedPnl < 0">
+                  {{ record.realisedPnl > 0 ? '+' : '' }}{{ formatCurrency(record.realisedPnl) }}
                 </td>
               </tr>
             }

@@ -1,124 +1,4 @@
-﻿/* Professional Realised P&L Component */
-
-.standalone-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 2rem;
-  padding: 2rem;
-  min-height: 100vh;
-}
-
-html:not(.dark-theme) .standalone-wrapper {
-  background-color: #f5f5f5;
-}
-
-html.dark-theme .standalone-wrapper {
-  background-color: #0f0f0f;
-}
-
-.page-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding-bottom: 1.5rem;
-  border-bottom: 1px solid;
-}
-
-html:not(.dark-theme) .page-header {
-  border-color: #e0e0e0;
-}
-
-html.dark-theme .page-header {
-  border-color: #2a2a2a;
-}
-
-.page-header h1 {
-  font-size: 2rem;
-  font-weight: 600;
-  margin: 0;
-  letter-spacing: -0.5px;
-}
-
-html:not(.dark-theme) .page-header h1 {
-  color: #1a1a1a;
-}
-
-html.dark-theme .page-header h1 {
-  color: #ffffff;
-}
-
-.page-header .subtitle {
-  font-size: 0.95rem;
-  margin: 0;
-  font-weight: 400;
-}
-
-html:not(.dark-theme) .page-header .subtitle {
-  color: #5a5a5a;
-}
-
-html.dark-theme .page-header .subtitle {
-  color: #b0b0b0;
-}
-
-.content-container {
-  flex: 1;
-}
-
-/* Card */
-.card {
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  border: 1px solid;
-}
-
-html:not(.dark-theme) .card {
-  background-color: #ffffff;
-  border-color: #e0e0e0;
-}
-
-html.dark-theme .card {
-  background-color: #1a1a1a;
-  border-color: #2a2a2a;
-}
-
-.pnl-card {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Card Header */
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-}
-
-html:not(.dark-theme) .card-header {
-  background-color: #fafafa;
-  border-color: #e0e0e0;
-}
-
-html.dark-theme .card-header {
-  background-color: #0f0f0f;
-  border-color: #2a2a2a;
-}
-
-.pnl-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  gap: 2rem;
-  flex-wrap: wrap;
-}
+/* Professional Realised P&L Component */
 
 .header-left {
   display: flex;
@@ -133,21 +13,6 @@ html.dark-theme .card-header {
   align-items: center;
   gap: 1.5rem;
   flex-wrap: wrap;
-}
-
-.card-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0;
-  letter-spacing: -0.3px;
-}
-
-html:not(.dark-theme) .card-title {
-  color: #1a1a1a;
-}
-
-html.dark-theme .card-title {
-  color: #ffffff;
 }
 
 .view-all-link {
@@ -479,149 +344,12 @@ html.dark-theme .pnl-empty {
   }
 }
 
-/* Table Styles */
 .table-container {
   overflow-x: auto;
   flex: 1;
 }
 
-.pnl-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.9rem;
-}
 
-.pnl-table thead {
-  border-bottom: 2px solid;
-}
-
-html:not(.dark-theme) .pnl-table thead {
-  background-color: #f5f5f5;
-  border-color: #e0e0e0;
-}
-
-html.dark-theme .pnl-table thead {
-  background-color: #0f0f0f;
-  border-color: #2a2a2a;
-}
-
-.pnl-table th {
-  padding: 1rem 1.25rem;
-  text-align: left;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-}
-
-html:not(.dark-theme) .pnl-table th {
-  color: #5a5a5a;
-}
-
-html.dark-theme .pnl-table th {
-  color: #b0b0b0;
-}
-
-.pnl-table th.text-right {
-  text-align: right;
-}
-
-.pnl-table td {
-  padding: 0.95rem 1.25rem;
-  border-bottom: 1px solid;
-  font-size: 0.9rem;
-}
-
-html:not(.dark-theme) .pnl-table td {
-  color: #1a1a1a;
-  border-color: #ecece6;
-}
-
-html.dark-theme .pnl-table td {
-  color: #ffffff;
-  border-color: #2b2b2b;
-}
-
-.pnl-table tbody tr {
-  transition: background-color 150ms ease;
-}
-
-html:not(.dark-theme) .pnl-table tbody tr:nth-child(even) {
-  background-color: #fafafa;
-}
-
-html.dark-theme .pnl-table tbody tr:nth-child(even) {
-  background-color: #151515;
-}
-
-.pnl-table tbody tr:hover {
-  background-color: rgba(0, 200, 83, 0.05);
-}
-
-html.dark-theme .pnl-table tbody tr:hover {
-  background-color: rgba(0, 200, 83, 0.08);
-}
-
-.pnl-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-/* Cell Styles */
-.cell-value {
-  display: inline-block;
-}
-
-.cell-value.price {
-  font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono, 'Courier New');
-  font-size: 0.88rem;
-}
-
-html:not(.dark-theme) .cell-value.price {
-  color: #5a5a5a;
-}
-
-html.dark-theme .cell-value.price {
-  color: #b0b0b0;
-}
-
-.symbol-badge {
-  display: inline-block;
-  padding: 0.3rem 0.7rem;
-  border: 1px solid;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--primary-green-light);
-  min-width: 50px;
-  text-align: center;
-}
-
-html:not(.dark-theme) .symbol-badge {
-  background-color: #fafafa;
-  border-color: #e0e0e0;
-}
-
-html.dark-theme .symbol-badge {
-  background-color: #232323;
-  border-color: #2a2a2a;
-  color: var(--primary-green-dark-mode);
-}
-
-.pnl-value {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono, 'Courier New');
-  font-size: 0.88rem;
-}
-
-.pnl-value.positive {
-  color: #4caf50;
-}
-
-.pnl-value.negative {
-  color: #ff5252;
-}
 
 /* Pagination */
 .pagination-section {
@@ -708,18 +436,7 @@ html.dark-theme .pagination-button.active {
   cursor: not-allowed;
 }
 
-/* Responsive */
 @media (max-width: 1024px) {
-  .pnl-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .header-left,
-  .header-right {
-    width: 100%;
-  }
-
   .summary-pills {
     width: 100%;
   }
@@ -730,11 +447,6 @@ html.dark-theme .pagination-button.active {
 
   .filter-input-group {
     width: 100%;
-  }
-
-  .pnl-table td,
-  .pnl-table th {
-    padding: 0.75rem 1rem;
   }
 }
 
@@ -749,15 +461,6 @@ html.dark-theme .pagination-button.active {
 
   .pagination-section {
     padding: 1.25rem;
-  }
-
-  .pnl-table {
-    font-size: 0.85rem;
-  }
-
-  .pnl-table th,
-  .pnl-table td {
-    padding: 0.6rem 0.8rem;
   }
 
   .summary-pills {
@@ -775,23 +478,6 @@ html.dark-theme .pagination-button.active {
 }
 
 @media (max-width: 480px) {
-  .standalone-wrapper {
-    padding: 1rem;
-    gap: 1.5rem;
-  }
-
-  .page-header h1 {
-    font-size: 1.5rem;
-  }
-
-  .card-header {
-    padding: 1rem;
-  }
-
-  .filter-bar {
-    padding: 1rem;
-  }
-
   .filter-controls {
     flex-direction: column;
   }

@@ -18,6 +18,16 @@ export class Advice implements OnInit {
   loading = signal(true);
   error = signal<string | null>(null);
   advice = signal<AdviceResponse | null>(null);
+  
+  focusedSignal = signal<SignalResponse | null>(null);
+
+  openModal(signalResponse: SignalResponse) {
+    this.focusedSignal.set(signalResponse);
+  }
+
+  closeModal() {
+    this.focusedSignal.set(null);
+  }
 
   ngOnInit() {
     this.loadAdvice();

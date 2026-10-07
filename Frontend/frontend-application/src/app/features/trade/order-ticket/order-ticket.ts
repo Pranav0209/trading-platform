@@ -6,6 +6,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OrdersService } from '../../../../generated/trade/api/orders.service';
 import { OrderSide } from '../../../../generated/trade/model/orderSide';
 import { PlaceOrderRequest } from '../../../../generated/trade/model/placeOrderRequest';
+import { InstrumentsService } from '../../../../generated/trade/api/instruments.service';
+import { InstrumentResponse } from '../../../../generated/trade/model/instrumentResponse';
 import { Session } from '../../../core/auth/session';
 import { DashboardService } from '../../dashboard/dashboard.service';
 import { ErrorCodeMapper } from '../../../core/error/error-code-mapper';
@@ -30,6 +32,9 @@ export class OrderTicket implements OnInit {
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly instrumentsService = inject(InstrumentsService);
+
+  availableInstruments = signal<InstrumentResponse[]>([]);
 
   readonly orderSides = [OrderSide.Buy, OrderSide.Sell];
   readonly orderTypes = ['LIMIT', 'MARKET'];
@@ -55,6 +60,11 @@ export class OrderTicket implements OnInit {
     if (symbolParam) {
       this.form.controls.symbol.setValue(symbolParam);
     }
+
+    this.instrumentsService.getInstruments().subscribe({
+      next: (instruments) => this.availableInstruments.set(instruments.filter(i => i.tradable)),
+      error: (e) => console.error('Failed to load instruments', e)
+    });
     
     // Dynamically require or hide the price field based on order type
     this.form.controls.orderType.valueChanges.subscribe(type => {
