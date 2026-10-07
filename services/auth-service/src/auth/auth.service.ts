@@ -43,6 +43,7 @@ export class AuthService {
 
     const otpCode = this.generateOtp();
     const otpExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+    const hashedOtp = await bcrypt.hash(otpCode, 10);
 
     let targetUser = existingUser || existingEmail;
     
@@ -52,7 +53,7 @@ export class AuthService {
         username: registerDto.username,
         email: registerDto.email,
         passwordHash,
-        otpCode,
+        otpCode: hashedOtp,
         otpExpiresAt,
       });
       if (!updatedUser) {
@@ -67,7 +68,7 @@ export class AuthService {
         role: 'CUSTOMER',
         status: 'PENDING',
         notificationChannel: 'EMAIL',
-        otpCode,
+        otpCode: hashedOtp,
         otpExpiresAt,
       });
     }
@@ -92,7 +93,12 @@ export class AuthService {
       throw new ConflictException({ errorCode: 'AUTH-409', message: 'User is already active' });
     }
 
-    if (user.otpCode !== otpCode || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+    if (!user.otpCode || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
+    }
+
+    const isOtpValid = await bcrypt.compare(otpCode, user.otpCode);
+    if (!isOtpValid) {
       throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
     }
 
@@ -117,9 +123,10 @@ export class AuthService {
 
     const otpCode = this.generateOtp();
     const otpExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+    const hashedOtp = await bcrypt.hash(otpCode, 10);
 
     await this.usersService.update(user.id, {
-      otpCode,
+      otpCode: hashedOtp,
       otpExpiresAt,
     });
 
@@ -135,9 +142,10 @@ export class AuthService {
 
     const otpCode = this.generateOtp();
     const otpExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+    const hashedOtp = await bcrypt.hash(otpCode, 10);
 
     await this.usersService.update(userId, {
-      otpCode,
+      otpCode: hashedOtp,
       otpExpiresAt,
       pendingNewEmail: newEmail,
     });
@@ -156,7 +164,12 @@ export class AuthService {
       throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
     }
 
-    if (user.otpCode !== otpCode || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+    if (!user.otpCode || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
+    }
+
+    const isOtpValid = await bcrypt.compare(otpCode, user.otpCode);
+    if (!isOtpValid) {
       throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
     }
 

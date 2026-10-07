@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS auth.users (
  password_hash VARCHAR(255) NOT NULL, role VARCHAR(20) NOT NULL CHECK(role IN ('CUSTOMER','ADMIN')),
  status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING','ACTIVE','SUSPENDED','CLOSED')),
  notification_channel VARCHAR(20) NOT NULL DEFAULT 'EMAIL' CHECK(notification_channel IN ('EMAIL','PUSH')),
- otp_code VARCHAR(10), otp_expires_at TIMESTAMPTZ, pending_new_email VARCHAR(255),
+ otp_code VARCHAR(255), otp_expires_at TIMESTAMPTZ, pending_new_email VARCHAR(255),
  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
 
 CREATE TABLE IF NOT EXISTS auth.refresh_tokens (
