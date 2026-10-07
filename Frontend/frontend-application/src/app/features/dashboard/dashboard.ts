@@ -25,6 +25,14 @@ export class Dashboard implements OnInit {
   accountStatus = this.dashboardService.accountStatus;
   accountCurrency = this.dashboardService.accountCurrency;
   accountId = this.session.accountId;
+  chartPath = this.dashboardService.chartPath;
+  chartFill = this.dashboardService.chartFill;
+  chartChange = this.dashboardService.chartChange;
+  chartTimeRange = this.dashboardService.chartTimeRange;
+
+  setChartTimeRange(range: string) {
+    this.dashboardService.setChartTimeRange(range);
+  }
 
   userName = this.session.userName;
   userInitial = computed(() => this.userName().charAt(0));

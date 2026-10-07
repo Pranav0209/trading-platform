@@ -2,7 +2,9 @@ import { Injectable, inject, signal, computed } from '@angular/core';
 import { PortfolioSummary, Holding } from './models';
 import { AccountsService } from '../../../generated/trade/api/accounts.service';
 import { ProfileService } from '../../../generated/auth/api/profile.service';
+import { PLService } from '../../../generated/portfolio/api/pL.service';
 import { PortfolioResponse } from '../../../generated/trade/model/portfolioResponse';
+import { RealisedPnlHistoryResponse } from '../../../generated/portfolio/model/realisedPnlHistoryResponse';
 import { Session } from '../../core/auth/session';
 import { MarketDataService } from '../../core/services/market-data.service';
 
@@ -14,6 +16,20 @@ export class DashboardService {
   private readonly profileService = inject(ProfileService);
   private readonly session = inject(Session);
   private readonly marketData = inject(MarketDataService);
+  private readonly plService = inject(PLService);
+
+  chartPath = signal<string>('');
+  chartFill = signal<string>('');
+  chartChange = signal<number>(0);
+  chartTimeRange = signal<string>('ALL');
+
+  setChartTimeRange(range: string) {
+    this.chartTimeRange.set(range);
+    const accountId = this.resolveAccountId();
+    if (accountId !== null) {
+      this.loadChartData(accountId);
+    }
+  }
   
   // Base State
   private basePositions = signal<PortfolioResponse[]>([]);
@@ -36,7 +52,9 @@ export class DashboardService {
         quantity: p.quantity,
         averagePrice: p.averageCost,
         ltp: ltp,
-        pnl: pnl
+        pnl: pnl,
+        currentValue: ltp * p.quantity,
+        investedValue: p.averageCost * p.quantity
       };
     });
   });
@@ -145,6 +163,68 @@ export class DashboardService {
         console.error('Failed to load holdings', err);
       }
     });
+
+    // Fetch Historical PnL for Chart
+    this.loadChartData(accountId);
+  }
+
+  private loadChartData(accountId: number) {
+    let fromDate: string | undefined = undefined;
+    const range = this.chartTimeRange();
+    
+    if (range !== 'ALL') {
+      const date = new Date();
+      if (range === '1D') date.setDate(date.getDate() - 1);
+      else if (range === '1W') date.setDate(date.getDate() - 7);
+      else if (range === '1M') date.setMonth(date.getMonth() - 1);
+      else if (range === '6M') date.setMonth(date.getMonth() - 6);
+      else if (range === '1Y') date.setFullYear(date.getFullYear() - 1);
+      
+      fromDate = date.toISOString().split('T')[0];
+    }
+
+    this.plService.getRealisedPnlHistory(accountId, undefined, fromDate, undefined, 0, 100).subscribe({
+      next: (res) => {
+        this.processChartData(res);
+      },
+      error: (err) => console.error('Failed to load PNL history', err)
+    });
+  }
+
+  private processChartData(res: RealisedPnlHistoryResponse) {
+    const records = res.records || [];
+    const ascRecords = [...records].reverse();
+    
+    let cumulative = 0;
+    const dataPoints = ascRecords.map(r => {
+      cumulative += r.realisedPnl;
+      return cumulative;
+    });
+
+    dataPoints.unshift(0); // starting baseline
+
+    const min = Math.min(...dataPoints);
+    const max = Math.max(...dataPoints);
+    const range = max - min || 1;
+
+    const width = 800;
+    const height = 180; 
+    const stepX = width / (dataPoints.length > 1 ? dataPoints.length - 1 : 1);
+
+    let path = '';
+    dataPoints.forEach((val, i) => {
+      const x = i * stepX;
+      const y = height - ((val - min) / range * height) + 10;
+      path += (i === 0 ? 'M' : ' L') + `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+
+    if (dataPoints.length === 1) {
+      path = `M0,100 L800,100`; // flat line if no data
+    }
+
+    this.chartPath.set(path);
+    this.chartFill.set(`${path} L800,200 L0,200 Z`);
+    this.chartChange.set(res.summary?.totalRealisedPnl || 0);
   }
 
   private resolveAccountId(accountIdFromToken?: unknown): number | null {

@@ -66,7 +66,8 @@ SELECT setval('accounts_id_seq', (SELECT MAX(id) FROM accounts));
 INSERT INTO positions (id, account_id, symbol, quantity, average_cost, version) VALUES
     (1, 2, 'AAPL', 15, 220.5000, 0),
     (2, 2, 'NVDA', 25, 165.0000, 0),
-    (3, 3, 'MSFT', 10, 495.2500, 0)
+    (3, 3, 'MSFT', 10, 495.2500, 0),
+    (100, 2, 'TSLA', 10, 200.0000, 0)
 ON CONFLICT (account_id, symbol) DO NOTHING;
 
 -- Reset sequence for positions table
@@ -95,7 +96,13 @@ ON CONFLICT (watchlist_id, symbol) DO NOTHING;
 INSERT INTO orders (id, account_id, symbol, side, order_type, quantity, limit_price, executed_price, executed_on, status, idempotency_key) VALUES
     ('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 2, 'AAPL', 'BUY', 'MARKET', 15, NULL, 220.5000, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-john-aapl-1'),
     ('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 2, 'NVDA', 'BUY', 'MARKET', 25, NULL, 165.0000, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-john-nvda-1'),
-    ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 3, 'MSFT', 'BUY', 'MARKET', 10, NULL, 495.2500, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-jane-msft-1')
+    ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 3, 'MSFT', 'BUY', 'MARKET', 10, NULL, 495.2500, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-jane-msft-1'),
+    ('d0eebc99-9c0b-4ef8-bb6d-6bb9bd380a44', 2, 'AAPL', 'BUY', 'MARKET', 10, NULL, 150.0000, CURRENT_TIMESTAMP - INTERVAL '30 days', 'FILLED', 'seed-order-john-aapl-past-1'),
+    ('e0eebc99-9c0b-4ef8-bb6d-6bb9bd380a55', 2, 'AAPL', 'SELL', 'MARKET', 10, NULL, 180.0000, CURRENT_TIMESTAMP - INTERVAL '25 days', 'FILLED', 'seed-order-john-aapl-past-2'),
+    ('f0eebc99-9c0b-4ef8-bb6d-6bb9bd380a66', 2, 'TSLA', 'BUY', 'MARKET', 20, NULL, 200.0000, CURRENT_TIMESTAMP - INTERVAL '20 days', 'FILLED', 'seed-order-john-tsla-past-1'),
+    ('a1eebc99-9c0b-4ef8-bb6d-6bb9bd380a77', 2, 'TSLA', 'SELL', 'MARKET', 10, NULL, 250.0000, CURRENT_TIMESTAMP - INTERVAL '15 days', 'FILLED', 'seed-order-john-tsla-past-2'),
+    ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a88', 2, 'MSFT', 'BUY', 'MARKET', 5, NULL, 300.0000, CURRENT_TIMESTAMP - INTERVAL '10 days', 'FILLED', 'seed-order-john-msft-past-1'),
+    ('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380a99', 2, 'MSFT', 'SELL', 'MARKET', 5, NULL, 320.0000, CURRENT_TIMESTAMP - INTERVAL '5 days', 'FILLED', 'seed-order-john-msft-past-2')
 ON CONFLICT (id) DO NOTHING;
 -- Backfill realised P&L for all FILLED SELL orders
 INSERT INTO pnl (order_id, account_id, symbol, quantity, sell_price, average_cost, realised_pnl, realised_at)

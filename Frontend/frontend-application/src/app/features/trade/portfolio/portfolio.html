@@ -5,6 +5,18 @@
       <h1>{{ pageTitle() }}</h1>
       <p class="subtitle">{{ pageSubtitle() }}</p>
     </header>
+    <div class="summary-cards">
+      <div class="summary-card">
+        <h4>Total Value</h4>
+        <div class="value">{{ portfolioSummary().portfolioValue | currency: accountCurrency(): 'symbol' }}</div>
+      </div>
+      <div class="summary-card">
+        <h4>Unrealized P&L</h4>
+        <div class="value" [class.positive]="portfolioSummary().todayPnL > 0" [class.negative]="portfolioSummary().todayPnL < 0">
+          {{ portfolioSummary().todayPnL > 0 ? '+' : '' }}{{ portfolioSummary().todayPnL | currency: accountCurrency(): 'symbol' }}
+        </div>
+      </div>
+    </div>
     <div class="content-container">
       <ng-container *ngTemplateOutlet="tableContent"></ng-container>
     </div>
@@ -29,18 +41,27 @@
             <th class="text-right">Qty</th>
             <th class="text-right">Avg. Price</th>
             <th class="text-right">LTP</th>
+            <th class="text-right">Current Value</th>
             <th class="text-right">P&L</th>
+            <th class="text-right">Allocation</th>
           </tr>
         </thead>
         <tbody>
-          @for (p of positions(); track p.symbol) {
+          @for (p of enrichedPositions(); track p.symbol) {
             <tr>
               <td class="symbol">{{ p.symbol }}</td>
               <td class="text-right">{{ p.quantity }}</td>
               <td class="text-right">{{ p.averagePrice | currency: accountCurrency(): 'symbol' }}</td>
               <td class="text-right">{{ p.ltp | currency: accountCurrency(): 'symbol' }}</td>
+              <td class="text-right">{{ p.currentValue | currency: accountCurrency(): 'symbol' }}</td>
               <td class="text-right" [class.positive]="p.pnl > 0" [class.negative]="p.pnl < 0">
                 {{ p.pnl > 0 ? '+' : '' }}{{ p.pnl | currency: accountCurrency(): 'symbol':'1.0-0' }}
+              </td>
+              <td class="text-right">
+                <div class="allocation-bar-container">
+                  <div class="allocation-bar" [style.width.%]="p.allocation * 100"></div>
+                </div>
+                <span>{{ p.allocation | percent:'1.1-2' }}</span>
               </td>
             </tr>
           }

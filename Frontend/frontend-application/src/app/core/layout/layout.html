@@ -8,15 +8,30 @@
 
     <nav class="nav-menu">
       @if (!isAdmin()) {
-        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" data-testid="nav-dashboard">
+        <a
+          routerLink="/dashboard"
+          routerLinkActive="active"
+          class="nav-item"
+          data-testid="nav-dashboard"
+        >
           <span class="material-icons icon" aria-hidden="true">dashboard</span>
           Dashboard
         </a>
-        <a routerLink="/watchlist" routerLinkActive="active" class="nav-item" data-testid="nav-watchlist">
+        <a
+          routerLink="/watchlist"
+          routerLinkActive="active"
+          class="nav-item"
+          data-testid="nav-watchlist"
+        >
           <span class="material-icons icon" aria-hidden="true">visibility</span>
           Watchlist
         </a>
-        <a routerLink="/trade" routerLinkActive="active" class="nav-item" data-testid="nav-order-ticket">
+        <a
+          routerLink="/trade"
+          routerLinkActive="active"
+          class="nav-item"
+          data-testid="nav-order-ticket"
+        >
           <span class="material-icons icon" aria-hidden="true">candlestick_chart</span>
           Trade
         </a>
@@ -24,26 +39,31 @@
           <span class="material-icons icon" aria-hidden="true">receipt_long</span>
           Orders
         </a>
-        <a routerLink="/portfolio" routerLinkActive="active" class="nav-item" data-testid="nav-portfolio">
         <a routerLink="/smart-rules" routerLinkActive="active" class="nav-item" data-testid="nav-smart-rules">
           <span class="material-icons icon" aria-hidden="true">rule</span>
           Smart Rules
         </a>
-        <a routerLink="/portfolio" routerLinkActive="active" class="nav-item" data-testid="nav-portfolio">
+        <a
+          routerLink="/portfolio"
+          routerLinkActive="active"
+          class="nav-item"
+          data-testid="nav-portfolio"
+        >
           <span class="material-icons icon" aria-hidden="true">show_chart</span>
           Portfolio
+        </a>
+        <a
+          routerLink="/realised-pnl"
+          routerLinkActive="active"
+          class="nav-item"
+          data-testid="nav-pnl"
+        >
+          <span class="material-icons icon" aria-hidden="true">trending_up</span>
+          P&L History
         </a>
         <a routerLink="/alerts" routerLinkActive="active" class="nav-item" data-testid="nav-alerts">
           <span class="material-icons icon" aria-hidden="true">notifications_active</span>
           Alerts
-        </a>
-        <a routerLink="/holdings" routerLinkActive="active" class="nav-item" data-testid="nav-holdings">
-          <span class="material-icons icon" aria-hidden="true">account_balance_wallet</span>
-          Holdings
-        </a>
-        <a routerLink="/realised-pnl" routerLinkActive="active" class="nav-item" data-testid="nav-pnl">
-          <span class="material-icons icon" aria-hidden="true">trending_up</span>
-          P&L History
         </a>
         <a routerLink="/advice" routerLinkActive="active" class="nav-item" data-testid="nav-advice">
           <span class="material-icons icon" aria-hidden="true">auto_graph</span>

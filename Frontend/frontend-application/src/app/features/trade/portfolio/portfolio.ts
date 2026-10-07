@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, Input } from '@angular/core';
+import { Component, inject, OnInit, signal, Input, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { DashboardService } from '../../dashboard/dashboard.service';
@@ -24,7 +24,16 @@ export class PortfolioComponent implements OnInit {
   
   // Bind to the centralized dashboard service state
   positions = this.dashboardService.holdings;
+  portfolioSummary = this.dashboardService.portfolioSummary;
   accountCurrency = this.dashboardService.accountCurrency;
+
+  enrichedPositions = computed(() => {
+    const totalValue = this.portfolioSummary().portfolioValue;
+    return this.positions().map(p => ({
+      ...p,
+      allocation: totalValue > 0 ? (p.currentValue / totalValue) : 0
+    }));
+  });
 
   ngOnInit() {
     const url = this.router.url;
