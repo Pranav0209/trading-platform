@@ -97,5 +97,43 @@ INSERT INTO orders (id, account_id, symbol, side, order_type, quantity, limit_pr
     ('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 2, 'NVDA', 'BUY', 'MARKET', 25, NULL, 165.0000, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-john-nvda-1'),
     ('c0eebc99-9c0b-4ef8-bb6d-6bb9bd380a33', 3, 'MSFT', 'BUY', 'MARKET', 10, NULL, 495.2500, CURRENT_TIMESTAMP, 'FILLED', 'seed-order-jane-msft-1')
 ON CONFLICT (id) DO NOTHING;
+-- Backfill realised P&L for all FILLED SELL orders
+INSERT INTO pnl (order_id, account_id, symbol, quantity, sell_price, average_cost, realised_pnl, realised_at)
+WITH RECURSIVE order_fills AS (
+    SELECT 
+        id as order_id, account_id, symbol, side, quantity, executed_price, executed_on, created_at,
+        ROW_NUMBER() OVER (PARTITION BY account_id, symbol ORDER BY executed_on ASC NULLS LAST, created_at ASC, id ASC) as fill_seq
+    FROM orders
+    WHERE status = 'FILLED' AND executed_price IS NOT NULL AND executed_on IS NOT NULL
+),
+position_tracker AS (
+    SELECT 
+        of.account_id, of.symbol, 0::BIGINT as last_fill_seq, 0 as held_qty, 0::NUMERIC as avg_cost
+    FROM (SELECT DISTINCT account_id, symbol FROM order_fills) of
+    UNION ALL
+    SELECT 
+        of.account_id, of.symbol, of.fill_seq,
+        CASE 
+            WHEN of.side = 'BUY' THEN pt.held_qty + of.quantity
+            WHEN of.side = 'SELL' THEN pt.held_qty - of.quantity
+            ELSE pt.held_qty
+        END as held_qty_after,
+        CASE
+            WHEN of.side = 'BUY' THEN
+                (pt.avg_cost * pt.held_qty + of.executed_price * of.quantity) / (pt.held_qty + of.quantity)::NUMERIC
+            WHEN of.side = 'SELL' THEN
+                CASE WHEN pt.held_qty - of.quantity = 0 THEN 0::NUMERIC ELSE pt.avg_cost END
+            ELSE pt.avg_cost
+        END as avg_cost_after
+    FROM order_fills of
+    JOIN position_tracker pt ON of.account_id = pt.account_id AND of.symbol = pt.symbol AND of.fill_seq = pt.last_fill_seq + 1
+)
+SELECT 
+    of.order_id, of.account_id, of.symbol, of.quantity, of.executed_price as sell_price, pt.avg_cost as average_cost,
+    (of.executed_price - pt.avg_cost) * of.quantity as realised_pnl, of.executed_on as realised_at
+FROM order_fills of
+JOIN position_tracker pt ON of.account_id = pt.account_id AND of.symbol = pt.symbol AND of.fill_seq = pt.last_fill_seq + 1
+WHERE of.side = 'SELL' AND pt.held_qty >= of.quantity
+ON CONFLICT (order_id) DO NOTHING;
 
 COMMIT;

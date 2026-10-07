@@ -23,8 +23,11 @@ export const routes: Routes = [
       { path: 'positions', loadComponent: () => import('./features/trade/positions/positions').then(m => m.PositionsComponent), canActivate: [customerGuard] },
       { path: 'holdings', loadComponent: () => import('./features/trade/positions/positions').then(m => m.PositionsComponent), canActivate: [customerGuard] },
       { path: 'alerts', loadComponent: () => import('./features/trade/alerts/alerts').then(m => m.AlertsComponent), canActivate: [customerGuard] },
+      { path: 'realised-pnl', loadComponent: () => import('./features/trade/realised-pnl/realised-pnl').then(m => m.RealisedPnlComponent), canActivate: [customerGuard] },
+      { path: 'pnl', loadComponent: () => import('./features/trade/realised-pnl/realised-pnl').then(m => m.RealisedPnlComponent), canActivate: [customerGuard] },
       { path: 'profile', loadComponent: () => import('./features/profile/profile').then(m => m.Profile), canActivate: [customerGuard] },
       { path: 'account', loadComponent: () => import('./features/account/account').then(m => m.Account), canActivate: [customerGuard] },
+      { path: 'advice', loadComponent: () => import('./features/advice/advice').then(m => m.Advice), canActivate: [customerGuard] },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

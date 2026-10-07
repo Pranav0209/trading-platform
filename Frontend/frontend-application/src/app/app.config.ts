@@ -6,12 +6,15 @@ import { routes } from './app.routes';
 import { BASE_PATH as AUTH_BASE_PATH } from '../generated/auth/variables';
 import { Configuration as AuthConfiguration } from '../generated/auth/configuration';
 import { BASE_PATH as TRADE_BASE_PATH } from '../generated/trade/variables';
+import { BASE_PATH as PORTFOLIO_BASE_PATH } from '../generated/portfolio/variables';
+import { Configuration as PortfolioConfiguration } from '../generated/portfolio/configuration';
 import { BearerTokenInterceptor } from './core/auth/bearer-token.interceptor';
 import { environment } from '../environments/environment';
 
 // Get URLs from environment configuration (injected from .env during build)
 const authApiUrl = environment.authApiUrl;
 const tradeApiUrl = environment.tradeApiUrl;
+const portfolioApiUrl = environment.tradeApiUrl; // Portfolio API is part of trade-api
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -30,6 +33,14 @@ export const appConfig: ApplicationConfig = {
         withCredentials: true 
       }) 
     },
-    { provide: TRADE_BASE_PATH, useValue: tradeApiUrl }
+    { provide: TRADE_BASE_PATH, useValue: tradeApiUrl },
+    {
+      provide: PortfolioConfiguration,
+      useFactory: () => new PortfolioConfiguration({
+        basePath: portfolioApiUrl,
+        withCredentials: true
+      })
+    },
+    { provide: PORTFOLIO_BASE_PATH, useValue: portfolioApiUrl }
   ]
 };

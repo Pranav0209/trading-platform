@@ -25,9 +25,15 @@
             type="text"
             formControlName="symbol"
             placeholder="INFY.NS"
+            list="instrumentOptions"
             data-testid="symbol-input"
             aria-required="true"
           />
+          <datalist id="instrumentOptions">
+            @for (inst of availableInstruments(); track inst.symbol) {
+              <option [value]="inst.symbol">{{ inst.displayName }}</option>
+            }
+          </datalist>
           @if (form.controls.symbol.touched && form.controls.symbol.invalid) {
             <p class="field-error">Enter a valid tradable symbol.</p>
           }

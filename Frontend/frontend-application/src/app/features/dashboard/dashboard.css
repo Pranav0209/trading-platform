@@ -104,6 +104,10 @@ html.dark-theme .badge.positive {
   min-height: 0;
 }
 
+app-realised-pnl {
+  grid-column: 1 / -1;
+}
+
 .chart-card {
   display: flex;
   flex-direction: column;
@@ -215,7 +219,8 @@ html.dark-theme .grid-line {
 }
 
 #holdings-section,
-#positions-section .card {
+#positions-section .card,
+app-realised-pnl .card {
   min-height: 0;
   overflow: hidden;
   display: flex;
@@ -223,12 +228,14 @@ html.dark-theme .grid-line {
 }
 
 #holdings-section .card-header,
-#positions-section .card-header {
+#positions-section .card-header,
+app-realised-pnl .card-header {
   flex: 0 0 auto;
 }
 
 #holdings-section .table-container,
-#positions-section .table-container {
+#positions-section .table-container,
+app-realised-pnl .table-container {
   flex: 1 1 auto;
   min-height: 0;
   max-height: 100%;
@@ -238,7 +245,8 @@ html.dark-theme .grid-line {
 }
 
 #holdings-section table,
-#positions-section table {
+#positions-section table,
+app-realised-pnl table {
   width: 100%;
   table-layout: fixed;
 }
@@ -246,7 +254,9 @@ html.dark-theme .grid-line {
 #holdings-section th,
 #holdings-section td,
 #positions-section th,
-#positions-section td {
+#positions-section td,
+app-realised-pnl th,
+app-realised-pnl td {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -302,7 +312,8 @@ html.dark-theme .view-all {
   }
 
   #holdings-section .table-container,
-  #positions-section .table-container {
+  #positions-section .table-container,
+  app-realised-pnl .table-container {
     max-height: 320px;
   }
 }

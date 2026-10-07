@@ -12,7 +12,7 @@
     "e2e:debug": "playwright test --debug",
     "e2e:ui": "playwright test --ui",
     "e2e:report": "playwright show-report",
-    "generate:clients": "openapi-generator-cli generate -c openapi/auth-client.json && openapi-generator-cli generate -c openapi/trade-client.json && node ./scripts/cleanup-generated-clients.mjs"
+    "generate:clients": "openapi-generator-cli generate -c openapi/auth-client.json && openapi-generator-cli generate -c openapi/trade-client.json && openapi-generator-cli generate -c openapi/portfolio-client.json && node ./scripts/cleanup-generated-clients.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.2",

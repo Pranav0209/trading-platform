@@ -61,5 +61,20 @@ CREATE INDEX IF NOT EXISTS idx_orders_account_created ON orders(account_id,creat
 CREATE INDEX IF NOT EXISTS idx_positions_account ON positions(account_id);
 
 INSERT INTO instruments(symbol,display_name,asset_class,currency,tradable) VALUES('AAPL','Apple Inc.','EQUITY','USD',TRUE),('MSFT','Microsoft Corporation','EQUITY','USD',TRUE),('NVDA','NVIDIA Corporation','EQUITY','USD',TRUE),('TSLA','Tesla Inc.','EQUITY','USD',TRUE),('ACME','Acme Corporation','EQUITY','USD',TRUE),('INFY.NS','Infosys Limited','EQUITY','INR',TRUE) ON CONFLICT(symbol) DO NOTHING;
+CREATE TABLE IF NOT EXISTS pnl (
+    id BIGSERIAL PRIMARY KEY,
+    order_id UUID NOT NULL UNIQUE REFERENCES orders(id),
+    account_id BIGINT NOT NULL REFERENCES accounts(id),
+    symbol VARCHAR(20) NOT NULL REFERENCES instruments(symbol),
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    sell_price NUMERIC(19,4) NOT NULL,
+    average_cost NUMERIC(19,4) NOT NULL CHECK (average_cost >= 0),
+    realised_pnl NUMERIC(19,4) NOT NULL,
+    realised_at TIMESTAMPTZ NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_pnl_account_realised_at 
+    ON pnl(account_id, realised_at DESC);
 
 COMMIT;

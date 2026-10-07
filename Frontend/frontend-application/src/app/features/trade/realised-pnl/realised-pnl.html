@@ -1,0 +1,194 @@
+@if (isStandalone()) {
+  <div class="standalone-wrapper">
+    <header class="page-header">
+      <h1>{{ pageTitle() }}</h1>
+      <p class="subtitle">{{ pageSubtitle() }}</p>
+    </header>
+    <div class="content-container">
+      <ng-container *ngTemplateOutlet="pnlContent"></ng-container>
+    </div>
+  </div>
+} @else {
+  <ng-container *ngTemplateOutlet="pnlContent"></ng-container>
+}
+
+<ng-template #pnlContent>
+  <div class="card data-card" [class.span-2]="!isStandalone()">
+    <!-- Card Header with Summary -->
+    <div class="card-header">
+      <h3 class="card-title">{{ title }}</h3>
+      <div style="display: flex; gap: 16px; align-items: center;">
+        <div class="summary-pills">
+          <div class="pill total-pnl" [class.positive]="totalRealisedPnl() >= 0" [class.negative]="totalRealisedPnl() < 0">
+            <span class="label">Total P&L</span>
+            <span class="value">
+              {{ getPnlPrefix(totalRealisedPnl()) }}{{ formatCurrency(totalRealisedPnl()) }} {{ baseCurrency() }}
+            </span>
+          </div>
+          <div class="pill record-count">
+            <span class="label">Records</span>
+            <span class="value">{{ totalCount() }}</span>
+          </div>
+        </div>
+        @if (showViewAll && !isStandalone()) {
+          <a routerLink="/realised-pnl" class="view-all">View all</a>
+        }
+      </div>
+    </div>
+
+    <!-- Compact Filter Bar (only in standalone mode) -->
+    @if (isStandalone()) {
+      <div class="filter-bar">
+        <div class="filter-controls">
+          <div class="filter-input-group">
+            <label for="filter-symbol">Symbol</label>
+            <input
+              id="filter-symbol"
+              type="text"
+              class="filter-input compact"
+              [(ngModel)]="symbol"
+              placeholder="AAPL, NVDA..."
+              (keyup.enter)="applyFilters()"
+            />
+          </div>
+
+          <div class="filter-input-group">
+            <label for="filter-from">From</label>
+            <input
+              id="filter-from"
+              type="date"
+              class="filter-input compact"
+              [(ngModel)]="fromDate"
+            />
+          </div>
+
+          <div class="filter-input-group">
+            <label for="filter-to">To</label>
+            <input
+              id="filter-to"
+              type="date"
+              class="filter-input compact"
+              [(ngModel)]="toDate"
+            />
+          </div>
+
+          <div class="filter-button-group">
+            <button 
+              class="filter-btn apply-btn" 
+              (click)="applyFilters()" 
+              [disabled]="loading()"
+            >
+              Apply
+            </button>
+            <button 
+              class="filter-btn reset-btn" 
+              (click)="resetFilters()"
+              [disabled]="loading()"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (error()) {
+      <div class="pnl-error" role="alert">
+        <span class="error-icon">⚠</span>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    <!-- Loading State -->
+    @if (loading()) {
+      <div class="pnl-loading">
+        <span class="material-icons spinning">sync</span>
+        <p>Loading P&L history...</p>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (hasNoRecords && !error()) {
+      <div class="pnl-empty">
+        <span class="empty-icon">📊</span>
+        <p>No realised P&L records found</p>
+        @if (isStandalone()) {
+          <p class="empty-hint">Start by placing SELL orders to generate realised P&L records</p>
+        }
+      </div>
+    }
+
+    <!-- Data Table -->
+    @if (!loading() && !error() && pnlRecords().length > 0) {
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Symbol</th>
+              <th class="text-right">Qty</th>
+              <th class="text-right">Sell Price</th>
+              <th class="text-right">Avg Cost</th>
+              <th class="text-right">Realised P&L</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (record of pnlRecords(); track record.orderId) {
+              <tr>
+                <td class="muted">{{ record.realisedAt | date: 'MMM dd, yyyy' }}</td>
+                <td class="symbol">{{ record.symbol }}</td>
+                <td class="text-right">{{ record.quantity | number }}</td>
+                <td class="text-right">{{ formatCurrency(record.sellPrice) }}</td>
+                <td class="text-right">{{ formatCurrency(record.averageCost) }}</td>
+                <td class="text-right" [class.positive]="record.realisedPnl > 0" [class.negative]="record.realisedPnl < 0">
+                  {{ record.realisedPnl > 0 ? '+' : '' }}{{ formatCurrency(record.realisedPnl) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Section -->
+      @if (isStandalone() && totalPages() > 1) {
+        <div class="pagination-section">
+          <div class="pagination-controls">
+            <button
+              class="pagination-button"
+              (click)="previousPage()"
+              [disabled]="currentPage() === 0"
+              title="Previous page"
+            >
+              ← Prev
+            </button>
+
+            @for (pageNum of pageNumbers; track pageNum) {
+              <button
+                class="pagination-button"
+                [class.active]="pageNum === currentPage()"
+                (click)="goToPage(pageNum)"
+                [attr.aria-label]="'Go to page ' + (pageNum + 1)"
+              >
+                {{ pageNum + 1 }}
+              </button>
+            }
+
+            <button
+              class="pagination-button"
+              (click)="nextPage()"
+              [disabled]="currentPage() === totalPages() - 1"
+              title="Next page"
+            >
+              Next →
+            </button>
+          </div>
+
+          <div class="pagination-info">
+            Page {{ currentPage() + 1 }} of {{ totalPages() }} · {{ pnlRecords().length }} of {{ totalCount() }} records
+          </div>
+        </div>
+      }
+    }
+  </div>
+</ng-template>
