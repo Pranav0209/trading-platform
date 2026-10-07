@@ -44,6 +44,14 @@
   --auth-focus-ring-light: rgba(0, 103, 71, 0.18);
   --auth-focus-ring-dark: rgba(0, 208, 132, 0.26);
 
+  /* Generic Theme Variables (Light Mode Defaults) */
+  --primary-color: #10b981;
+  --surface-color: #ffffff;
+  --surface-hover: #f5f5f5;
+  --text-primary: #1A1A1A;
+  --text-muted: #69695F;
+  --border-color: #D8D8CF;
+
   /* Layout and spacing */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -71,6 +79,13 @@ html {
 
 html.dark-theme {
   color-scheme: dark;
+  /* Generic Theme Variables (Dark Mode Overrides) */
+  --primary-color: #10b981;
+  --surface-color: #1A1A1A;
+  --surface-hover: #232323;
+  --text-primary: #F5F5DC;
+  --text-muted: #A3A295;
+  --border-color: #343434;
 }
 
 html,

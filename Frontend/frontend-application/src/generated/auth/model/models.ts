@@ -4,6 +4,7 @@ export * from './preferenceResponse';
 export * from './refreshRequest';
 export * from './registerRequest';
 export * from './requestEmailUpdateRequest';
+export * from './resendOtpRequest';
 export * from './role';
 export * from './tokenResponse';
 export * from './updatePreferenceRequest';

@@ -197,4 +197,8 @@ export class WatchlistComponent implements OnInit {
       this.showDropdown.set(false);
     }, 200);
   }
+
+  goToCreateAlert(symbol: string) {
+    this.router.navigate(['/alerts'], { queryParams: { symbol: symbol } });
+  }
 }

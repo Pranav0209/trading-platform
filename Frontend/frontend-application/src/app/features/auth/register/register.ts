@@ -32,6 +32,7 @@ export class Register {
   protected readonly passwordValidationMessage = registerPasswordValidationMessage;
 
   isSubmitting = signal(false);
+  isResending = signal(false);
   isOtpStep = signal(false);
   registeredEmail = signal('');
 
@@ -122,5 +123,27 @@ export class Register {
         this.isSubmitting.set(false);
       }
     });
+  }
+
+  onResendOtp(): void {
+    this.isResending.set(true);
+    this.authService.resendOtp({
+      email: this.registeredEmail()
+    }).subscribe({
+      next: () => {
+        this.toastService.success('OTP resent successfully! Check your email.');
+        this.startTimer();
+        this.isResending.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        const errorMsg = this.errorCodeMapper.mapErrorToMessage(err);
+        this.toastService.error(errorMsg);
+        this.isResending.set(false);
+      }
+    });
+  }
+
+  goBack(): void {
+    this.router.navigate(['/sign-in']);
   }
 }
