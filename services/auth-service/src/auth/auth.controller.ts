@@ -5,6 +5,7 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { ResendOtpDto } from './dto/resend-otp.dto';
 import { RequestEmailUpdateDto } from './dto/request-email-update.dto';
 import { VerifyEmailUpdateDto } from './dto/verify-email-update.dto';
 import { JwtAuthGuard } from './guards/jwt.guard';
@@ -97,6 +98,14 @@ export class AuthController {
   @Post('verify-otp')
   async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
     return this.authService.verifyOtp(verifyOtpDto.email, verifyOtpDto.otpCode);
+  }
+
+  @ApiOperation({ summary: 'Resend Registration OTP' })
+  @ApiResponse({ status: 200, description: 'OTP resent successfully.' })
+  @HttpCode(200)
+  @Post('resend-otp')
+  async resendOtp(@Body() resendOtpDto: ResendOtpDto) {
+    return this.authService.resendOtp(resendOtpDto.email);
   }
 
   @ApiBearerAuth()

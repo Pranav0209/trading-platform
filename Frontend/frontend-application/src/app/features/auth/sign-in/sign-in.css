@@ -337,6 +337,72 @@
 }
 
 /* =========================
+   LOGO BUTTON
+   ========================= */
+
+.logo-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s ease;
+}
+
+.logo-button:hover {
+  transform: scale(1.05);
+}
+
+.logo-button:active {
+  transform: scale(0.98);
+}
+
+.logo-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* =========================
+   RESEND BUTTON
+   ========================= */
+
+.resend-button {
+  width: 100%;
+  height: 44px;
+
+  border: 1px solid #10b981;
+  border-radius: 8px;
+
+  background: transparent;
+  color: #10b981;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+  margin-top: 12px;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.resend-button:hover {
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.resend-button:active {
+  transform: translateY(1px);
+}
+
+.resend-button:disabled {
+  border-color: #cbd5e1;
+  background: transparent;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+/* =========================
    RESPONSIVE
    ========================= */
 

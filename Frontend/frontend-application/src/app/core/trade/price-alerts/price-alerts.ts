@@ -6,6 +6,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { WatchlistAlertService } from '../services/watchlist-alert.service';
 import { PriceAlert, CreateAlertRequest } from '../models/watchlist-alert.models';
+import { DashboardService } from '../../../features/dashboard/dashboard.service';
 
 @Component({
   selector: 'app-price-alerts',
@@ -34,11 +35,16 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
 
+  accountCurrency: any;
+
   constructor(
     private watchlistAlertService: WatchlistAlertService,
     private route: ActivatedRoute,
-    private cdr: ChangeDetectorRef
-  ) {}
+    private cdr: ChangeDetectorRef,
+    private dashboardService: DashboardService
+  ) {
+    this.accountCurrency = this.dashboardService.accountCurrency;
+  }
 
   ngOnInit(): void {
     this.accountId = this.getAccountIdFromToken();

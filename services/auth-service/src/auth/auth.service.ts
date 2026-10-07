@@ -105,6 +105,28 @@ export class AuthService {
     return { message: 'Account activated successfully' };
   }
 
+  async resendOtp(email: string) {
+    const user = await this.usersService.findOneByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'User not found' });
+    }
+
+    if (user.status !== 'PENDING') {
+      throw new ConflictException({ errorCode: 'AUTH-409', message: 'User is already active' });
+    }
+
+    const otpCode = this.generateOtp();
+    const otpExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+
+    await this.usersService.update(user.id, {
+      otpCode,
+      otpExpiresAt,
+    });
+
+    await this.emailJSService.sendOtpEmail(user.email, otpCode);
+    return { message: 'OTP resent successfully. Please check your email.' };
+  }
+
   async requestEmailUpdate(userId: number, newEmail: string) {
     const existingEmail = await this.usersService.findOneByEmail(newEmail);
     if (existingEmail) {

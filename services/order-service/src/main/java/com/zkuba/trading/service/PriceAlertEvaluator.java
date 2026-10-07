@@ -34,6 +34,8 @@ import java.util.Map;
  *    - BELOW: fires when price crosses downward (price <= threshold)
  * 5. Alert lifecycle: ACTIVE -> TRIGGERED (wait for reset) -> ACTIVE
  * 6. Dormant state: Not used in this iteration; alerts go ACTIVE after reset
+ * 7. Currency conversion: prices from Kafka are in USD, thresholds are in account currency
+ *    so prices are converted to account currency before comparison
  */
 @Service
 public class PriceAlertEvaluator {
@@ -43,14 +45,17 @@ public class PriceAlertEvaluator {
     private final PriceAlertRepository alertRepository;
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
+    private final CurrencyConversionService currencyConversionService;
 
     public PriceAlertEvaluator(
             PriceAlertRepository alertRepository,
             NotificationService notificationService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            CurrencyConversionService currencyConversionService) {
         this.alertRepository = alertRepository;
         this.notificationService = notificationService;
         this.objectMapper = objectMapper;
+        this.currencyConversionService = currencyConversionService;
     }
 
     /**
@@ -74,6 +79,7 @@ public class PriceAlertEvaluator {
             
             String symbol = (String) quoteData.get("symbol");
             Object priceObj = quoteData.get("price");
+            String quoteCurrency = (String) quoteData.getOrDefault("currency", "USD");
             
             if (symbol == null || priceObj == null) {
                 log.warn("Malformed market data message: missing symbol or price");
@@ -90,11 +96,11 @@ public class PriceAlertEvaluator {
                 return;
             }
 
-            log.debug("Evaluating {} alerts for symbol {} at price {}", alerts.size(), symbol, price);
+            log.debug("Evaluating {} alerts for symbol {} at price {} {}", alerts.size(), symbol, price, quoteCurrency);
 
             // Evaluate each alert
             for (PriceAlert alert : alerts) {
-                evaluateAlert(alert, price, symbol);
+                evaluateAlert(alert, price, quoteCurrency, symbol);
             }
 
         } catch (Exception e) {
@@ -104,28 +110,48 @@ public class PriceAlertEvaluator {
     }
 
     /**
-     * Evaluate a single alert against a price
+     * Evaluate a single alert against a price, converting to account currency first
      */
-    private void evaluateAlert(PriceAlert alert, BigDecimal price, String symbol) {
+    private void evaluateAlert(PriceAlert alert, BigDecimal priceInQuoteCurrency, String quoteCurrency, String symbol) {
         try {
             // Only evaluate ACTIVE alerts; TRIGGERED alerts are waiting for customer reset
             if (alert.getState() != AlertState.ACTIVE) {
                 return;
             }
 
+            // Get account currency
+            String accountCurrency = alert.getAccount().getCurrency() != null ? 
+                    alert.getAccount().getCurrency() : "USD";
+
+            // Convert price to account currency if needed
+            BigDecimal priceInAccountCurrency = priceInQuoteCurrency;
+            if (!quoteCurrency.equals(accountCurrency)) {
+                try {
+                    BigDecimal rate = currencyConversionService.getConversionRate(quoteCurrency, accountCurrency);
+                    priceInAccountCurrency = priceInQuoteCurrency.multiply(rate).setScale(4, java.math.RoundingMode.HALF_UP);
+                    log.debug("Converted price {} {} to {} {} using rate {}", 
+                            priceInQuoteCurrency, quoteCurrency, priceInAccountCurrency, accountCurrency, rate);
+                } catch (Exception e) {
+                    log.warn("Failed to convert price from {} to {}, using original price. Error: {}", 
+                            quoteCurrency, accountCurrency, e.getMessage());
+                    // Use original price if conversion fails
+                }
+            }
+
             boolean thresholdCrossed = false;
 
             if (alert.getDirection() == Direction.ABOVE) {
                 // Alert fires when price rises through threshold
-                thresholdCrossed = price.compareTo(alert.getThreshold()) >= 0;
+                thresholdCrossed = priceInAccountCurrency.compareTo(alert.getThreshold()) >= 0;
             } else if (alert.getDirection() == Direction.BELOW) {
                 // Alert fires when price falls through threshold
-                thresholdCrossed = price.compareTo(alert.getThreshold()) <= 0;
+                thresholdCrossed = priceInAccountCurrency.compareTo(alert.getThreshold()) <= 0;
             }
 
             if (thresholdCrossed) {
-                log.info("Alert {} triggered for {} at {} (threshold: {}, direction: {})",
-                        alert.getId(), symbol, price, alert.getThreshold(), alert.getDirection());
+                log.info("Alert {} triggered for {} at {} {} (threshold: {} {}, direction: {})",
+                        alert.getId(), symbol, priceInAccountCurrency, accountCurrency, 
+                        alert.getThreshold(), accountCurrency, alert.getDirection());
 
                 // Transition to TRIGGERED
                 alert.setState(AlertState.TRIGGERED);
@@ -134,7 +160,7 @@ public class PriceAlertEvaluator {
                 alert.setUpdatedAt(OffsetDateTime.now());
 
                 // Deliver notification through the notifications module
-                deliverAlert(alert, price);
+                deliverAlert(alert, priceInAccountCurrency);
 
                 // Save updated alert
                 alertRepository.save(alert);

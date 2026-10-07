@@ -11,6 +11,8 @@
 
 BEGIN;
 
+DROP TABLE IF EXISTS price_alerts;
+
 -- Price alerts table
 CREATE TABLE IF NOT EXISTS price_alerts (
     id BIGSERIAL PRIMARY KEY,
