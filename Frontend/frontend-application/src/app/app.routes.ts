@@ -26,6 +26,7 @@ export const routes: Routes = [
       { path: 'pnl', loadComponent: () => import('./features/trade/realised-pnl/realised-pnl').then(m => m.RealisedPnlComponent), canActivate: [customerGuard] },
       { path: 'profile', loadComponent: () => import('./features/profile/profile').then(m => m.Profile), canActivate: [customerGuard] },
       { path: 'account', loadComponent: () => import('./features/account/account').then(m => m.Account), canActivate: [customerGuard] },
+      { path: 'advice', loadComponent: () => import('./features/advice/advice').then(m => m.Advice), canActivate: [customerGuard] },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

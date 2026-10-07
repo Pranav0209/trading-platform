@@ -1,5 +1,6 @@
 export * from './accountResponse';
 export * from './accountStatus';
+export * from './adviceResponse';
 export * from './balanceResponse';
 export * from './createAccountRequest';
 export * from './createWatchlistRequest';
@@ -12,5 +13,6 @@ export * from './orderStatus';
 export * from './pendingUserResponse';
 export * from './placeOrderRequest';
 export * from './positionResponse';
+export * from './signalResponse';
 export * from './updateOrderRequest';
 export * from './watchlistResponse';

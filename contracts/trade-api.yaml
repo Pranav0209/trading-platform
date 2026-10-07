@@ -621,6 +621,29 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorised'
 
+  /api/v1/advice/{id}:
+    get:
+      tags: [Advice]
+      operationId: getAdvice
+      summary: Get trade advice and signals
+      description: |
+        Returns BUY/SELL/HOLD signals for every stock the user currently owns or has added to their watchlist.
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+      responses:
+        '200':
+          description: Advice generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdviceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          $ref: '#/components/responses/AccountNotActive'
+        '404':
+          $ref: '#/components/responses/AccountNotFound'
+
 components:
 
   securitySchemes:
@@ -1043,3 +1066,49 @@ components:
           type: string
         tradable:
           type: boolean
+
+    AdviceResponse:
+      type: object
+      additionalProperties: false
+      required: [accountId, generatedAt, signals]
+      properties:
+        accountId:
+          type: integer
+          format: int64
+        generatedAt:
+          type: string
+          format: date-time
+        signals:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignalResponse'
+
+    SignalResponse:
+      type: object
+      additionalProperties: false
+      required: [symbol, source, signal, score, reasons, stale]
+      properties:
+        symbol:
+          type: string
+        source:
+          type: string
+          enum: [HOLDING, WATCHLIST, BOTH]
+        signal:
+          type: string
+          enum: [BUY, SELL, HOLD, INSUFFICIENT_DATA]
+        score:
+          type: integer
+          format: int32
+        reasons:
+          type: array
+          items:
+            type: string
+        indicatorValues:
+          type: object
+          additionalProperties: true
+        stale:
+          type: boolean
+        priceTimestamp:
+          type: string
+          format: date-time
+
