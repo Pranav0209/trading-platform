@@ -42,7 +42,8 @@ psql \
     --dbname="$DATABASE" \
     -v ON_ERROR_STOP=1 \
     -f "$MIGRATIONS_DIR/01-schema.sql" \
-    -f "$MIGRATIONS_DIR/02-seed-data.sql"
+    -f "$MIGRATIONS_DIR/02-seed-data.sql" \
+    -f "$MIGRATIONS_DIR/03-realised-pnl-table.sql"
 
 echo "Database setup completed successfully."
 
