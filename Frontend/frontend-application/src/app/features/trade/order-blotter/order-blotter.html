@@ -17,6 +17,76 @@
   <div class="card data-card order-blotter" [class.span-2]="!isStandalone()">
     <div class="card-header blotter-header">
       <h3 class="card-title">Recent Orders</h3>
+      
+      <!-- Filter Section -->
+      <div class="filters-section">
+        <!-- Symbol Search -->
+        <div class="filter-group search-group">
+          <label for="symbol-search" class="filter-label">Search by Symbol:</label>
+          <input
+            id="symbol-search"
+            type="text"
+            class="symbol-search-input"
+            placeholder="Enter symbol..."
+            [value]="searchSymbol()"
+            (input)="onSearchSymbolChange($any($event.target).value)"
+            data-testid="symbol-search-input"
+          />
+        </div>
+
+        <!-- Status Filters -->
+        <div class="filter-group status-filters">
+          <label class="filter-label">Status:</label>
+          <div class="status-checkboxes">
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                [checked]="isStatusSelected('NEW')"
+                (change)="toggleStatusFilter('NEW')"
+                data-testid="filter-new"
+              />
+              <span>New</span>
+            </label>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                [checked]="isStatusSelected('FILLED')"
+                (change)="toggleStatusFilter('FILLED')"
+                data-testid="filter-filled"
+              />
+              <span>Filled</span>
+            </label>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                [checked]="isStatusSelected('CANCELLED')"
+                (change)="toggleStatusFilter('CANCELLED')"
+                data-testid="filter-cancelled"
+              />
+              <span>Cancelled</span>
+            </label>
+            <label class="checkbox-label">
+              <input
+                type="checkbox"
+                [checked]="isStatusSelected('REJECTED')"
+                (change)="toggleStatusFilter('REJECTED')"
+                data-testid="filter-rejected"
+              />
+              <span>Rejected</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Clear Filters Button -->
+        <button
+          class="clear-filters-btn"
+          (click)="clearFilters()"
+          data-testid="clear-filters-button"
+        >
+         Enable All Filters
+        </button>
+      </div>
+
       <div class="blotter-controls">
         @if (isAutoRefreshing()) {
           <span class="auto-refresh-indicator" aria-live="polite">
