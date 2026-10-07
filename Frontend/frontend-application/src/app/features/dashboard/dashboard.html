@@ -12,10 +12,12 @@
     <div class="card summary-card">
       <div class="card-title">Portfolio Value</div>
       <div class="card-value financial-value">
-        {{ portfolioSummary().portfolioValue | currency: accountCurrency(): 'symbol' }}
+        {{ portfolioSummary().portfolioValue | currency: accountCurrency() : 'symbol' }}
       </div>
       <div class="card-meta">
-        <span class="positive">+{{ portfolioSummary().todayPnL | currency: accountCurrency(): 'symbol' }} today</span>
+        <span class="positive"
+          >+{{ portfolioSummary().todayPnL | currency: accountCurrency() : 'symbol' }} today</span
+        >
         <span class="badge positive">+{{ portfolioSummary().todayPnLPercent }}%</span>
       </div>
     </div>
@@ -23,7 +25,7 @@
     <div class="card summary-card">
       <div class="card-title">Today's P&L</div>
       <div class="card-value financial-value positive">
-        +{{ portfolioSummary().todayPnL | currency: accountCurrency(): 'symbol' }}
+        +{{ portfolioSummary().todayPnL | currency: accountCurrency() : 'symbol' }}
       </div>
       <div class="card-meta">
         <span class="badge positive">+{{ portfolioSummary().todayPnLPercent }}%</span>
@@ -33,7 +35,7 @@
     <div class="card summary-card">
       <div class="card-title">Available Balance</div>
       <div class="card-value financial-value">
-        {{ portfolioSummary().availableBalance | currency: accountCurrency(): 'symbol' }}
+        {{ portfolioSummary().availableBalance | currency: accountCurrency() : 'symbol' }}
       </div>
       <div class="card-meta">
         <span class="muted">Available to trade</span>
@@ -49,19 +51,62 @@
         <div class="card-header">
           <h3 class="card-title">Portfolio Performance</h3>
           <div class="time-selectors" role="tablist" aria-label="Performance range">
-            <button type="button" [class.active]="chartTimeRange() === '1D'" (click)="setChartTimeRange('1D')">1D</button>
-            <button type="button" [class.active]="chartTimeRange() === '1W'" (click)="setChartTimeRange('1W')">1W</button>
-            <button type="button" [class.active]="chartTimeRange() === '1M'" (click)="setChartTimeRange('1M')">1M</button>
-            <button type="button" [class.active]="chartTimeRange() === '6M'" (click)="setChartTimeRange('6M')">6M</button>
-            <button type="button" [class.active]="chartTimeRange() === '1Y'" (click)="setChartTimeRange('1Y')">1Y</button>
-            <button type="button" [class.active]="chartTimeRange() === 'ALL'" (click)="setChartTimeRange('ALL')">ALL</button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === '1D'"
+              (click)="setChartTimeRange('1D')"
+            >
+              1D
+            </button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === '1W'"
+              (click)="setChartTimeRange('1W')"
+            >
+              1W
+            </button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === '1M'"
+              (click)="setChartTimeRange('1M')"
+            >
+              1M
+            </button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === '6M'"
+              (click)="setChartTimeRange('6M')"
+            >
+              6M
+            </button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === '1Y'"
+              (click)="setChartTimeRange('1Y')"
+            >
+              1Y
+            </button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === 'ALL'"
+              (click)="setChartTimeRange('ALL')"
+            >
+              ALL
+            </button>
           </div>
         </div>
 
         <div class="chart-summary">
-          <div class="chart-value financial-value">{{ portfolioSummary().portfolioValue | currency: accountCurrency(): 'symbol' }}</div>
-          <div class="chart-change" [class.positive]="chartChange() >= 0" [class.negative]="chartChange() < 0">
-            {{ chartChange() >= 0 ? '+' : '' }}{{ chartChange() | currency: accountCurrency(): 'symbol' }} (Total Realised P&L)
+          <div class="chart-value financial-value">
+            {{ portfolioSummary().portfolioValue | currency: accountCurrency() : 'symbol' }}
+          </div>
+          <div
+            class="chart-change"
+            [class.positive]="chartChange() >= 0"
+            [class.negative]="chartChange() < 0"
+          >
+            {{ chartChange() >= 0 ? '+' : ''
+            }}{{ chartChange() | currency: accountCurrency() : 'symbol' }} (Total Realised P&L)
           </div>
         </div>
 
@@ -69,8 +114,16 @@
           <svg viewBox="0 0 800 200" preserveAspectRatio="none" class="chart-svg">
             <defs>
               <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" [attr.stop-color]="chartChange() >= 0 ? '#00D084' : '#ef4444'" stop-opacity="0.28" />
-                <stop offset="100%" [attr.stop-color]="chartChange() >= 0 ? '#00D084' : '#ef4444'" stop-opacity="0.02" />
+                <stop
+                  offset="0%"
+                  [attr.stop-color]="chartChange() >= 0 ? '#00D084' : '#ef4444'"
+                  stop-opacity="0.28"
+                />
+                <stop
+                  offset="100%"
+                  [attr.stop-color]="chartChange() >= 0 ? '#00D084' : '#ef4444'"
+                  stop-opacity="0.02"
+                />
               </linearGradient>
             </defs>
             <path
@@ -97,7 +150,7 @@
     </section>
 
     <!-- HOLDINGS (Summary) -->
-    <app-portfolio title="Holdings" [showViewAll]="true"></app-portfolio>
+    <app-portfolio title="Portfolio" [showViewAll]="true"></app-portfolio>
 
     <!-- REALISED P&L (Summary) -->
     <app-realised-pnl

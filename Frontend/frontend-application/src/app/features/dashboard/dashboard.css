@@ -7,10 +7,11 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
   gap: var(--spacing-lg);
   padding: var(--spacing-lg) var(--spacing-xl) var(--spacing-xl);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 html:not(.dark-theme) .dashboard-scroll-area {
@@ -99,7 +100,7 @@ html.dark-theme .badge.positive {
 
 .performance-section,
 .two-col-grid,
-#holdings-section,
+app-portfolio,
 #positions-section {
   min-height: 0;
 }
@@ -218,22 +219,23 @@ html.dark-theme .grid-line {
   gap: var(--spacing-lg);
 }
 
-#holdings-section,
+app-portfolio .card,
 #positions-section .card,
 app-realised-pnl .card {
+  max-height: clamp(350px, 60vh, 700px);
   min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-#holdings-section .card-header,
+app-portfolio .card-header,
 #positions-section .card-header,
 app-realised-pnl .card-header {
   flex: 0 0 auto;
 }
 
-#holdings-section .table-container,
+app-portfolio .table-container,
 #positions-section .table-container,
 app-realised-pnl .table-container {
   flex: 1 1 auto;
@@ -244,15 +246,15 @@ app-realised-pnl .table-container {
   padding-right: 4px;
 }
 
-#holdings-section table,
+app-portfolio table,
 #positions-section table,
 app-realised-pnl table {
   width: 100%;
   table-layout: fixed;
 }
 
-#holdings-section th,
-#holdings-section td,
+app-portfolio th,
+app-portfolio td,
 #positions-section th,
 #positions-section td,
 app-realised-pnl th,
@@ -311,7 +313,7 @@ html.dark-theme .view-all {
     grid-template-rows: auto auto;
   }
 
-  #holdings-section .table-container,
+  app-portfolio .table-container,
   #positions-section .table-container,
   app-realised-pnl .table-container {
     max-height: 320px;

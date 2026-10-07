@@ -20,6 +20,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -36,6 +37,22 @@ public class SmartRuleEvaluator {
     private final InternalOrderClient internalOrderClient;
     private final SmartRuleIndicatorCalculator indicatorCalculator;
     private final ObjectMapper objectMapper;
+
+    // Simple cache to prevent database starvation from high-frequency ticks.
+    // NOTE: We intentionally cache JPA entities for 2 seconds. A newly created
+    // or updated rule may take up to 2 seconds to be evaluated. This brief staleness
+    // is an acceptable trade-off to drastically reduce database load.
+    private final ConcurrentHashMap<String, CacheEntry> ruleCache = new ConcurrentHashMap<>();
+    private static final long CACHE_TTL_MS = 2000;
+
+    private static class CacheEntry {
+        final List<SmartRule> rules;
+        final long timestamp;
+        CacheEntry(List<SmartRule> rules, long timestamp) {
+            this.rules = rules;
+            this.timestamp = timestamp;
+        }
+    }
 
     public SmartRuleEvaluator(
             SmartRuleRepository smartRuleRepository,
@@ -69,7 +86,18 @@ public class SmartRuleEvaluator {
                     ? new BigDecimal(previousCloseObj.toString()).setScale(4, RoundingMode.HALF_UP)
                     : null;
 
-            List<SmartRule> rules = smartRuleRepository.findBySymbolAndEnabledTrue(symbol);
+            // Check cache first to avoid DB queries for every tick
+            long now = System.currentTimeMillis();
+            CacheEntry cacheEntry = ruleCache.get(symbol);
+            List<SmartRule> rules;
+            
+            if (cacheEntry != null && (now - cacheEntry.timestamp) < CACHE_TTL_MS) {
+                rules = cacheEntry.rules;
+            } else {
+                rules = smartRuleRepository.findBySymbolAndEnabledTrue(symbol);
+                ruleCache.put(symbol, new CacheEntry(rules, now));
+            }
+
             if (rules.isEmpty()) {
                 return;
             }
@@ -78,31 +106,42 @@ public class SmartRuleEvaluator {
             List<CandleResponse.Candle> candles = candleResponse != null && candleResponse.data() != null
                     ? candleResponse.data().candles()
                     : null;
+                    
+            // Bulk-load positions for all accounts involved in these rules
+            List<Long> accountIds = rules.stream().map(r -> r.getAccount().getId()).distinct().toList();
+            Map<Long, Position> positionsByAccount = positionRepository.findByAccountIdInAndSymbol(accountIds, symbol)
+                    .stream()
+                    .collect(java.util.stream.Collectors.toMap(p -> p.getAccount().getId(), p -> p));
 
             for (SmartRule rule : rules) {
-                evaluateRule(rule, currentPrice, previousClose, candles);
+                Position position = positionsByAccount.get(rule.getAccount().getId());
+                evaluateRule(rule, currentPrice, previousClose, position, candles);
             }
         } catch (Exception exception) {
             log.error("Failed to evaluate smart rules from market-data message", exception);
         }
     }
 
-    private void evaluateRule(SmartRule rule, BigDecimal currentPrice, BigDecimal previousClose, List<CandleResponse.Candle> candles) {
+    private void evaluateRule(SmartRule rule, BigDecimal currentPrice, BigDecimal previousClose, Position position, List<CandleResponse.Candle> candles) {
         if (!isEligible(rule)) {
             return;
         }
 
-        Position position = positionRepository.findByAccountIdAndSymbol(rule.getAccount().getId(), rule.getSymbol())
-                .orElse(null);
+        boolean wasMet = rule.isConditionMet();
         boolean matches = conditionMatches(rule, currentPrice, previousClose, position, candles);
 
-        if (matches && !rule.isConditionMet()) {
+        boolean triggered = false;
+        if (matches && !wasMet) {
             triggerRule(rule, currentPrice, position);
+            triggered = true;
         }
 
-        rule.setConditionMet(matches);
-        rule.setUpdatedAt(OffsetDateTime.now());
-        smartRuleRepository.save(rule);
+        // Only save if the state changed or the rule was triggered (which mutates the rule)
+        if (matches != wasMet || triggered) {
+            rule.setConditionMet(matches);
+            rule.setUpdatedAt(OffsetDateTime.now());
+            smartRuleRepository.save(rule);
+        }
     }
 
     private boolean isEligible(SmartRule rule) {

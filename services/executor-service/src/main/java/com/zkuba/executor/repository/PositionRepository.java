@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface PositionRepository extends JpaRepository<Position, Long> {
     Optional<Position> findByAccountIdAndSymbol(Long accountId, String symbol);
+    List<Position> findByAccountIdInAndSymbol(List<Long> accountIds, String symbol);
 
     @Query(
             value = "SELECT symbol FROM positions " +
