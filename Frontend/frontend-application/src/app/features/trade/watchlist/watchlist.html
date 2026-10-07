@@ -31,12 +31,22 @@
   <div class="watchlist-toolbar" *ngIf="activeWatchlist()">
     <div class="instrument-search">
       <span class="material-icons search-icon">search</span>
-      <input type="text" [(ngModel)]="newSymbol" list="instrumentOptions" placeholder="Search instruments..." class="search-input" (keyup.enter)="addSymbol()" #searchInput />
-      <datalist id="instrumentOptions">
-        <option *ngFor="let inst of availableInstruments()" [value]="inst.symbol">
-          {{ inst.displayName }}
-        </option>
-      </datalist>
+      
+      <div class="autocomplete-wrapper" style="position: relative;">
+        <input type="text" [ngModel]="newSymbol" (ngModelChange)="onSearchChange($event)" placeholder="Search instruments..." class="search-input" (keyup.enter)="addSymbol()" autocomplete="off" (focus)="showDropdown.set(true)" (blur)="hideDropdown()" #searchInput />
+        
+        @if (showDropdown() && filteredInstruments().length > 0) {
+          <ul class="autocomplete-dropdown">
+            @for (inst of filteredInstruments(); track inst.symbol) {
+              <li (click)="selectSearchInstrument(inst.symbol)">
+                <span class="symbol-name">{{ inst.symbol }}</span>
+                <span class="company-name">{{ inst.displayName }}</span>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
       <button (click)="addSymbol()" class="icon-btn" [disabled]="!newSymbol" *ngIf="newSymbol">
         <span class="material-icons">add</span>
       </button>
@@ -93,8 +103,8 @@
 
         <div class="col-actions">
           <div class="row-actions">
-            <button class="btn-icon" (click)="removeSymbol(symbol); $event.stopPropagation()" title="Remove" aria-label="Remove">
-              ⋮
+            <button class="btn-icon delete-btn" (click)="removeSymbol(symbol); $event.stopPropagation()" title="Remove" aria-label="Remove">
+              <span class="material-icons delete-icon">delete</span>
             </button>
           </div>
         </div>
