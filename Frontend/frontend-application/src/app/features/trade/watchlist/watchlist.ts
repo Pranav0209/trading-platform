@@ -25,6 +25,8 @@ export class WatchlistComponent implements OnInit {
   activeWatchlist = signal<WatchlistResponse | null>(null);
   
   availableInstruments = signal<InstrumentResponse[]>([]);
+  filteredInstruments = signal<InstrumentResponse[]>([]);
+  showDropdown = signal(false);
   
   // Expose the centralized quotes signal to the template
   quotes = this.marketData.quotes;
@@ -35,7 +37,11 @@ export class WatchlistComponent implements OnInit {
   ngOnInit() {
     this.loadWatchlists();
     this.instrumentsService.getInstruments().subscribe({
-      next: (instruments) => this.availableInstruments.set(instruments.filter(i => i.tradable)),
+      next: (instruments) => {
+        const tradable = instruments.filter(i => i.tradable);
+        this.availableInstruments.set(tradable);
+        this.filteredInstruments.set(tradable);
+      },
       error: (e) => console.error('Failed to load instruments', e)
     });
   }
@@ -163,6 +169,33 @@ export class WatchlistComponent implements OnInit {
 
   abs(value: number): number {
     return Math.abs(value);
+  }
+
+  onSearchChange(value: string) {
+    this.newSymbol = value;
+    if (!value) {
+      this.filteredInstruments.set(this.availableInstruments());
+      return;
+    }
+    const lower = value.toLowerCase();
+    this.filteredInstruments.set(
+      this.availableInstruments().filter(i => 
+        i.symbol.toLowerCase().includes(lower) || 
+        i.displayName.toLowerCase().includes(lower)
+      )
+    );
+  }
+
+  selectSearchInstrument(symbol: string) {
+    this.newSymbol = symbol;
+    this.showDropdown.set(false);
+    this.addSymbol();
+  }
+
+  hideDropdown() {
+    setTimeout(() => {
+      this.showDropdown.set(false);
+    }, 200);
   }
 
   goToCreateAlert(symbol: string) {
