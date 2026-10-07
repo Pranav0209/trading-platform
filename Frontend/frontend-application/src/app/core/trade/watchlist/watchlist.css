@@ -1,0 +1,259 @@
+.watchlist-container {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.watchlist-header {
+  margin-bottom: 30px;
+}
+
+.watchlist-header h2 {
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: #666;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.create-watchlist {
+  border: 1px solid #dee2e6;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.create-watchlist .card-body {
+  padding: 20px;
+}
+
+.create-watchlist .input-group {
+  gap: 8px;
+}
+
+.create-watchlist input {
+  border-radius: 4px;
+}
+
+.create-watchlist button {
+  border-radius: 4px;
+}
+
+.watchlists-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.watchlist-header-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  cursor: pointer;
+}
+
+.watchlist-title {
+  flex: 1;
+  cursor: pointer;
+}
+
+.watchlist-title h5 {
+  margin: 0 0 4px 0;
+  color: #333;
+  font-weight: 600;
+}
+
+.watchlist-title small {
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.watchlist-header-item button {
+  border-radius: 4px;
+  font-size: 0.875rem;
+  padding: 6px 12px;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.instruments-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.instruments-table table {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.instruments-table thead th {
+  font-weight: 600;
+  color: #555;
+  border-top: none;
+  padding: 12px 8px;
+}
+
+.instruments-table tbody td {
+  padding: 12px 8px;
+  vertical-align: middle;
+}
+
+.instruments-table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.text-success {
+  color: #198754;
+  font-weight: 500;
+}
+
+.text-danger {
+  color: #dc3545;
+  font-weight: 500;
+}
+
+.text-muted {
+  color: #999;
+}
+
+.add-instrument {
+  border-top: 1px solid #dee2e6;
+  padding-top: 15px;
+}
+
+.add-instrument .input-group {
+  gap: 8px;
+}
+
+.add-instrument input {
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.add-instrument button {
+  border-radius: 4px;
+}
+
+/* Empty state */
+.alert-info {
+  background-color: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  color: #004085;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 0;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+}
+
+/* Loading spinner */
+.spinner-border {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .watchlist-container {
+    padding: 15px;
+  }
+
+  .watchlist-header-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .watchlist-header-item button {
+    align-self: flex-end;
+  }
+
+  .instruments-table table {
+    font-size: 0.85rem;
+  }
+
+  .instruments-table thead th,
+  .instruments-table tbody td {
+    padding: 8px 4px;
+  }
+}
+
+/* Price formatting */
+.currency {
+  font-family: 'Courier New', monospace;
+}
+
+/* Button styles */
+.btn-primary {
+  background-color: #007bff;
+  border-color: #007bff;
+  border-radius: 4px;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  border-radius: 4px;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+  border-color: #c82333;
+}
+
+.btn-outline-primary {
+  color: #007bff;
+  border-color: #007bff;
+  border-radius: 4px;
+}
+
+.btn-outline-primary:hover {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-outline-danger {
+  color: #dc3545;
+  border-color: #dc3545;
+  border-radius: 4px;
+}
+
+.btn-outline-danger:hover {
+  background-color: #dc3545;
+  color: white;
+}

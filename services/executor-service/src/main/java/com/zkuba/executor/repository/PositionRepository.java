@@ -11,7 +11,9 @@ public interface PositionRepository extends JpaRepository<Position, Long> {
     Optional<Position> findByAccountIdAndSymbol(Long accountId, String symbol);
 
     @Query(
-            value = "SELECT symbol FROM positions UNION SELECT symbol FROM watchlist_items",
+            value = "SELECT symbol FROM positions " +
+                    "UNION SELECT symbol FROM watchlist_items " +
+                    "UNION SELECT symbol FROM price_alerts WHERE state IN ('ACTIVE', 'TRIGGERED')",
             nativeQuery = true
     )
     List<String> findUniqueSymbolsOfInterest();

@@ -1,0 +1,204 @@
+<div class="alerts-container">
+  <div class="alerts-header">
+    <h2>Price Alerts</h2>
+    <p class="subtitle">Get notified when prices cross your thresholds</p>
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = null"></button>
+  </div>
+
+  <!-- Alert Limit Progress -->
+  <div class="alert-limit-card card mb-4">
+    <div class="card-body">
+      <div class="limit-info">
+        <span class="limit-text">
+          Active Alerts: {{ alerts.filter(a => a.state === 'ACTIVE' || a.state === 'TRIGGERED').length }} / {{ alertLimit }}
+        </span>
+      </div>
+      <div class="progress" role="progressbar">
+        <div
+          class="progress-bar"
+          [style.width.%]="getAlertCountProgress()"
+          [class.progress-bar-warning]="getAlertCountProgress() > 75"
+          [class.progress-bar-danger]="getAlertCountProgress() > 90"
+        ></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create New Alert -->
+  <div class="create-alert card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Create Price Alert</h5>
+      <div class="alert-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Symbol *</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="e.g., AAPL, MSFT"
+              [(ngModel)]="newAlertForm.symbol"
+              [disabled]="isCreatingAlert"
+              (keyup.enter)="createAlert()"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Direction *</label>
+            <select
+              class="form-control"
+              [(ngModel)]="newAlertForm.direction"
+              [disabled]="isCreatingAlert"
+            >
+              <option value="ABOVE">Price rises above</option>
+              <option value="BELOW">Price falls below</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Threshold *</label>
+            <input
+              type="number"
+              class="form-control"
+              placeholder="e.g., 150.00"
+              [(ngModel)]="newAlertForm.threshold"
+              step="0.01"
+              min="0"
+              [disabled]="isCreatingAlert"
+              (keyup.enter)="createAlert()"
+            />
+          </div>
+
+          <div class="form-group">
+            <button
+              class="btn btn-primary"
+              type="button"
+              (click)="createAlert()"
+              [disabled]="isCreatingAlert"
+            >
+              <span
+                *ngIf="isCreatingAlert"
+                class="spinner-border spinner-border-sm me-2"
+              ></span>
+              Create Alert
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter and Alerts List -->
+  <div class="alerts-section">
+    <!-- Filter Tabs -->
+    <div class="filter-tabs mb-3">
+      <div class="btn-group" role="group">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          [class.active]="selectedState === 'ALL'"
+          (click)="selectedState = 'ALL'; filterAlerts()"
+        >
+          All
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-success"
+          [class.active]="selectedState === 'ACTIVE'"
+          (click)="selectedState = 'ACTIVE'; filterAlerts()"
+        >
+          Active
+        </button>
+        <button
+          type="button"
+          class="btn btn-outline-warning"
+          [class.active]="selectedState === 'TRIGGERED'"
+          (click)="selectedState = 'TRIGGERED'; filterAlerts()"
+        >
+          Triggered
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    <div *ngIf="isLoadingAlerts" class="text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="!isLoadingAlerts && filteredAlerts.length === 0" class="alert alert-info">
+      <span *ngIf="selectedState === 'ALL'"
+        >No alerts yet. Create one to get started!</span
+      >
+      <span *ngIf="selectedState !== 'ALL'">
+        No {{ selectedState | lowercase }} alerts.
+      </span>
+    </div>
+
+    <!-- Alerts List -->
+    <div *ngFor="let alert of filteredAlerts" class="alert-card card mb-3">
+      <div class="card-body">
+        <div class="alert-header">
+          <div class="alert-symbol">
+            <h5>{{ alert.symbol }}</h5>
+            <p class="alert-description">
+              {{ getDirectionLabel(alert.direction) }}
+              <strong>{{ alert.threshold | currency }}</strong>
+            </p>
+          </div>
+
+          <div class="alert-badges">
+            <span [ngClass]="getStateBadgeClass(alert.state)">
+              {{ alert.state }}
+            </span>
+            <span *ngIf="alert.deliveryStatus" [ngClass]="getDeliveryBadgeClass(alert.deliveryStatus)">
+              {{ alert.deliveryStatus }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Alert Details -->
+        <div class="alert-details mt-3">
+          <div class="detail-row">
+            <span class="label">Created:</span>
+            <span>{{ formatDate(alert.createdAt) }}</span>
+          </div>
+
+          <div class="detail-row" *ngIf="alert.lastFiredAt">
+            <span class="label">Last Fired:</span>
+            <span>{{ formatDate(alert.lastFiredAt) }}</span>
+          </div>
+
+          <div class="detail-row" *ngIf="alert.failureReason">
+            <span class="label">Failure Reason:</span>
+            <span class="failure-text">{{ alert.failureReason }}</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="alert-actions mt-3">
+          <button
+            *ngIf="alert.state === 'TRIGGERED'"
+            class="btn btn-sm btn-warning"
+            (click)="resetAlert(alert)"
+          >
+            Reset
+          </button>
+
+          <button
+            class="btn btn-sm btn-outline-danger"
+            (click)="deleteAlert(alert)"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
