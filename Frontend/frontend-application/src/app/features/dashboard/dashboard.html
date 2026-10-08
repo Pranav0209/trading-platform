@@ -23,12 +23,23 @@
     </div>
 
     <div class="card summary-card">
-      <div class="card-title">Today's P&L</div>
-      <div class="card-value financial-value positive">
-        +{{ portfolioSummary().todayPnL | currency: accountCurrency() : 'symbol' }}
+      <div class="card-title">Total P&amp;L</div>
+      <div
+        class="card-value financial-value"
+        [class.positive]="portfolioSummary().todayPnL > 0"
+        [class.negative]="portfolioSummary().todayPnL < 0"
+      >
+        {{ portfolioSummary().todayPnL > 0 ? '+' : '' }}{{ portfolioSummary().todayPnL
+          | currency: accountCurrency() : 'symbol' }}
       </div>
       <div class="card-meta">
-        <span class="badge positive">+{{ portfolioSummary().todayPnLPercent }}%</span>
+        <span
+          class="badge"
+          [class.positive]="portfolioSummary().todayPnLPercent >= 0"
+          [class.negative]="portfolioSummary().todayPnLPercent < 0"
+        >
+          {{ portfolioSummary().todayPnLPercent > 0 ? '+' : '' }}{{ portfolioSummary().todayPnLPercent }}%
+        </span>
       </div>
     </div>
 
@@ -146,6 +157,48 @@
             <div class="grid-line"></div>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="allocation-section">
+      <div class="card allocation-card">
+        <div class="card-header">
+          <h3 class="card-title">Holdings Allocation</h3>
+        </div>
+
+        @if (holdingSlices().length > 0) {
+          <div class="allocation-content">
+            <div class="pie-chart-wrapper" aria-hidden="true">
+              <svg viewBox="0 0 120 120" class="pie-chart">
+                @for (slice of holdingSlices(); track slice.label) {
+                  <path [attr.d]="slice.path" [attr.fill]="slice.color"></path>
+                }
+                <circle cx="60" cy="60" r="25" class="pie-chart-inner"></circle>
+              </svg>
+              <div class="pie-chart-center">
+                <span class="pie-chart-label">Holdings</span>
+                <strong>{{ holdingsTotal() | currency: accountCurrency() : 'symbol':'1.0-0' }}</strong>
+              </div>
+            </div>
+
+            <div class="allocation-legend">
+              @for (slice of holdingSlices(); track slice.label) {
+                <div class="legend-item">
+                  <span class="legend-swatch" [style.background]="slice.color"></span>
+                  <div class="legend-copy">
+                    <span class="legend-label">{{ slice.label }}</span>
+                    <span class="legend-value">
+                      {{ slice.percent | percent:'1.0-1' }}
+                      <small>{{ slice.value | currency: accountCurrency() : 'symbol':'1.0-0' }}</small>
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="allocation-empty muted">Portfolio allocation will appear once holdings are available.</div>
+        }
       </div>
     </section>
 
