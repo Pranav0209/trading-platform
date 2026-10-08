@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.zkuba.executor.client.BatchQuoteResponse;
-import com.zkuba.executor.client.CurrencyConversionClient;
-import com.zkuba.executor.client.FauxnanceQuoteClient;
+import com.zkuba.executor.client.CurrencyConverter;
+import com.zkuba.executor.client.QuoteClient;
 import com.zkuba.executor.client.QuoteResponse;
 import com.zkuba.executor.repository.PositionRepository;
 import org.slf4j.Logger;
@@ -24,14 +24,14 @@ public class MarketDataPoller {
     private static final Logger log = LoggerFactory.getLogger(MarketDataPoller.class);
     private static final int BATCH_SIZE = 25;
 
-    private final FauxnanceQuoteClient quoteClient;
-    private final CurrencyConversionClient conversionClient;
+    private final QuoteClient quoteClient;
+    private final CurrencyConverter conversionClient;
     private final PositionRepository positionRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
-    public MarketDataPoller(FauxnanceQuoteClient quoteClient,
-            CurrencyConversionClient conversionClient,
+    public MarketDataPoller(QuoteClient quoteClient,
+            CurrencyConverter conversionClient,
             PositionRepository positionRepository,
             KafkaTemplate<String, String> kafkaTemplate,
             ObjectMapper objectMapper) {

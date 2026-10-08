@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Component
-public class FillRuleEngine {
+public class FillRuleEngine implements FillRuleEvaluator {
 
     public FillDecision evaluate(Order order, QuoteResponse.Data quote) {
         // if 200 for fauxnance but missing quote we reject order
