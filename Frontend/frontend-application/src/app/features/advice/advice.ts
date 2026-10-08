@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AdviceService } from '../../../generated/trade/api/advice.service';
 import { AdviceResponse, SignalResponse } from '../../../generated/trade/model/models';
@@ -10,10 +10,11 @@ import { Session } from '../../core/auth/session';
   imports: [CommonModule],
   templateUrl: './advice.html',
   styleUrl: './advice.css',
+  encapsulation: ViewEncapsulation.None,
 })
 export class Advice implements OnInit {
-  private adviceService = inject(AdviceService);
-  private session = inject(Session);
+  private readonly adviceService = inject(AdviceService);
+  private readonly session = inject(Session);
 
   loading = signal(true);
   error = signal<string | null>(null);
