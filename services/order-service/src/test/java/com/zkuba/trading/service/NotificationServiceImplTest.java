@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceImplTest {
@@ -50,6 +51,11 @@ class NotificationServiceImplTest {
         user = new User();
         user.setId(2L);
         user.setEmail("test@example.com");
+
+        ReflectionTestUtils.setField(notificationService, "serviceId", "testService");
+        ReflectionTestUtils.setField(notificationService, "templateId", "testTemplate");
+        ReflectionTestUtils.setField(notificationService, "publicKey", "testPublic");
+        ReflectionTestUtils.setField(notificationService, "privateKey", "testPrivate");
     }
 
     @Test

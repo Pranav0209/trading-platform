@@ -21,6 +21,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestClientException;
 
 import java.math.BigDecimal;
@@ -67,6 +68,9 @@ class OrderEventListenerDeadLetterTest {
 
     @Autowired
     private KafkaTemplate<String, String> kafkaTemplate;
+
+    @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
+    private String bootstrapServers;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -239,7 +243,7 @@ class OrderEventListenerDeadLetterTest {
 
     private KafkaConsumer<String, String> createDLTConsumer() {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "${KAFKA_BOOTSTRAP_SERVERS}");
+        props.put("bootstrap.servers", bootstrapServers);
         props.put("group.id", "dlt-test-consumer");
         props.put("auto.offset.reset", "earliest");
         props.put("key.deserializer", StringDeserializer.class.getName());

@@ -38,6 +38,7 @@ const { AuthService } = require('../../src/auth/auth.service') as {
     loginThrottleService: unknown,
     configService: unknown,
     refreshTokenRepository: unknown,
+    emailJSService: unknown,
   ) => any;
 };
 
@@ -59,6 +60,11 @@ describe('AuthService', () => {
     findOneByEmail: jest.Mock;
     create: jest.Mock;
     findOneById: jest.Mock;
+    update: jest.Mock;
+  };
+
+  let emailJSService: {
+    sendOtpEmail: jest.Mock;
   };
 
   let jwtService: {
@@ -95,6 +101,11 @@ describe('AuthService', () => {
       findOneByEmail: jest.fn(),
       create: jest.fn(),
       findOneById: jest.fn(),
+      update: jest.fn(),
+    };
+
+    emailJSService = {
+      sendOtpEmail: jest.fn(),
     };
 
     jwtService = {
@@ -135,6 +146,7 @@ describe('AuthService', () => {
       loginThrottleService as never,
       configService as never,
       refreshTokenRepository as never,
+      emailJSService as never,
     );
 
     mockedBcrypt.genSalt.mockResolvedValue('salt-12');
@@ -163,19 +175,21 @@ describe('AuthService', () => {
       password: 'mission123',
     });
 
-    expect(usersService.create).toHaveBeenCalledWith({
+    expect(usersService.create).toHaveBeenCalledWith(expect.objectContaining({
       username: 'carol',
       email: 'carol@mission.local',
       passwordHash: 'hashed-password',
       role: 'CUSTOMER',
-      status: 'ACTIVE',
-    });
+      status: 'PENDING',
+      notificationChannel: 'EMAIL',
+      otpCode: expect.any(String),
+      otpExpiresAt: expect.any(Date),
+    }));
     expect(result).toEqual({
       id: '7',
       username: 'carol',
       email: 'carol@mission.local',
-      roles: ['CUSTOMER'],
-      createdOn: new Date('2026-09-24T12:00:00.000Z'),
+      message: 'Registration successful. Please check your email for the OTP to activate your account.',
     });
   });
 
