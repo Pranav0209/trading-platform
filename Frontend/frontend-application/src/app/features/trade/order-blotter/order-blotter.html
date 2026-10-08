@@ -16,27 +16,100 @@
 <ng-template #blotterContent>
   <div class="card data-card order-blotter" [class.span-2]="!isStandalone()">
     <div class="card-header blotter-header">
-      <h3 class="card-title">Recent Orders</h3>
-      <div class="blotter-controls">
-        @if (isAutoRefreshing()) {
-          <span class="auto-refresh-indicator" aria-live="polite">
-            <span class="material-icons spinner-icon" aria-hidden="true">sync</span>
-            Auto-refreshing...
-          </span>
-        }
-        <button
-          class="refresh-button"
-          (click)="manualRefresh()"
-          [disabled]="isLoading()"
-          data-testid="manual-refresh-button"
-        >
-          {{ isLoading() ? 'Loading...' : 'Refresh' }}
-        </button>
-        @if (lastRefreshed()) {
-          <span class="last-refreshed"
-            >Last refreshed: {{ formatDate(lastRefreshed()!.toISOString()) }}</span
+      <div class="header-top-row">
+        <h3 class="card-title">Recent Orders</h3>
+        <div class="blotter-controls">
+          @if (isAutoRefreshing()) {
+            <span class="auto-refresh-indicator" aria-live="polite">
+              <span class="material-icons spinner-icon" aria-hidden="true">sync</span>
+              Auto-refreshing...
+            </span>
+          }
+          <button
+            class="refresh-button"
+            (click)="manualRefresh()"
+            [disabled]="isLoading()"
+            data-testid="manual-refresh-button"
           >
-        }
+            {{ isLoading() ? 'Loading...' : 'Refresh' }}
+          </button>
+          @if (lastRefreshed()) {
+            <span class="last-refreshed"
+              >Last updated: {{ formatDate(lastRefreshed()!.toISOString()) }}</span
+            >
+          }
+        </div>
+      </div>
+      
+      <!-- Filter Section -->
+      <div class="filters-section">
+        <!-- Symbol Search -->
+        <div class="filter-group search-group">
+          <input
+            id="symbol-search"
+            type="text"
+            class="symbol-search-input"
+            placeholder="Search by Symbol..."
+            [value]="searchSymbol()"
+            (input)="onSearchSymbolChange($any($event.target).value)"
+            data-testid="symbol-search-input"
+          />
+        </div>
+
+        <!-- Status Filters -->
+        <div class="filter-group status-filters">
+          <div class="status-chips">
+            <label class="status-chip" [class.active]="isStatusSelected('NEW')">
+              <input
+                type="checkbox"
+                class="hidden-checkbox"
+                [checked]="isStatusSelected('NEW')"
+                (change)="toggleStatusFilter('NEW')"
+                data-testid="filter-new"
+              />
+              <span>New</span>
+            </label>
+            <label class="status-chip" [class.active]="isStatusSelected('FILLED')">
+              <input
+                type="checkbox"
+                class="hidden-checkbox"
+                [checked]="isStatusSelected('FILLED')"
+                (change)="toggleStatusFilter('FILLED')"
+                data-testid="filter-filled"
+              />
+              <span>Filled</span>
+            </label>
+            <label class="status-chip" [class.active]="isStatusSelected('CANCELLED')">
+              <input
+                type="checkbox"
+                class="hidden-checkbox"
+                [checked]="isStatusSelected('CANCELLED')"
+                (change)="toggleStatusFilter('CANCELLED')"
+                data-testid="filter-cancelled"
+              />
+              <span>Cancelled</span>
+            </label>
+            <label class="status-chip" [class.active]="isStatusSelected('REJECTED')">
+              <input
+                type="checkbox"
+                class="hidden-checkbox"
+                [checked]="isStatusSelected('REJECTED')"
+                (change)="toggleStatusFilter('REJECTED')"
+                data-testid="filter-rejected"
+              />
+              <span>Rejected</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Clear Filters Button -->
+        <button
+          class="clear-filters-btn"
+          (click)="clearFilters()"
+          data-testid="clear-filters-button"
+        >
+         Clear All Filters
+        </button>
       </div>
     </div>
 

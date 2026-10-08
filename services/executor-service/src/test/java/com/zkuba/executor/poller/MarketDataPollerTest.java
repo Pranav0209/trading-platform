@@ -2,13 +2,18 @@ package com.zkuba.executor.poller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.zkuba.executor.client.BatchQuoteResponse;
-import com.zkuba.executor.client.FauxnanceQuoteClient;
+import com.zkuba.executor.client.QuoteClient;
 import com.zkuba.executor.client.QuoteResponse;
+import com.zkuba.executor.client.CurrencyConverter;
 import com.zkuba.executor.repository.PositionRepository;
-import com.zkuba.executor.client.CurrencyConversionClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.ArrayList;
@@ -20,26 +25,31 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class MarketDataPollerTest {
 
-    private FauxnanceQuoteClient quoteClient;
-    private CurrencyConversionClient conversionClient;
+    @Mock
+    private QuoteClient quoteClient;
+
+    @Mock
+    private CurrencyConverter conversionClient;
+
+    @Mock
     private PositionRepository positionRepository;
+
+    @Mock
     private KafkaTemplate<String, String> kafkaTemplate;
+
     private ObjectMapper objectMapper;
     private MarketDataPoller poller;
 
     @BeforeEach
     void setUp() {
-        quoteClient = mock(FauxnanceQuoteClient.class);
-        conversionClient = mock(CurrencyConversionClient.class);
-        positionRepository = mock(PositionRepository.class);
-        kafkaTemplate = mock(KafkaTemplate.class);
         objectMapper = new ObjectMapper();
         poller = new MarketDataPoller(quoteClient, conversionClient, positionRepository, kafkaTemplate, objectMapper);
     }

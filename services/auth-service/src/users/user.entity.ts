@@ -29,6 +29,9 @@ export class User {
   @Column({ name: 'otp_expires_at', type: 'timestamp with time zone', nullable: true })
   otpExpiresAt?: Date | null;
 
+  @Column({ name: 'pending_new_email', type: 'varchar', length: 255, nullable: true })
+  pendingNewEmail?: string | null;
+
   @Column({ name: 'created_at', type: 'timestamp with time zone', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 

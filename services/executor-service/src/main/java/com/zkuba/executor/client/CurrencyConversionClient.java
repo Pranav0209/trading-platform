@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.math.BigDecimal;
 
 @Component
-public class CurrencyConversionClient {
+public class CurrencyConversionClient implements CurrencyConverter {
 
     private final RestClient restClient;
 

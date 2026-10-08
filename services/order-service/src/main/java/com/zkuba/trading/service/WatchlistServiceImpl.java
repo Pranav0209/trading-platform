@@ -66,7 +66,13 @@ public class WatchlistServiceImpl implements WatchlistService {
         verifyOwnership(userId, watchlistId);
         watchlistMapper.removeSymbol(watchlistId, symbol.toUpperCase());
     }
-
+    @Override
+    @Transactional
+    public void delete(Long userId, Long watchlistId) {
+        verifyOwnership(userId, watchlistId);
+        watchlistMapper.removeAllSymbols(watchlistId);
+        watchlists.deleteById(watchlistId);
+    }
     private void verifyOwnership(Long userId, Long watchlistId) {
         Watchlist watchlist = watchlists.findById(watchlistId).orElse(null);
         if (watchlist == null || !watchlist.getUserId().equals(userId)) {

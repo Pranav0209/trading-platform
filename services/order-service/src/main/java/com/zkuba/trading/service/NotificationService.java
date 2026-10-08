@@ -24,4 +24,18 @@ public interface NotificationService {
      * @throws Exception if delivery fails (caller handles retry/logging)
      */
     void sendPriceAlertNotification(AlertNotificationPayload payload);
+
+    /**
+     * Send an order notification to a customer.
+     */
+    void sendOrderNotification(OrderNotificationPayload payload);
+
+    record OrderNotificationPayload(
+            Long accountId,
+            String orderId,
+            String side,
+            Integer quantity,
+            String symbol,
+            String status
+    ) {}
 }

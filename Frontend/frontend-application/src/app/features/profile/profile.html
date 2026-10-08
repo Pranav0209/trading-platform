@@ -59,8 +59,8 @@
           <div *ngIf="emailUpdateStep() === 'otp'" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(0,103,71,0.2);">
             <p style="font-size: 12px; margin-top: 0; margin-bottom: 10px; color: var(--text-secondary-light);">Enter the 6-digit OTP sent to {{ newEmail() }}</p>
             <div style="display: flex; gap: 10px;">
-              <input type="text" [ngModel]="otpCode()" (ngModelChange)="otpCode.set($event)" placeholder="000000" maxlength="6" class="preference-select" style="flex: 1; letter-spacing: 2px;" [disabled]="isUpdatingEmail()">
-              <button (click)="verifyEmailUpdate()" class="primary-button" [disabled]="isUpdatingEmail() || !otpCode()" style="padding: 8px 16px; border-radius: 6px; border: none; background: var(--primary-green-light); color: white; cursor: pointer;">
+              <input type="text" pattern="[0-9]*" inputmode="numeric" [ngModel]="otpCode()" (ngModelChange)="otpCode.set($event)" placeholder="000000" maxlength="6" class="preference-select" style="flex: 1; letter-spacing: 2px;" [disabled]="isUpdatingEmail()">
+              <button (click)="verifyEmailUpdate()" class="primary-button" [disabled]="isUpdatingEmail() || !otpCode() || otpCode().length < 6" style="padding: 8px 16px; border-radius: 6px; border: none; background: var(--primary-green-light); color: white; cursor: pointer;">
                 {{ isUpdatingEmail() ? 'Verifying...' : 'Verify' }}
               </button>
               <button (click)="cancelEmailUpdate()" class="secondary-button" [disabled]="isUpdatingEmail()" style="padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border-light); background: transparent; cursor: pointer;">Cancel</button>

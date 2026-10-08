@@ -3,6 +3,7 @@ BEGIN;
 CREATE SCHEMA IF NOT EXISTS auth;
 
 DROP TABLE IF EXISTS pnl CASCADE;
+DROP TABLE IF EXISTS smart_rules CASCADE;
 DROP TABLE IF EXISTS watchlist_instruments CASCADE;
 DROP TABLE IF EXISTS watchlist_items CASCADE;
 DROP TABLE IF EXISTS watchlists CASCADE;
@@ -18,7 +19,7 @@ CREATE TABLE IF NOT EXISTS auth.users (
  password_hash VARCHAR(255) NOT NULL, role VARCHAR(20) NOT NULL CHECK(role IN ('CUSTOMER','ADMIN')),
  status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING','ACTIVE','SUSPENDED','CLOSED')),
  notification_channel VARCHAR(20) NOT NULL DEFAULT 'EMAIL' CHECK(notification_channel IN ('EMAIL','PUSH')),
- otp_code VARCHAR(10), otp_expires_at TIMESTAMPTZ,
+ otp_code VARCHAR(255), otp_expires_at TIMESTAMPTZ, pending_new_email VARCHAR(255),
  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
 
 CREATE TABLE IF NOT EXISTS auth.refresh_tokens (
@@ -60,7 +61,6 @@ ALTER TABLE positions ADD COLUMN IF NOT EXISTS version INTEGER NOT NULL DEFAULT 
 CREATE INDEX IF NOT EXISTS idx_orders_account_created ON orders(account_id,created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_positions_account ON positions(account_id);
 
-INSERT INTO instruments(symbol,display_name,asset_class,currency,tradable) VALUES('AAPL','Apple Inc.','EQUITY','USD',TRUE),('MSFT','Microsoft Corporation','EQUITY','USD',TRUE),('NVDA','NVIDIA Corporation','EQUITY','USD',TRUE),('TSLA','Tesla Inc.','EQUITY','USD',TRUE),('ACME','Acme Corporation','EQUITY','USD',TRUE),('INFY.NS','Infosys Limited','EQUITY','INR',TRUE) ON CONFLICT(symbol) DO NOTHING;
 CREATE TABLE IF NOT EXISTS pnl (
     id BIGSERIAL PRIMARY KEY,
     order_id UUID NOT NULL UNIQUE REFERENCES orders(id),
@@ -76,5 +76,64 @@ CREATE TABLE IF NOT EXISTS pnl (
 
 CREATE INDEX IF NOT EXISTS idx_pnl_account_realised_at 
     ON pnl(account_id, realised_at DESC);
+
+DROP TABLE IF EXISTS price_alerts;
+
+-- Price alerts table
+CREATE TABLE IF NOT EXISTS price_alerts (
+    id BIGSERIAL PRIMARY KEY,
+    account_id BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    symbol VARCHAR(20) NOT NULL REFERENCES instruments(symbol),
+    direction VARCHAR(5) NOT NULL CHECK(direction IN ('ABOVE', 'BELOW')),
+    threshold NUMERIC(19,4) NOT NULL CHECK(threshold > 0),
+    state VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK(state IN ('ACTIVE', 'TRIGGERED', 'DORMANT')),
+    last_fired_at TIMESTAMPTZ,
+    delivery_status VARCHAR(20) DEFAULT 'PENDING' CHECK(delivery_status IN ('PENDING', 'DELIVERED', 'FAILED')),
+    failure_reason VARCHAR(500),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for efficient alert evaluation and queries
+-- Hot path: market-data consumer queries (account_id, symbol, state) for active alerts
+CREATE INDEX IF NOT EXISTS idx_price_alerts_account_state ON price_alerts(account_id, state);
+CREATE INDEX IF NOT EXISTS idx_price_alerts_account_symbol ON price_alerts(account_id, symbol);
+
+-- Indexes for API queries
+CREATE INDEX IF NOT EXISTS idx_price_alerts_account ON price_alerts(account_id);
+CREATE INDEX IF NOT EXISTS idx_price_alerts_created ON price_alerts(created_at DESC);
+
+-- Constraint: maximum 100 active + triggered alerts per account
+-- This is enforced in the application layer with a check before INSERT
+-- Database constraint would be: create a check trigger or use a materialized view
+-- For now, relying on application-level validation with COUNT query
+
+CREATE TABLE IF NOT EXISTS smart_rules (
+    id BIGSERIAL PRIMARY KEY,
+    account_id BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    parent_rule_id BIGINT REFERENCES smart_rules(id) ON DELETE CASCADE,
+    symbol VARCHAR(20) NOT NULL REFERENCES instruments(symbol),
+    action VARCHAR(8) NOT NULL CHECK(action IN ('BUY', 'SELL')),
+    quantity_mode VARCHAR(8) NOT NULL CHECK(quantity_mode IN ('FIXED', 'HALF', 'ALL')),
+    quantity_value INTEGER,
+    metric_type VARCHAR(32) NOT NULL CHECK(metric_type IN ('PRICE', 'AVERAGE_COST', 'MOVING_AVERAGE', 'PERCENT_CHANGE', 'MOVING_AVERAGE_CROSSOVER', 'BOLLINGER_BAND', 'STOP_LOSS')),
+    comparison_operator VARCHAR(16) NOT NULL CHECK(comparison_operator IN ('GREATER_THAN', 'LESS_THAN', 'EQUAL_TO', 'CROSS_ABOVE', 'CROSS_BELOW', 'TOUCH_UPPER', 'TOUCH_LOWER')),
+    target_value NUMERIC(19,4),
+    lookback_period INTEGER,
+    secondary_lookback_period INTEGER,
+    std_deviation_multiplier NUMERIC(10,4),
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    condition_met BOOLEAN NOT NULL DEFAULT FALSE,
+    activation_reference_price NUMERIC(19,4),
+    activated_quantity INTEGER,
+    activated_at TIMESTAMPTZ,
+    last_triggered_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_smart_rules_account ON smart_rules(account_id);
+CREATE INDEX IF NOT EXISTS idx_smart_rules_symbol_enabled ON smart_rules(symbol, enabled);
+CREATE INDEX IF NOT EXISTS idx_smart_rules_parent ON smart_rules(parent_rule_id);
 
 COMMIT;

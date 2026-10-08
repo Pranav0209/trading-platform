@@ -11,7 +11,7 @@ import com.zkuba.trading.domain.enums.OrderStatus;
 import com.zkuba.trading.dto.response.AccountResponse;
 import com.zkuba.trading.dto.response.BalanceResponse;
 import com.zkuba.trading.dto.response.OrderHistoryEntry;
-import com.zkuba.trading.dto.response.PositionResponse;
+import com.zkuba.trading.dto.response.PortfolioResponse;
 import com.zkuba.trading.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.zkuba.trading.security.JwtService;
 import com.zkuba.trading.service.AccountService;
@@ -31,7 +31,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(AccountController.class)
+@WebMvcTest({AccountController.class, com.zkuba.trading.exception.GlobalExceptionHandler.class})
 @AutoConfigureMockMvc(addFilters = false)
 class AccountControllerTest {
 
@@ -155,20 +155,20 @@ class AccountControllerTest {
     // ============================================================
 
     @Test
-    void getPositions_shouldReturnPositions() throws Exception {
+    void getPortfolio_shouldReturnPositions() throws Exception {
 
         Long accountId = 123L;
         Long userId = 10L;
 
-        List<PositionResponse> response = List.of();
+        List<PortfolioResponse> response = List.of();
 
-        when(accountService.getPositionsResponse(
+        when(accountService.getPortfolioResponse(
                 accountId,
                 userId
         )).thenReturn(response);
 
         mockMvc.perform(
-                        get("/api/v1/accounts/{id}/positions", accountId)
+                        get("/api/v1/accounts/{id}/portfolio", accountId)
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
@@ -179,7 +179,7 @@ class AccountControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
 
         verify(accountService)
-                .getPositionsResponse(accountId, userId);
+                .getPortfolioResponse(accountId, userId);
     }
 
     // ============================================================

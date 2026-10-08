@@ -393,7 +393,7 @@ class OrderControllerTest {
         )).thenReturn(response);
 
         mockMvc.perform(
-                        post("/api/v1/orders/{id}/cancel", orderId)
+                        delete("/api/v1/orders/{id}", orderId)
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
@@ -421,7 +421,7 @@ class OrderControllerTest {
             throws Exception {
 
         mockMvc.perform(
-                        post("/api/v1/orders/ORD-789/cancel")
+                        delete("/api/v1/orders/ORD-789")
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isUnprocessableEntity())
@@ -445,7 +445,7 @@ class OrderControllerTest {
             throws Exception {
 
         mockMvc.perform(
-                        post("/api/v1/orders/not-a-uuid/cancel")
+                        delete("/api/v1/orders/not-a-uuid")
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isUnprocessableEntity())

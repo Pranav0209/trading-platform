@@ -27,6 +27,7 @@ public interface PriceAlertRepository extends JpaRepository<PriceAlert, Long> {
      */
     @Query("""
         SELECT a FROM PriceAlert a 
+        JOIN FETCH a.account
         WHERE a.symbol = :symbol 
         AND a.state IN ('ACTIVE', 'TRIGGERED')
         """)

@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.List;
 
 @Component
-public class FauxnanceQuoteClient {
+public class FauxnanceQuoteClient implements QuoteClient {
 
     private final RestClient restClient;
 

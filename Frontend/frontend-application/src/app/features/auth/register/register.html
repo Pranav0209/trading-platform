@@ -111,6 +111,9 @@
             <input
               id="otpCode"
               type="text"
+              pattern="[0-9]*"
+              inputmode="numeric"
+              maxlength="6"
               formControlName="otpCode"
               placeholder="123456"
               [disabled]="isSubmitting() || timerSeconds() === 0"

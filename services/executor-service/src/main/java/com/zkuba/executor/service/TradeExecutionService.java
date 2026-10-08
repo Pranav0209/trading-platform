@@ -1,7 +1,7 @@
 package com.zkuba.executor.service;
 
-import com.zkuba.executor.client.CurrencyConversionClient;
-import com.zkuba.executor.client.FauxnanceQuoteClient;
+import com.zkuba.executor.client.CurrencyConverter;
+import com.zkuba.executor.client.QuoteClient;
 import com.zkuba.executor.client.PricingUnavailableException;
 import com.zkuba.executor.client.QuoteResponse;
 import com.zkuba.executor.domain.entity.Account;
@@ -9,7 +9,7 @@ import com.zkuba.executor.domain.entity.Order;
 import com.zkuba.executor.domain.entity.Position;
 import com.zkuba.executor.domain.entity.RealisedPnl;
 import com.zkuba.executor.engine.FillDecision;
-import com.zkuba.executor.engine.FillRuleEngine;
+import com.zkuba.executor.engine.FillRuleEvaluator;
 import com.zkuba.executor.event.TradeEventPayload;
 import com.zkuba.executor.repository.AccountRepository;
 import com.zkuba.executor.repository.OrderRepository;
@@ -45,13 +45,13 @@ public class TradeExecutionService {
     private RealisedPnlRepository realisedPnlRepository;
 
     @Autowired
-    private FauxnanceQuoteClient quoteClient;
+    private QuoteClient quoteClient;
 
     @Autowired
-    private FillRuleEngine fillRuleEngine;
+    private FillRuleEvaluator fillRuleEngine;
 
     @Autowired
-    private CurrencyConversionClient currencyConversionClient;
+    private CurrencyConverter currencyConversionClient;
 
     // if 2 threads try to update exact same account at same time, db wil throw
     // OptimisticLockingException, if that happes we tell spring to not crash and

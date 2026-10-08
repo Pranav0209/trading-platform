@@ -1,0 +1,78 @@
+/* Styles moved to global src/styles.css */
+.summary-cards {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.summary-card {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 1.5rem;
+  flex: 1;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.summary-card h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.summary-card .value {
+  margin-top: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.summary-card .value.positive {
+  color: var(--success-color, #10b981);
+}
+
+.summary-card .value.negative {
+  color: var(--danger-color, #ef4444);
+}
+
+.allocation-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
+.allocation-bar-container {
+  height: 6px;
+  background-color: var(--border-color);
+  border-radius: 3px;
+  overflow: hidden;
+  flex: 1 1 96px;
+  width: auto;
+  max-width: 120px;
+  min-width: 44px;
+}
+
+.allocation-bar {
+  height: 100%;
+  background-color: var(--primary-color, #3b82f6);
+  border-radius: 3px;
+}
+
+.allocation-column {
+  width: 180px;
+}
+
+.allocation-cell {
+  min-width: 180px;
+}
+
+.allocation-value {
+  display: inline-block;
+  flex: 0 0 56px;
+  min-width: 56px;
+  text-align: right;
+}

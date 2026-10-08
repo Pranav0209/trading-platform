@@ -12,7 +12,7 @@ export * from './orderSide';
 export * from './orderStatus';
 export * from './pendingUserResponse';
 export * from './placeOrderRequest';
-export * from './positionResponse';
+export * from './portfolioResponse';
 export * from './signalResponse';
 export * from './updateOrderRequest';
 export * from './watchlistResponse';

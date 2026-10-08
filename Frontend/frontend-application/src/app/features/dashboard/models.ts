@@ -1,7 +1,9 @@
 export interface PortfolioSummary {
+  investedValue: number;
+  currentHoldingsValue: number;
   portfolioValue: number;
-  todayPnL: number;
-  todayPnLPercent: number;
+  unrealizedPnL: number;
+  unrealizedPnLPercent: number;
   availableBalance: number;
 }
 

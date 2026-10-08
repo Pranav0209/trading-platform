@@ -53,17 +53,19 @@ public class MarketDataStreamService {
     }
 
     public void broadcast(QuotePayload quote) {
-        List<UserEmitter> deadEmitters = new java.util.ArrayList<>();
+        Map<String, QuotePayload> convertedQuotes = new java.util.concurrent.ConcurrentHashMap<>();
+        
         for (UserEmitter userEmitter : emitters) {
-            try {
-                // Convert quote to user's account currency
-                QuotePayload convertedQuote = convertQuoteToAccountCurrency(quote, userEmitter.accountCurrency);
-                userEmitter.emitter.send(SseEmitter.event().name("quote").data(convertedQuote));
-            } catch (IOException e) {
-                deadEmitters.add(userEmitter);
-            }
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    String currency = userEmitter.accountCurrency;
+                    QuotePayload payload = convertedQuotes.computeIfAbsent(currency, k -> convertQuoteToAccountCurrency(quote, k));
+                    userEmitter.emitter.send(SseEmitter.event().name("quote").data(payload));
+                } catch (IOException e) {
+                    emitters.remove(userEmitter);
+                }
+            });
         }
-        emitters.removeAll(deadEmitters);
     }
 
     /**

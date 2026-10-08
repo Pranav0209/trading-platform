@@ -4,5 +4,6 @@
   <select id="findSymbols" resultType="string">SELECT symbol FROM watchlist_items WHERE watchlist_id=#{id} ORDER BY symbol</select>
   <insert id="addSymbol">INSERT INTO watchlist_items(watchlist_id,symbol) VALUES(#{watchlistId},#{symbol}) ON CONFLICT DO NOTHING</insert>
   <delete id="removeSymbol">DELETE FROM watchlist_items WHERE watchlist_id=#{watchlistId} AND symbol=#{symbol}</delete>
+  <delete id="removeAllSymbols">DELETE FROM watchlist_items WHERE watchlist_id=#{watchlistId}</delete>
 </mapper>
 

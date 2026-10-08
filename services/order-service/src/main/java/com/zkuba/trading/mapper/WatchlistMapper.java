@@ -11,4 +11,6 @@ public interface WatchlistMapper {
     int addSymbol(@Param("watchlistId") Long id, @Param("symbol") String symbol);
 
     int removeSymbol(@Param("watchlistId") Long id, @Param("symbol") String symbol);
+
+    int removeAllSymbols(@Param("watchlistId") Long id);
 }

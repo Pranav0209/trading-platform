@@ -83,6 +83,37 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    @Override
+    public void sendOrderNotification(OrderNotificationPayload payload) {
+        try {
+            Optional<Account> accountOpt = accountRepository.findById(payload.accountId());
+            if (accountOpt.isEmpty()) {
+                log.warn("Account not found for order notification: {}", payload.orderId());
+                return;
+            }
+
+            Optional<User> userOpt = userRepository.findById(accountOpt.get().getUserId());
+            if (userOpt.isEmpty()) {
+                log.warn("User not found for order notification: {}", payload.orderId());
+                return;
+            }
+
+            User user = userOpt.get();
+
+            if ("EMAIL".equals(user.getNotificationChannel())) {
+                String subject = "Trading Alert: Order " + payload.status();
+                String message = String.format("Your order to %s %d %s was %s.", 
+                        payload.side(), payload.quantity(), payload.symbol(), payload.status());
+                sendEmail(user.getEmail(), subject, message, payload.orderId());
+            } else if ("PUSH".equals(user.getNotificationChannel())) {
+                log.info("PUSH notification requested for order {}. Not yet implemented.", payload.orderId());
+            }
+
+        } catch (Exception e) {
+            log.error("Error sending order notification for order {}", payload.orderId(), e);
+        }
+    }
+
     /**
      * Send price alert via EmailJS
      */
@@ -96,7 +127,11 @@ public class NotificationServiceImpl implements NotificationService {
                 payload.threshold(),
                 payload.currentPrice()
         );
+        String subject = "Trading Alert: " + payload.symbol() + " price alert";
+        sendEmail(toEmail, subject, message, String.valueOf(payload.alertId()));
+    }
 
+    private void sendEmail(String toEmail, String subject, String message, String referenceId) {
         Map<String, Object> body = new HashMap<>();
         body.put("service_id", serviceId);
         body.put("template_id", templateId);
@@ -106,7 +141,7 @@ public class NotificationServiceImpl implements NotificationService {
         Map<String, String> templateParams = new HashMap<>();
         templateParams.put("to_email", toEmail);
         templateParams.put("message", message);
-        templateParams.put("subject", "Trading Alert: " + payload.symbol() + " price alert");
+        templateParams.put("subject", subject);
         body.put("template_params", templateParams);
 
         HttpHeaders headers = new HttpHeaders();
@@ -115,9 +150,9 @@ public class NotificationServiceImpl implements NotificationService {
 
         try {
             restTemplate.postForEntity("https://api.emailjs.com/api/v1.0/email/send", request, String.class);
-            log.info("Price alert email sent to {} for alert {}", toEmail, payload.alertId());
+            log.info("Email notification sent to {} for reference {}", toEmail, referenceId);
         } catch (Exception e) {
-            log.error("Failed to send price alert email to {} for alert {}", toEmail, payload.alertId(), e);
+            log.error("Failed to send email notification to {} for reference {}", toEmail, referenceId, e);
             throw e;
         }
     }

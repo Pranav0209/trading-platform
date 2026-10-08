@@ -43,7 +43,7 @@ export class Register {
   });
 
   otpForm = this.fb.nonNullable.group({
-    otpCode: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]],
+    otpCode: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6), Validators.pattern('^[0-9]{6}$')]],
   });
 
   // Timer state
