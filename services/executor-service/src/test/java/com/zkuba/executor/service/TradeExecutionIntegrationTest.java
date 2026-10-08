@@ -154,6 +154,13 @@ class TradeExecutionIntegrationTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         // ============================================================
+        // SMART RULE REPOSITORY
+        // ============================================================
+
+        when(smartRuleRepository.findBySymbolAndEnabledTrue("AAPL"))
+                .thenReturn(java.util.Collections.emptyList());
+
+        // ============================================================
         // FAUXNANCE QUOTE
         // ============================================================
 
