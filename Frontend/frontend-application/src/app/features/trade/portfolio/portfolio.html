@@ -7,13 +7,13 @@
     </header>
     <div class="summary-cards">
       <div class="summary-card">
-        <h4>Total Value</h4>
-        <div class="value">{{ portfolioSummary().portfolioValue | currency: accountCurrency(): 'symbol' }}</div>
+        <h4>Current Holdings Value</h4>
+        <div class="value">{{ portfolioSummary().currentHoldingsValue | currency: accountCurrency(): 'symbol' }}</div>
       </div>
       <div class="summary-card">
         <h4>Unrealized P&L</h4>
-        <div class="value" [class.positive]="portfolioSummary().todayPnL > 0" [class.negative]="portfolioSummary().todayPnL < 0">
-          {{ portfolioSummary().todayPnL > 0 ? '+' : '' }}{{ portfolioSummary().todayPnL | currency: accountCurrency(): 'symbol' }}
+        <div class="value" [class.positive]="portfolioSummary().unrealizedPnL > 0" [class.negative]="portfolioSummary().unrealizedPnL < 0">
+          {{ portfolioSummary().unrealizedPnL > 0 ? '+' : '' }}{{ portfolioSummary().unrealizedPnL | currency: accountCurrency(): 'symbol' }}
         </div>
       </div>
     </div>
