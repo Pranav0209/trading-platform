@@ -4,9 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { WatchlistAlertService } from '../services/watchlist-alert.service';
+import { PriceAlertService } from '../../../../generated/trade/api/priceAlerts.service';
 import { PriceAlert, CreateAlertRequest } from '../models/watchlist-alert.models';
 import { DashboardService } from '../../../features/dashboard/dashboard.service';
+import { Session } from '../../auth/session';
 
 @Component({
   selector: 'app-price-alerts',
@@ -22,7 +23,6 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
   isLoadingAlerts = false;
   isCreatingAlert = false;
   error: string | null = null;
-  accountId: number = 0;
 
   // Create alert form
   newAlertForm = {
@@ -38,16 +38,16 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
   accountCurrency: any;
 
   constructor(
-    private watchlistAlertService: WatchlistAlertService,
+    private watchlistAlertService: PriceAlertService,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
-    private dashboardService: DashboardService
+    private dashboardService: DashboardService,
+    private session: Session
   ) {
     this.accountCurrency = this.dashboardService.accountCurrency;
   }
 
   ngOnInit(): void {
-    this.accountId = this.getAccountIdFromToken();
     
     // Pre-fill symbol from query parameter if provided (from watchlist)
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
@@ -72,7 +72,7 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
     this.error = null;
 
     this.watchlistAlertService
-      .getAlerts(this.accountId)
+      .getAlerts(this.session.accountId())
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response) => {
@@ -137,7 +137,7 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
     };
 
     this.watchlistAlertService
-      .createAlert(this.accountId, request)
+      .createAlert(this.session.accountId(), request)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (alert) => {
@@ -170,7 +170,7 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
     }
 
     this.watchlistAlertService
-      .deleteAlert(this.accountId, alert.id)
+      .deleteAlert(this.session.accountId(), alert.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
@@ -196,7 +196,7 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
     }
 
     this.watchlistAlertService
-      .resetAlert(this.accountId, alert.id)
+      .resetAlert(this.session.accountId(), alert.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (updatedAlert) => {
@@ -264,30 +264,6 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
       direction: 'ABOVE',
       threshold: '',
     };
-  }
-
-  /**
-   * Extract accountId from JWT token
-   */
-  private getAccountIdFromToken(): number {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.warn('No token found in localStorage');
-      return 0;
-    }
-
-    try {
-      const payload = token.split('.')[1];
-      const decoded = JSON.parse(atob(payload));
-      const accountId = decoded.accountId || decoded.userId || 0;
-      if (!accountId) {
-        console.warn('No accountId or userId found in token', decoded);
-      }
-      return accountId;
-    } catch (e) {
-      console.error('Failed to decode token', e);
-      return 0;
-    }
   }
 
   /**
