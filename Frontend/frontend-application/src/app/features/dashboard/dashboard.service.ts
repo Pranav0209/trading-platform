@@ -1,5 +1,4 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
-import { PortfolioSummary, Holding } from './models';
 import { AccountsService } from '../../../generated/trade/api/accounts.service';
 import { ProfileService } from '../../../generated/auth/api/profile.service';
 import { PLService } from '../../../generated/portfolio/api/pL.service';
@@ -18,10 +17,10 @@ export class DashboardService {
   private readonly marketData = inject(MarketDataService);
   private readonly plService = inject(PLService);
 
-  chartPath = signal<string>('');
-  chartFill = signal<string>('');
-  chartChange = signal<number>(0);
-  chartTimeRange = signal<string>('ALL');
+  readonly chartPath = signal<string>('');
+  readonly chartFill = signal<string>('');
+  readonly chartChange = signal<number>(0);
+  readonly chartTimeRange = signal<string>('ALL');
 
   setChartTimeRange(range: string) {
     this.chartTimeRange.set(range);
@@ -32,16 +31,16 @@ export class DashboardService {
   }
   
   // Base State
-  private basePositions = signal<PortfolioResponse[]>([]);
-  private baseBalance = signal<number>(0);
+  private readonly basePositions = signal<PortfolioResponse[]>([]);
+  private readonly baseBalance = signal<number>(0);
   
-  userName = signal<string>('User');
-  userEmail = signal<string | null>(null);
-  accountStatus = signal<string | null>(null);
-  accountCurrency = signal<string>('USD');
+  readonly userName = signal<string>('User');
+  readonly userEmail = signal<string | null>(null);
+  readonly accountStatus = signal<string | null>(null);
+  readonly accountCurrency = signal<string>('USD');
 
   // Computed Real-Time State
-  holdings = computed(() => {
+  readonly holdings = computed(() => {
     const quotes = this.marketData.quotes();
     return this.basePositions().map(p => {
       const quote = quotes[p.symbol];
@@ -59,22 +58,26 @@ export class DashboardService {
     });
   });
 
-  portfolioSummary = computed(() => {
-    let totalValue = this.baseBalance();
+  readonly portfolioSummary = computed(() => {
+    let currentHoldingsValue = 0;
+    let investedValue = 0;
     let totalPnl = 0;
     
     this.holdings().forEach(h => {
-       totalValue += h.ltp * h.quantity;
+       currentHoldingsValue += h.ltp * h.quantity;
+       investedValue += h.investedValue;
        totalPnl += h.pnl;
     });
 
-    const previousValue = totalValue - totalPnl;
-    const pnlPercent = previousValue > 0 ? (totalPnl / previousValue) * 100 : 0;
+    const portfolioValue = this.baseBalance() + currentHoldingsValue;
+    const pnlPercent = investedValue > 0 ? (totalPnl / investedValue) * 100 : 0;
 
     return {
-      portfolioValue: totalValue,
-      todayPnL: totalPnl,
-      todayPnLPercent: Number(pnlPercent.toFixed(2)),
+      investedValue,
+      currentHoldingsValue,
+      portfolioValue,
+      unrealizedPnL: totalPnl,
+      unrealizedPnLPercent: Number(pnlPercent.toFixed(2)),
       availableBalance: this.baseBalance()
     };
   });

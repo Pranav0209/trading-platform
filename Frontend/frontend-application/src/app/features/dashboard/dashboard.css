@@ -42,7 +42,7 @@ html.dark-theme .dashboard-header h1 {
 
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--spacing-lg);
 }
 
@@ -62,6 +62,22 @@ html:not(.dark-theme) .card-value {
 
 html.dark-theme .card-value {
   color: var(--text-primary-dark);
+}
+
+html:not(.dark-theme) .card-value.positive {
+  color: var(--success-light);
+}
+
+html.dark-theme .card-value.positive {
+  color: var(--success-dark);
+}
+
+html:not(.dark-theme) .card-value.negative {
+  color: #b91c1c;
+}
+
+html.dark-theme .card-value.negative {
+  color: #fca5a5;
 }
 
 .card-meta {
@@ -421,6 +437,12 @@ html.dark-theme .view-all {
 @media (max-width: 1320px) {
   .summary-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
   }
 }
 
