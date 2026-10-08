@@ -185,8 +185,8 @@ export class RealisedPnlComponent implements OnInit {
       return '0.00';
     }
     return value.toLocaleString('en-US', {
-      minimumFractionDigits: 4,
-      maximumFractionDigits: 4
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     });
   }
 
