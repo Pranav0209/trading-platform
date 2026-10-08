@@ -89,7 +89,6 @@ class OrderEventListenerDeadLetterTest {
 
     private static final UUID ORDER_ID = UUID.fromString("33333333-3333-3333-3333-333333333333");
     private ConsumerRecord<String, String> dltMessage = null;
-    private CountDownLatch dltLatch = new CountDownLatch(1);
 
     /**
      * Valid ORDER_PLACED event that will be retried when FauxnanceQuoteClient fails
@@ -166,9 +165,6 @@ class OrderEventListenerDeadLetterTest {
     @Test
     void messageIsRetriedAndThenSentToDeadLetterTopic() throws Exception {
         System.out.println("\n=== Dead-Letter Test: OrderEventListener Processing ===\n");
-
-        // Set up a listener on orders.DLT to capture dead-lettered messages
-        dltLatch = new CountDownLatch(1);
         
         // Send the order event to 'orders' topic
         // OrderEventListener (auto-wired via @SpringBootTest) will consume it
@@ -194,28 +190,21 @@ class OrderEventListenerDeadLetterTest {
 
         System.out.println("4. Waiting 35 seconds for retries to exhaust...");
         
-        // Consume from orders.DLT in a separate thread
-        new Thread(() -> {
-            try {
-                var consumer = createDLTConsumer();
-                long startTime = System.currentTimeMillis();
-                while (System.currentTimeMillis() - startTime < 40_000) {
-                    var records = consumer.poll(Duration.ofSeconds(1));
-                    for (ConsumerRecord<String, String> record : records) {
-                        dltMessage = record;
-                        dltLatch.countDown();
-                        break;
-                    }
-                    if (dltLatch.getCount() == 0) break;
+        // Consume from orders.DLT synchronously
+        try (var consumer = createDLTConsumer()) {
+            long startTime = System.currentTimeMillis();
+            while (System.currentTimeMillis() - startTime < 40_000) {
+                var records = consumer.poll(Duration.ofSeconds(1));
+                if (!records.isEmpty()) {
+                    dltMessage = records.iterator().next();
+                    break;
                 }
-                consumer.close();
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-        }).start();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        // Wait for message to appear in DLT (with timeout)
-        boolean messageReceived = dltLatch.await(40, TimeUnit.SECONDS);
+        boolean messageReceived = (dltMessage != null);
 
         System.out.println("   ✓ 35 seconds elapsed");
         System.out.println("");

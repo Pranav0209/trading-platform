@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -11,9 +12,9 @@ import { of, throwError } from 'rxjs';
 describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
   let component: PriceAlertsComponent;
   let fixture: ComponentFixture<PriceAlertsComponent>;
-  let priceAlertsService: jasmine.SpyObj<PriceAlertsService>;
-  let dashboardService: jasmine.SpyObj<DashboardService>;
-  let session: jasmine.SpyObj<Session>;
+  let priceAlertsService: any;
+  let dashboardService: any;
+  let session: any;
   let activatedRoute: any;
 
   // Sample test data matching generated AlertResponse type
@@ -22,12 +23,12 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
     accountId: 123,
     symbol: 'AAPL',
     displayName: 'Apple Inc.',
-    direction: 'ABOVE',
+    direction: 'ABOVE' as any,
     threshold: 150.00,
-    state: 'ACTIVE',
-    lastFiredAt: null,
-    deliveryStatus: 'PENDING',
-    failureReason: null,
+    state: 'ACTIVE' as any,
+    lastFiredAt: undefined,
+    deliveryStatus: 'PENDING' as any,
+    failureReason: undefined,
     createdAt: '2026-10-08T10:00:00Z'
   };
 
@@ -39,25 +40,23 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
 
   beforeEach(async () => {
     // Create spy objects with proper typing
-    priceAlertsService = jasmine.createSpyObj<PriceAlertsService>('PriceAlertsService', [
-      'getAlerts',
-      'createAlert',
-      'deleteAlert',
-      'resetAlert',
-      'getAlert'
-    ]);
+    priceAlertsService = {
+      getAlerts: vi.fn(),
+      createAlert: vi.fn(),
+      deleteAlert: vi.fn(),
+      resetAlert: vi.fn(),
+      getAlert: vi.fn()
+    } as any;
 
-    dashboardService = jasmine.createSpyObj<DashboardService>('DashboardService', 
-      ['accountCurrency'],
-      { accountCurrency: 'USD' }
-    );
+    dashboardService = { accountCurrency: () => 'USD' } as any;
 
-    session = jasmine.createSpyObj<Session>('Session', ['accountId']);
-    session.accountId.and.returnValue(123);
+    session = { accountId: vi.fn().mockReturnValue(123) } as any;
 
     activatedRoute = {
       queryParams: of({})
     };
+
+    priceAlertsService.getAlerts.mockReturnValue(of(mockGetAlertsResponse));
 
     await TestBed.configureTestingModule({
       imports: [PriceAlertsComponent, FormsModule],
@@ -76,11 +75,11 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
   describe('Service Integration', () => {
     it('should use PriceAlertsService (not PriceAlertService)', () => {
       // This test validates the import is correct
-      expect(component.alertService).toEqual(priceAlertsService);
+      expect((component as any).alertService).toEqual(priceAlertsService);
     });
 
     it('should load alerts with proper GetAlerts200Response type', () => {
-      priceAlertsService.getAlerts.and.returnValue(of(mockGetAlertsResponse));
+      priceAlertsService.getAlerts.mockReturnValue(of(mockGetAlertsResponse));
 
       component.loadAlerts();
 
@@ -90,17 +89,14 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
       expect(component.alertLimit).toBe(100);
     });
 
-    it('should handle getAlerts errors properly', () => {
+    it('should handle getAlerts errors properly', async () => {
       const errorResponse = { error: { message: 'Unauthorized' }, message: 'Unauthorized' };
-      priceAlertsService.getAlerts.and.returnValue(throwError(() => errorResponse));
+      priceAlertsService.getAlerts.mockReturnValue(throwError(() => errorResponse));
 
       component.loadAlerts();
       fixture.detectChanges();
 
-      // Wait for setTimeout to execute
-      jasmine.clock().install();
-      jasmine.clock().tick(0);
-      jasmine.clock().uninstall();
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(component.error).toContain('Failed to load alerts');
       expect(component.isLoadingAlerts).toBe(false);
@@ -109,7 +105,7 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
 
   describe('Type Safety - Alert Array', () => {
     it('should have alerts array of type AlertResponse[]', () => {
-      priceAlertsService.getAlerts.and.returnValue(of(mockGetAlertsResponse));
+      priceAlertsService.getAlerts.mockReturnValue(of(mockGetAlertsResponse));
 
       component.loadAlerts();
 
@@ -124,8 +120,8 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
 
     it('should filter alerts by state with proper type checking', () => {
       component.alerts = [
-        { ...mockAlertResponse, state: 'ACTIVE' },
-        { ...mockAlertResponse, id: 2, state: 'TRIGGERED' }
+        { ...mockAlertResponse, state: 'ACTIVE' as any },
+        { ...mockAlertResponse, id: 2, state: 'TRIGGERED' as any }
       ];
 
       component.selectedState = 'ACTIVE';
@@ -156,7 +152,7 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
     });
 
     it('should convert threshold number properly in createAlert', () => {
-      priceAlertsService.createAlert.and.returnValue(of(mockAlertResponse));
+      priceAlertsService.createAlert.mockReturnValue(of(mockAlertResponse));
       component.newAlertForm.symbol = 'AAPL';
       component.newAlertForm.threshold = 150;
       component.newAlertForm.direction = CreateAlertRequestDirectionEnum.Above;
@@ -165,7 +161,7 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
 
       expect(priceAlertsService.createAlert).toHaveBeenCalledWith(
         123,
-        jasmine.objectContaining({
+        expect.objectContaining({
           symbol: 'AAPL',
           threshold: 150,
           direction: CreateAlertRequestDirectionEnum.Above
@@ -176,7 +172,7 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
 
   describe('CreateAlert Method', () => {
     it('should create alert with proper CreateAlertRequest type', () => {
-      priceAlertsService.createAlert.and.returnValue(of(mockAlertResponse));
+      priceAlertsService.createAlert.mockReturnValue(of(mockAlertResponse));
 
       component.newAlertForm.symbol = 'MSFT';
       component.newAlertForm.threshold = 200;
@@ -195,7 +191,7 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
     });
 
     it('should add created alert to alerts array', () => {
-      priceAlertsService.createAlert.and.returnValue(of(mockAlertResponse));
+      priceAlertsService.createAlert.mockReturnValue(of(mockAlertResponse));
 
       component.alerts = [];
       component.newAlertForm.symbol = 'AAPL';
@@ -208,7 +204,7 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
     });
 
     it('should reset form after successful creation', () => {
-      priceAlertsService.createAlert.and.returnValue(of(mockAlertResponse));
+      priceAlertsService.createAlert.mockReturnValue(of(mockAlertResponse));
 
       component.newAlertForm.symbol = 'AAPL';
       component.newAlertForm.threshold = 150;
@@ -223,8 +219,8 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
 
   describe('DeleteAlert Method', () => {
     it('should delete alert by id', () => {
-      spyOn(window, 'confirm').and.returnValue(true);
-      priceAlertsService.deleteAlert.and.returnValue(of(undefined));
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+      priceAlertsService.deleteAlert.mockReturnValue(of(undefined));
 
       component.alerts = [mockAlertResponse];
       component.deleteAlert(mockAlertResponse);
@@ -234,8 +230,8 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
     });
 
     it('should handle delete confirmation', () => {
-      spyOn(window, 'confirm').and.returnValue(false);
-      priceAlertsService.deleteAlert.and.returnValue(of(undefined));
+      vi.spyOn(window, 'confirm').mockReturnValue(false);
+      priceAlertsService.deleteAlert.mockReturnValue(of(undefined));
 
       component.alerts = [mockAlertResponse];
       component.deleteAlert(mockAlertResponse);
@@ -247,12 +243,12 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
 
   describe('ResetAlert Method', () => {
     it('should reset triggered alert to active', () => {
-      spyOn(window, 'confirm').and.returnValue(true);
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
 
-      const resetAlert = { ...mockAlertResponse, state: 'TRIGGERED' } as AlertResponse;
-      const resettedAlert = { ...resetAlert, state: 'ACTIVE' } as AlertResponse;
+      const resetAlert = { ...mockAlertResponse, state: 'TRIGGERED' as any } as AlertResponse;
+      const resettedAlert = { ...resetAlert, state: 'ACTIVE' as any } as AlertResponse;
 
-      priceAlertsService.resetAlert.and.returnValue(of(resettedAlert));
+      priceAlertsService.resetAlert.mockReturnValue(of(resettedAlert));
 
       component.alerts = [resetAlert];
       component.resetAlert(resetAlert);
@@ -274,9 +270,9 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
 
     it('should correctly filter by ACTIVE state', () => {
       component.alerts = [
-        { ...mockAlertResponse, id: 1, state: 'ACTIVE' },
-        { ...mockAlertResponse, id: 2, state: 'TRIGGERED' },
-        { ...mockAlertResponse, id: 3, state: 'ACTIVE' }
+        { ...mockAlertResponse, id: 1, state: 'ACTIVE' as any },
+        { ...mockAlertResponse, id: 2, state: 'TRIGGERED' as any },
+        { ...mockAlertResponse, id: 3, state: 'ACTIVE' as any }
       ];
 
       component.selectedState = 'ACTIVE';
@@ -321,9 +317,9 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
 
     it('should calculate alert count progress', () => {
       component.alerts = [
-        { ...mockAlertResponse, state: 'ACTIVE' },
-        { ...mockAlertResponse, id: 2, state: 'TRIGGERED' },
-        { ...mockAlertResponse, id: 3, state: 'DORMANT' }
+        { ...mockAlertResponse, state: 'ACTIVE' as any },
+        { ...mockAlertResponse, id: 2, state: 'TRIGGERED' as any },
+        { ...mockAlertResponse, id: 3, state: 'DORMANT' as any }
       ];
       component.alertLimit = 100;
 
@@ -334,9 +330,9 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle 409 conflict error when creating alert', () => {
+    it('should handle 409 conflict error when creating alert', async () => {
       const error = { status: 409, error: { message: 'Limit exceeded' }, message: 'Conflict' };
-      priceAlertsService.createAlert.and.returnValue(throwError(() => error));
+      priceAlertsService.createAlert.mockReturnValue(throwError(() => error));
 
       component.newAlertForm.symbol = 'AAPL';
       component.newAlertForm.threshold = 150;
@@ -344,16 +340,14 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
       component.createAlert();
       fixture.detectChanges();
 
-      jasmine.clock().install();
-      jasmine.clock().tick(0);
-      jasmine.clock().uninstall();
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(component.error).toContain('Alert limit exceeded');
     });
 
-    it('should handle generic error when creating alert', () => {
+    it('should handle generic error when creating alert', async () => {
       const error = { status: 400, error: { message: 'Bad request' }, message: 'Error' };
-      priceAlertsService.createAlert.and.returnValue(throwError(() => error));
+      priceAlertsService.createAlert.mockReturnValue(throwError(() => error));
 
       component.newAlertForm.symbol = 'AAPL';
       component.newAlertForm.threshold = 150;
@@ -361,9 +355,7 @@ describe('PriceAlertsComponent - Generated Service Integration Tests', () => {
       component.createAlert();
       fixture.detectChanges();
 
-      jasmine.clock().install();
-      jasmine.clock().tick(0);
-      jasmine.clock().uninstall();
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       expect(component.error).toContain('Failed to create alert');
     });
