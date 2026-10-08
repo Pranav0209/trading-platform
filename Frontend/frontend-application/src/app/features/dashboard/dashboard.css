@@ -397,7 +397,7 @@ app-portfolio table,
 #positions-section table,
 app-realised-pnl table {
   width: 100%;
-  table-layout: fixed;
+  table-layout: auto;
 }
 
 app-portfolio th,

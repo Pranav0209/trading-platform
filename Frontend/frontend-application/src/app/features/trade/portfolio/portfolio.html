@@ -43,7 +43,7 @@
             <th class="text-right">LTP</th>
             <th class="text-right">Current Value</th>
             <th class="text-right">P&L</th>
-            <th class="text-right">Allocation</th>
+            <th class="text-right allocation-column">Allocation</th>
           </tr>
         </thead>
         <tbody>
@@ -57,11 +57,13 @@
               <td class="text-right" [class.positive]="p.pnl > 0" [class.negative]="p.pnl < 0">
                 {{ p.pnl > 0 ? '+' : '' }}{{ p.pnl | currency: accountCurrency(): 'symbol':'1.0-0' }}
               </td>
-              <td class="text-right">
-                <div class="allocation-bar-container">
-                  <div class="allocation-bar" [style.width.%]="p.allocation * 100"></div>
+              <td class="text-right allocation-cell">
+                <div class="allocation-content">
+                  <div class="allocation-bar-container">
+                    <div class="allocation-bar" [style.width.%]="p.allocation * 100"></div>
+                  </div>
+                  <span class="allocation-value">{{ p.allocation | percent:'1.1-2' }}</span>
                 </div>
-                <span>{{ p.allocation | percent:'1.1-2' }}</span>
               </td>
             </tr>
           }

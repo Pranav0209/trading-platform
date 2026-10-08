@@ -11,8 +11,8 @@ import { DashboardService } from '../../dashboard/dashboard.service';
   styleUrls: ['./portfolio.css']
 })
 export class PortfolioComponent implements OnInit {
-  private router = inject(Router);
-  private dashboardService = inject(DashboardService);
+  private readonly router = inject(Router);
+  private readonly dashboardService = inject(DashboardService);
   
   @Input() title = 'Open Positions';
   @Input() showViewAll = false;
@@ -23,12 +23,12 @@ export class PortfolioComponent implements OnInit {
   isStandalone = signal<boolean>(false);
   
   // Bind to the centralized dashboard service state
-  positions = this.dashboardService.holdings;
-  portfolioSummary = this.dashboardService.portfolioSummary;
-  accountCurrency = this.dashboardService.accountCurrency;
+  readonly positions = this.dashboardService.holdings;
+  readonly portfolioSummary = this.dashboardService.portfolioSummary;
+  readonly accountCurrency = this.dashboardService.accountCurrency;
 
-  enrichedPositions = computed(() => {
-    const totalValue = this.portfolioSummary().portfolioValue;
+  readonly enrichedPositions = computed(() => {
+    const totalValue = this.portfolioSummary().currentHoldingsValue;
     return this.positions().map(p => ({
       ...p,
       allocation: totalValue > 0 ? (p.currentValue / totalValue) : 0

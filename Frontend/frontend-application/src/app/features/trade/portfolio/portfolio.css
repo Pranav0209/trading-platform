@@ -37,20 +37,42 @@
   color: var(--danger-color, #ef4444);
 }
 
+.allocation-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  width: 100%;
+}
+
 .allocation-bar-container {
   height: 6px;
   background-color: var(--border-color);
   border-radius: 3px;
-  margin-bottom: 4px;
   overflow: hidden;
-  width: 100px;
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 8px;
+  flex: 1 1 96px;
+  width: auto;
+  max-width: 120px;
+  min-width: 44px;
 }
 
 .allocation-bar {
   height: 100%;
   background-color: var(--primary-color, #3b82f6);
   border-radius: 3px;
+}
+
+.allocation-column {
+  width: 180px;
+}
+
+.allocation-cell {
+  min-width: 180px;
+}
+
+.allocation-value {
+  display: inline-block;
+  flex: 0 0 56px;
+  min-width: 56px;
+  text-align: right;
 }
