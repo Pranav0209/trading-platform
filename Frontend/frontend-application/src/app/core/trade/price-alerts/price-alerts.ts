@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { PriceAlertService } from '../../../../generated/trade/api/priceAlerts.service';
-import { PriceAlert, CreateAlertRequest } from '../models/watchlist-alert.models';
+import { PriceAlertsService } from '../../../../generated/trade/api/priceAlerts.service';
+import { AlertResponse, GetAlerts200Response, CreateAlertRequest, CreateAlertRequestDirectionEnum } from '../../../../generated/trade/model/models';
 import { DashboardService } from '../../../features/dashboard/dashboard.service';
 import { Session } from '../../auth/session';
 
@@ -17,18 +17,18 @@ import { Session } from '../../auth/session';
   styleUrls: ['./price-alerts.css'],
 })
 export class PriceAlertsComponent implements OnInit, OnDestroy {
-  alerts: PriceAlert[] = [];
-  filteredAlerts: PriceAlert[] = [];
-  selectedState: string = 'ALL';
+  alerts: AlertResponse[] = [];
+  filteredAlerts: AlertResponse[] = [];
+  selectedState: 'ALL' | 'ACTIVE' | 'TRIGGERED' | 'DORMANT' = 'ALL';
   isLoadingAlerts = false;
   isCreatingAlert = false;
   error: string | null = null;
 
-  // Create alert form
+  // Create alert form with proper typing
   newAlertForm = {
     symbol: '',
-    direction: 'ABOVE' as 'ABOVE' | 'BELOW',
-    threshold: '',
+    direction: CreateAlertRequestDirectionEnum.Above,
+    threshold: 0 as number,
   };
 
   alertLimit = 100;
@@ -38,7 +38,7 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
   accountCurrency: any;
 
   constructor(
-    private watchlistAlertService: PriceAlertService,
+    private alertService: PriceAlertsService,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
     private dashboardService: DashboardService,
@@ -71,18 +71,18 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
     this.isLoadingAlerts = true;
     this.error = null;
 
-    this.watchlistAlertService
+    this.alertService
       .getAlerts(this.session.accountId())
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
+        next: (response: GetAlerts200Response) => {
           this.alerts = response.alerts;
           this.alertLimit = response.limit;
           this.filterAlerts();
           this.isLoadingAlerts = false;
           this.cdr.markForCheck();
         },
-        error: (err) => {
+        error: (err: any) => {
           setTimeout(() => {
             this.error = `Failed to load alerts: ${err.error?.message || err.message}`;
             this.isLoadingAlerts = false;
@@ -113,7 +113,7 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const threshold = parseFloat(this.newAlertForm.threshold);
+    const threshold = Number(this.newAlertForm.threshold);
     if (isNaN(threshold) || threshold <= 0) {
       this.error = 'Threshold must be a positive number';
       return;
@@ -136,18 +136,18 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
       threshold,
     };
 
-    this.watchlistAlertService
+    this.alertService
       .createAlert(this.session.accountId(), request)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (alert) => {
+        next: (alert: AlertResponse) => {
           this.alerts.push(alert);
           this.filterAlerts();
           this.resetForm();
           this.isCreatingAlert = false;
           this.cdr.markForCheck();
         },
-        error: (err) => {
+        error: (err: any) => {
           setTimeout(() => {
             if (err.status === 409) {
               this.error = 'Alert limit exceeded. Delete some alerts first.';
@@ -164,12 +164,12 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
   /**
    * Delete an alert
    */
-  deleteAlert(alert: PriceAlert): void {
+  deleteAlert(alert: AlertResponse): void {
     if (!confirm(`Delete alert for ${alert.symbol}?`)) {
       return;
     }
 
-    this.watchlistAlertService
+    this.alertService
       .deleteAlert(this.session.accountId(), alert.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -178,7 +178,7 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
           this.filterAlerts();
           this.cdr.markForCheck();
         },
-        error: (err) => {
+        error: (err: any) => {
           setTimeout(() => {
             this.error = `Failed to delete alert: ${err.error?.message || err.message}`;
             this.cdr.markForCheck();
@@ -190,16 +190,16 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
   /**
    * Reset a triggered alert back to ACTIVE
    */
-  resetAlert(alert: PriceAlert): void {
+  resetAlert(alert: AlertResponse): void {
     if (!confirm(`Reset alert for ${alert.symbol} to ACTIVE?`)) {
       return;
     }
 
-    this.watchlistAlertService
+    this.alertService
       .resetAlert(this.session.accountId(), alert.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (updatedAlert) => {
+        next: (updatedAlert: AlertResponse) => {
           const index = this.alerts.findIndex((a) => a.id === alert.id);
           if (index >= 0) {
             this.alerts[index] = updatedAlert;
@@ -207,7 +207,7 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
           }
           this.cdr.markForCheck();
         },
-        error: (err) => {
+        error: (err: any) => {
           setTimeout(() => {
             this.error = `Failed to reset alert: ${err.error?.message || err.message}`;
             this.cdr.markForCheck();
@@ -261,8 +261,8 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
   private resetForm(): void {
     this.newAlertForm = {
       symbol: '',
-      direction: 'ABOVE',
-      threshold: '',
+      direction: CreateAlertRequestDirectionEnum.Above,
+      threshold: 0,
     };
   }
 

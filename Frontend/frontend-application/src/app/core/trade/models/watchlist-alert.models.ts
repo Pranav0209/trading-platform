@@ -1,4 +1,9 @@
 // Models for Watchlist and Price Alerts
+// Re-export generated API types for consistency (using 'export type' for isolatedModules compatibility)
+export type { AlertResponse as PriceAlert } from '../../../../generated/trade/model/models';
+export type { AlertResponse } from '../../../../generated/trade/model/models';
+export type { CreateAlertRequest } from '../../../../generated/trade/model/models';
+export type { GetAlerts200Response as AlertsResponse } from '../../../../generated/trade/model/models';
 
 export interface Watchlist {
   id: number;
@@ -25,30 +30,4 @@ export interface WatchlistInstrument {
 
 export interface CreateWatchlistRequest {
   name: string;
-}
-
-export interface PriceAlert {
-  id: number;
-  accountId: number;
-  symbol: string;
-  displayName: string;
-  direction: 'ABOVE' | 'BELOW';
-  threshold: number;
-  state: 'ACTIVE' | 'TRIGGERED' | 'DORMANT';
-  lastFiredAt: string | null;
-  deliveryStatus: 'PENDING' | 'DELIVERED' | 'FAILED';
-  failureReason: string | null;
-  createdAt: string;
-}
-
-export interface CreateAlertRequest {
-  symbol: string;
-  direction: 'ABOVE' | 'BELOW';
-  threshold: number;
-}
-
-export interface AlertsResponse {
-  alerts: PriceAlert[];
-  count: number;
-  limit: number;
 }

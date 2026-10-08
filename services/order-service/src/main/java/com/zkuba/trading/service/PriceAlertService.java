@@ -3,6 +3,7 @@ package com.zkuba.trading.service;
 import com.zkuba.trading.dto.request.CreateAlertRequest;
 import com.zkuba.trading.dto.response.AlertResponse;
 import com.zkuba.trading.domain.entity.PriceAlert.AlertState;
+import com.zkuba.trading.domain.entity.PriceAlert.DeliveryStatus;
 import java.util.List;
 
 public interface PriceAlertService {
@@ -32,4 +33,10 @@ public interface PriceAlertService {
      * Reset a triggered alert back to ACTIVE
      */
     AlertResponse resetAlert(Long accountId, Long alertId);
+
+    /**
+     * Update delivery status for an alert after notification send attempt.
+     * Called by the evaluator in a transactional context.
+     */
+    void updateAlertDeliveryStatus(Long alertId, DeliveryStatus status, String failureReason);
 }
