@@ -136,7 +136,7 @@ export class AuthService {
 
   async requestEmailUpdate(userId: number, newEmail: string) {
     const existingEmail = await this.usersService.findOneByEmail(newEmail);
-    if (existingEmail) {
+    if (existingEmail && existingEmail.id !== userId) {
       throw new ConflictException({ errorCode: 'AUTH-409', message: 'Email is already in use' });
     }
 
@@ -320,6 +320,7 @@ export class AuthService {
     return {
       id: user.id.toString(),
       username: user.username,
+      email: user.email,
       accountId: accountId,
       roles: [user.role],
       createdOn: user.createdAt,

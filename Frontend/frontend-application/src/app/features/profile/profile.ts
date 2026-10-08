@@ -65,7 +65,24 @@ export class Profile {
 
   constructor() {
     this.initializeFromToken();
+    this.loadUserProfile();
     this.loadPreferences();
+  }
+
+  /**
+   * Fetch latest user profile from API to ensure email is up to date
+   */
+  private loadUserProfile(): void {
+    this.profileService.getCurrentUser().subscribe({
+      next: (user) => {
+        if (user.email) {
+          this.email.set(user.email);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load user profile:', err);
+      }
+    });
   }
 
   /**

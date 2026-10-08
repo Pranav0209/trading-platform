@@ -29,23 +29,23 @@ INSERT INTO instruments (symbol, display_name, asset_class, currency, tradable) 
     ('BAJFINANCE.NS', 'Bajaj Finance Limited', 'EQUITY', 'INR', TRUE)
 ON CONFLICT (symbol) DO NOTHING;
 
--- Seed Sample Users (Password for all seeded users is: password123)
--- BCrypt hash for 'password123': $2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy
+-- Seed Sample Users (Password for all seeded users is: Password123)
+-- BCrypt hash for 'Password123': $2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6
 INSERT INTO auth.users (id, username, email, password_hash, role, status, notification_channel) VALUES
-    (1, 'admin', 'admin@trading.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'ADMIN', 'ACTIVE', 'PUSH'),
-    (2, 'john_doe', 'john@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE', 'PUSH'),
-    (3, 'jane_smith', 'jane@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE', 'PUSH'),
-    (4, 'bob_suspended', 'bob@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'SUSPENDED', 'PUSH'),
-    (5, 'alice_closed', 'alice@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'CLOSED', 'PUSH'),
-    (6, 'charlie_closed_usr', 'charlie@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'CLOSED', 'PUSH'),
-    (7, 'dave_suspended_usr', 'dave@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'SUSPENDED', 'PUSH'),
-    (8, 'eve_active_usr', 'eve@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE', 'PUSH'),
-    (9, 'frank_active_usr', 'frank@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE', 'PUSH'),
-    (10, 'muru', 'muru@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE', 'EMAIL'),
-    (11, 'krish', 'krish@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE', 'EMAIL'),
-    (12, 'pranav', 'pranav@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE', 'EMAIL'),
-    (13, 'tanu', 'tanu@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE', 'EMAIL'),
-    (14, 'sowmya', 'sowmya@example.com', '$2a$10$8vjGinIehruRYojYZxJ0B.tJhEus.xaoPfoi.qXl5ZrilfoER8BCy', 'CUSTOMER', 'ACTIVE', 'EMAIL')
+    (1, 'admin', 'admin@trading.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'ADMIN', 'ACTIVE', 'PUSH'),
+    (2, 'john_doe', 'john@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'ACTIVE', 'PUSH'),
+    (3, 'jane_smith', 'jane@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'ACTIVE', 'PUSH'),
+    (4, 'bob_suspended', 'bob@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'SUSPENDED', 'PUSH'),
+    (5, 'alice_closed', 'alice@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'CLOSED', 'PUSH'),
+    (6, 'charlie_closed_usr', 'charlie@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'CLOSED', 'PUSH'),
+    (7, 'dave_suspended_usr', 'dave@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'SUSPENDED', 'PUSH'),
+    (8, 'eve_active_usr', 'eve@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'ACTIVE', 'PUSH'),
+    (9, 'frank_active_usr', 'frank@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'ACTIVE', 'PUSH'),
+    (10, 'muru', 'muru@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'ACTIVE', 'PUSH'),
+    (11, 'krish', 'krish@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'ACTIVE', 'PUSH'),
+    (12, 'pranav', 'pranav@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'ACTIVE', 'PUSH'),
+    (13, 'tanu', 'tanu@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'ACTIVE', 'PUSH'),
+    (14, 'sowmya', 'sowmya@example.com', '$2b$10$vYd7O8NJMqixSBM5qamqv.wHYYRWNWkG.Wrj6THbR2jECjrupwWM6', 'CUSTOMER', 'ACTIVE', 'PUSH')
 ON CONFLICT (id) DO NOTHING;
 
 -- Reset sequence for users table so new registrations start after seeded IDs
@@ -162,6 +162,12 @@ INSERT INTO orders (id, account_id, symbol, side, order_type, quantity, limit_pr
     ('a1eebc99-9c0b-4ef8-bb6d-6bb9bd380a77', 2, 'TSLA', 'SELL', 'MARKET', 10, NULL, 250.0000, CURRENT_TIMESTAMP - INTERVAL '15 days', 'FILLED', 'seed-order-john-tsla-past-2', CURRENT_TIMESTAMP - INTERVAL '15 days', CURRENT_TIMESTAMP - INTERVAL '15 days'),
     ('b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a88', 2, 'MSFT', 'BUY', 'MARKET', 5, NULL, 300.0000, CURRENT_TIMESTAMP - INTERVAL '10 days', 'FILLED', 'seed-order-john-msft-past-1', CURRENT_TIMESTAMP - INTERVAL '10 days', CURRENT_TIMESTAMP - INTERVAL '10 days'),
     ('c1eebc99-9c0b-4ef8-bb6d-6bb9bd380a99', 2, 'MSFT', 'SELL', 'MARKET', 5, NULL, 320.0000, CURRENT_TIMESTAMP - INTERVAL '5 days', 'FILLED', 'seed-order-john-msft-past-2', CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '5 days'),
+    ('d1eebc99-9c0b-4ef8-bb6d-6bb9bd380aa1', 2, 'MSFT', 'BUY', 'MARKET', 50, NULL, 280.0000, CURRENT_TIMESTAMP - INTERVAL '1 year', 'FILLED', 'seed-order-john-msft-1y-buy', CURRENT_TIMESTAMP - INTERVAL '1 year', CURRENT_TIMESTAMP - INTERVAL '1 year'),
+    ('e1eebc99-9c0b-4ef8-bb6d-6bb9bd380aa2', 2, 'MSFT', 'SELL', 'MARKET', 50, NULL, 350.0000, CURRENT_TIMESTAMP - INTERVAL '360 days', 'FILLED', 'seed-order-john-msft-1y-sell', CURRENT_TIMESTAMP - INTERVAL '360 days', CURRENT_TIMESTAMP - INTERVAL '360 days'),
+    ('f1eebc99-9c0b-4ef8-bb6d-6bb9bd380aa3', 2, 'META', 'BUY', 'MARKET', 20, NULL, 400.0000, CURRENT_TIMESTAMP - INTERVAL '7 days', 'FILLED', 'seed-order-john-meta-1w-buy', CURRENT_TIMESTAMP - INTERVAL '7 days', CURRENT_TIMESTAMP - INTERVAL '7 days'),
+    ('a2eebc99-9c0b-4ef8-bb6d-6bb9bd380aa4', 2, 'META', 'SELL', 'MARKET', 20, NULL, 420.0000, CURRENT_TIMESTAMP - INTERVAL '5 days', 'FILLED', 'seed-order-john-meta-1w-sell', CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '5 days'),
+    ('b2eebc99-9c0b-4ef8-bb6d-6bb9bd380aa5', 2, 'AMZN', 'BUY', 'MARKET', 100, NULL, 150.0000, CURRENT_TIMESTAMP - INTERVAL '2 days', 'FILLED', 'seed-order-john-amzn-1d-buy', CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP - INTERVAL '2 days'),
+    ('c2eebc99-9c0b-4ef8-bb6d-6bb9bd380aa6', 2, 'AMZN', 'SELL', 'MARKET', 100, NULL, 145.0000, CURRENT_TIMESTAMP - INTERVAL '1 day', 'FILLED', 'seed-order-john-amzn-1d-sell', CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_TIMESTAMP - INTERVAL '1 day'),
     ('10000000-0000-4000-8000-000000000001', 10, 'AAPL', 'BUY', 'MARKET', 65, NULL, 258.2100, '2026-01-15T10:00:00Z', 'FILLED', 'seed-order-muru-aapl-buy-1', '2026-01-15T10:00:00Z', '2026-01-15T10:00:00Z'),
     ('10000000-0000-4000-8000-000000000002', 10, 'AAPL', 'SELL', 'MARKET', 20, NULL, 310.0300, '2026-08-18T10:00:00Z', 'FILLED', 'seed-order-muru-aapl-sell-1', '2026-08-18T10:00:00Z', '2026-08-18T10:00:00Z'),
     ('10000000-0000-4000-8000-000000000003', 10, 'AAPL', 'BUY', 'MARKET', 15, NULL, 333.6300, '2026-10-06T10:00:00Z', 'FILLED', 'seed-order-muru-aapl-buy-2', '2026-10-06T10:00:00Z', '2026-10-06T10:00:00Z'),
