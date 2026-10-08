@@ -31,7 +31,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(AccountController.class)
+@WebMvcTest({AccountController.class, com.zkuba.trading.exception.GlobalExceptionHandler.class})
 @AutoConfigureMockMvc(addFilters = false)
 class AccountControllerTest {
 
@@ -168,7 +168,7 @@ class AccountControllerTest {
         )).thenReturn(response);
 
         mockMvc.perform(
-                        get("/api/v1/accounts/{id}/positions", accountId)
+                        get("/api/v1/accounts/{id}/portfolio", accountId)
                                 .accept(MediaType.APPLICATION_JSON)
                 )
                 .andExpect(status().isOk())
