@@ -443,3 +443,45 @@ html.dark-theme .error-state p {
     text-align: left;
   }
 }
+
+/* Preferences Dropdown */
+.preference-control {
+  display: flex;
+  align-items: center;
+}
+
+.preference-select {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  background-color: transparent;
+  transition: all 0.2s ease;
+}
+
+html:not(.dark-theme) .preference-select {
+  border-color: var(--border-light);
+  color: var(--text-primary-light);
+}
+
+html.dark-theme .preference-select {
+  border-color: var(--border-dark);
+  color: var(--text-primary-dark);
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.preference-select:focus {
+  border-color: var(--primary-green-light);
+}
+
+html.dark-theme .preference-select:focus {
+  border-color: var(--primary-green-dark-mode);
+}
+
+.preference-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

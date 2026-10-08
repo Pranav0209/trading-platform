@@ -19,7 +19,7 @@
   <properties>
     <java.version>21</java.version>
     <jjwt.version>0.12.6</jjwt.version>
-    <jacoco.version>0.8.11</jacoco.version>
+    <jacoco.version>0.8.12</jacoco.version>
     <sonar.coverage.jacoco.xmlReportPaths>${project.build.directory}/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     <sonar.coverage.exclusions>**/TradingApplication.java,**/dto/**,**/domain/entity/**,**/domain/enums/**,**/exception/**,**/config/**,**/security/**,**/mapper/**,**/controller/**,**/event/**</sonar.coverage.exclusions>
     <sonar.cpd.exclusions>**/dto/**,**/domain/entity/**,**/exception/**,**/mapper/**,**/config/**</sonar.cpd.exclusions>
@@ -106,6 +106,12 @@
       <version>3.0.0</version>
     </dependency>
 
+    <!-- HTTP Client for RestClient -->
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+    </dependency>
+
     <dependency>
     <groupId>org.springdoc</groupId>
     <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -147,18 +153,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.testcontainers</groupId>
-      <artifactId>postgresql</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <!-- Kafka -->
     <dependency>
       <groupId>org.springframework.kafka</groupId>
@@ -186,20 +180,20 @@
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+      </plugin>
+      <plugin>
         <groupId>org.jacoco</groupId>
         <artifactId>jacoco-maven-plugin</artifactId>
         <version>${jacoco.version}</version>
         <configuration>
-          <excludes>
-            <exclude>**/TradingApplication.class</exclude>
-            <exclude>**/dto/**</exclude>
-            <exclude>**/domain/entity/**</exclude>
-            <exclude>**/domain/enums/**</exclude>
-            <exclude>**/exception/**</exclude>
-            <exclude>**/config/**</exclude>
-            <exclude>**/aop/**</exclude>
-            <exclude>**/event/**</exclude>
-          </excludes>
+          <includes>
+            <include>**/controller/**</include>
+            <include>**/service/**</include>
+            <include>**/dto/**</include>
+            <include>**/repository/**</include>
+          </includes>
         </configuration>
         <executions>
           <execution>

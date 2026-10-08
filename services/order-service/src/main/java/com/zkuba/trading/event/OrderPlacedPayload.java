@@ -12,6 +12,7 @@ public record OrderPlacedPayload(
     Integer quantity,
     BigDecimal price,
     String idempotencyKey,
+    String status,
     Instant createdOn
 ) {
 }

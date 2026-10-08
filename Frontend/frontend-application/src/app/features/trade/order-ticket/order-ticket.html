@@ -4,7 +4,7 @@
     <p class="subtitle">Execute your market and limit orders.</p>
   </header>
 
-  <div class="content-container">
+  <div class="content-container order-ticket-layout">
     <section class="card data-card order-ticket" data-testid="order-ticket">
       <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
         <!-- <div class="field">
@@ -18,8 +18,17 @@
           />
         </div> -->
 
-        <div class="field">
-          <label for="symbol">Instrument</label>
+        <div class="field autocomplete-wrapper" style="position: relative;">
+          <div class="field-header">
+            <label for="symbol">Instrument</label>
+            @if (form.controls.symbol.value && quotes()[form.controls.symbol.value]) {
+              <span class="cmp-placeholder">
+                CMP: <span class="placeholder-value">{{ quotes()[form.controls.symbol.value].price | currency:quotes()[form.controls.symbol.value].currency:'symbol' }}</span>
+              </span>
+            } @else {
+              <span class="cmp-placeholder">CMP: <span class="placeholder-value">--</span></span>
+            }
+          </div>
           <input
             id="symbol"
             type="text"
@@ -27,33 +36,49 @@
             placeholder="INFY.NS"
             data-testid="symbol-input"
             aria-required="true"
+            autocomplete="off"
+            (focus)="showDropdown.set(true)"
+            (blur)="hideDropdown()"
           />
+          @if (showDropdown() && filteredInstruments().length > 0) {
+            <ul class="autocomplete-dropdown">
+              @for (inst of filteredInstruments(); track inst.symbol) {
+                <li (click)="selectInstrument(inst.symbol)">
+                  <span class="symbol-name">{{ inst.symbol }}</span>
+                  <span class="company-name">{{ inst.displayName }}</span>
+                </li>
+              }
+            </ul>
+          }
           @if (form.controls.symbol.touched && form.controls.symbol.invalid) {
             <p class="field-error">Enter a valid tradable symbol.</p>
           }
         </div>
 
-        <div class="field">
-          <label for="side">Side</label>
-          <select id="side" formControlName="side" data-testid="side-input" aria-required="true">
-            @for (side of orderSides; track side) {
-              <option [value]="side">{{ side }}</option>
-            }
-          </select>
-        </div>
+        <div class="segmented-control-group">
+          <div class="field">
+            <label>Side</label>
+            <div class="segmented-control">
+              @for (side of orderSides; track side) {
+                <label class="segment-label" [class.active]="form.controls.side.value === side" [class.buy]="side === 'BUY'" [class.sell]="side === 'SELL'">
+                  <input type="radio" formControlName="side" [value]="side" class="visually-hidden">
+                  {{ side }}
+                </label>
+              }
+            </div>
+          </div>
 
-        <div class="field">
-          <label for="orderType">Type</label>
-          <select
-            id="orderType"
-            formControlName="orderType"
-            data-testid="order-type-input"
-            aria-required="true"
-          >
-            @for (type of orderTypes; track type) {
-              <option [value]="type">{{ type }}</option>
-            }
-          </select>
+          <div class="field">
+            <label>Type</label>
+            <div class="segmented-control">
+              @for (type of orderTypes; track type) {
+                <label class="segment-label" [class.active]="form.controls.orderType.value === type">
+                  <input type="radio" formControlName="orderType" [value]="type" class="visually-hidden">
+                  {{ type }}
+                </label>
+              }
+            </div>
+          </div>
         </div>
 
         <div class="field">
@@ -112,6 +137,63 @@
         >
           {{ responseMessage() }}
         </p>
+      }
+    </section>
+
+    <section class="card data-card order-summary">
+      <div class="card-header">
+        <h3 class="card-title">Order Summary</h3>
+      </div>
+      
+      @if (!summarySymbol) {
+        <div class="empty-summary">
+          <span class="material-icons">receipt_long</span>
+          <p>Enter an instrument to see the order summary.</p>
+        </div>
+      } @else {
+        <div class="summary-details">
+          <div class="summary-row">
+            <span class="summary-label">Instrument</span>
+            <span class="summary-value">{{ summarySymbol }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Action</span>
+            <span class="summary-value" [class.buy-text]="summarySide === 'BUY'" [class.sell-text]="summarySide === 'SELL'">{{ summarySide }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Order Type</span>
+            <span class="summary-value">{{ summaryType }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Quantity</span>
+            <span class="summary-value">{{ summaryQuantity || '--' }}</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Price</span>
+            <span class="summary-value">
+              @if (summaryType === 'LIMIT') {
+                {{ summaryLimitPrice ? (summaryLimitPrice | currency:(quotes()[summarySymbol]?.currency || 'USD'):'symbol') : '--' }}
+              } @else {
+                @if (getCachedPrice(summarySymbol)) {
+                  {{ getCachedPrice(summarySymbol) | currency:(quotes()[summarySymbol]?.currency || 'USD'):'symbol' }} <small>(Market Est.)</small>
+                } @else {
+                  Market Price
+                }
+              }
+            </span>
+          </div>
+          <hr class="summary-divider" />
+          <div class="summary-row total-row">
+            <span class="summary-label">Estimated Total</span>
+            <span class="summary-value">
+              @if (summaryTotal) {
+                {{ summaryTotal | currency:(quotes()[summarySymbol]?.currency || 'USD'):'symbol' }}
+              } @else {
+                --
+              }
+            </span>
+          </div>
+        </div>
       }
     </section>
   </div>

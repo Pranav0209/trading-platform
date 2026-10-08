@@ -1,0 +1,74 @@
+@if (isStandalone()) {
+  <div class="standalone-wrapper">
+    <header class="page-header">
+
+      <h1>{{ pageTitle() }}</h1>
+      <p class="subtitle">{{ pageSubtitle() }}</p>
+    </header>
+    <div class="summary-cards">
+      <div class="summary-card">
+        <h4>Current Holdings Value</h4>
+        <div class="value">{{ portfolioSummary().currentHoldingsValue | currency: accountCurrency(): 'symbol' }}</div>
+      </div>
+      <div class="summary-card">
+        <h4>Unrealized P&L</h4>
+        <div class="value" [class.positive]="portfolioSummary().unrealizedPnL > 0" [class.negative]="portfolioSummary().unrealizedPnL < 0">
+          {{ portfolioSummary().unrealizedPnL > 0 ? '+' : '' }}{{ portfolioSummary().unrealizedPnL | currency: accountCurrency(): 'symbol' }}
+        </div>
+      </div>
+    </div>
+    <div class="content-container">
+      <ng-container *ngTemplateOutlet="tableContent"></ng-container>
+    </div>
+  </div>
+} @else {
+  <ng-container *ngTemplateOutlet="tableContent"></ng-container>
+}
+
+<ng-template #tableContent>
+  <div class="card data-card">
+    <div class="card-header">
+      <h3 class="card-title">{{ title }}</h3>
+      @if (showViewAll) {
+        <a routerLink="/portfolio" class="view-all">View all</a>
+      }
+    </div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th class="text-right">Qty</th>
+            <th class="text-right">Avg. Price</th>
+            <th class="text-right">LTP</th>
+            <th class="text-right">Current Value</th>
+            <th class="text-right">P&L</th>
+            <th class="text-right allocation-column">Allocation</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of enrichedPositions(); track p.symbol) {
+            <tr>
+              <td class="symbol">{{ p.symbol }}</td>
+              <td class="text-right">{{ p.quantity }}</td>
+              <td class="text-right">{{ p.averagePrice | currency: accountCurrency(): 'symbol' }}</td>
+              <td class="text-right">{{ p.ltp | currency: accountCurrency(): 'symbol' }}</td>
+              <td class="text-right">{{ p.currentValue | currency: accountCurrency(): 'symbol' }}</td>
+              <td class="text-right" [class.positive]="p.pnl > 0" [class.negative]="p.pnl < 0">
+                {{ p.pnl > 0 ? '+' : '' }}{{ p.pnl | currency: accountCurrency(): 'symbol':'1.0-0' }}
+              </td>
+              <td class="text-right allocation-cell">
+                <div class="allocation-content">
+                  <div class="allocation-bar-container">
+                    <div class="allocation-bar" [style.width.%]="p.allocation * 100"></div>
+                  </div>
+                  <span class="allocation-value">{{ p.allocation | percent:'1.1-2' }}</span>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</ng-template>

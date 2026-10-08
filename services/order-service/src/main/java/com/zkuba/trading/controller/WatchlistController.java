@@ -4,6 +4,8 @@ import com.zkuba.trading.dto.request.CreateWatchlistRequest;
 import com.zkuba.trading.dto.response.WatchlistResponse;
 import com.zkuba.trading.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.zkuba.trading.service.WatchlistService;
+import com.zkuba.trading.service.AccountService;
+import com.zkuba.trading.domain.entity.Account;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +19,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import com.zkuba.trading.service.MarketDataStreamService;
+
 @RestController
 @RequestMapping("/api/v1/watchlists")
 public class WatchlistController {
@@ -26,10 +31,19 @@ public class WatchlistController {
 
     @Autowired
     private MarketDataStreamService marketDataStreamService;
+    
+    @Autowired
+    private AccountService accountService;
 
     @GetMapping(value = "/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamPrices() {
-        return marketDataStreamService.subscribe();
+    @ResponseStatus(HttpStatus.OK)
+    public SseEmitter streamPrices(@AuthenticationPrincipal AuthenticatedUser user) {
+        // Get the account to retrieve its currency
+        Account account = accountService.getByUserId(user.userId());
+        String accountCurrency = account.getCurrency() != null ? account.getCurrency() : "USD";
+        
+        // Subscribe with user context for per-account currency conversion
+        return marketDataStreamService.subscribe(user.userId(), accountCurrency);
     }
 
     @GetMapping
@@ -49,6 +63,14 @@ public class WatchlistController {
             @PathVariable Long id,
             @PathVariable String symbol) {
         watchlistService.addSymbol(user.userId(), id, symbol);
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(
+            @AuthenticationPrincipal AuthenticatedUser user,
+            @PathVariable Long id) {
+        watchlistService.delete(user.userId(), id);
     }
 
     @DeleteMapping("/{id}/symbols/{symbol}")

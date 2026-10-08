@@ -2,10 +2,18 @@
   <!-- Left Side: Branding -->
   <div class="login-brand">
     <div class="brand-content">
-      <div class="logo">
-        <div class="logo-icon">Z</div>
-        <div class="logo-text">Zkuba Trading</div>
-      </div>
+      <button 
+        type="button"
+        class="logo-button"
+        (click)="goBack()"
+        aria-label="Go back to sign in"
+        title="Go back to sign in"
+      >
+        <div class="logo">
+          <div class="logo-icon">Z</div>
+          <div class="logo-text">Zkuba Trading</div>
+        </div>
+      </button>
       <h1>Join the <span>Platform</span></h1>
       <p>
         Create an account to access global markets, advanced analytics, and lightning-fast
@@ -17,74 +25,133 @@
   <!-- Right Side: Login -->
   <div class="login-section">
     <div class="login-card">
-      <h2>Sign Up</h2>
-      <p class="login-subtitle">Create a new trading account.</p>
+      @if (!isOtpStep()) {
+        <h2>Sign Up</h2>
+        <p class="login-subtitle">Create a new trading account.</p>
 
-      <form [formGroup]="form" (ngSubmit)="onSubmit()">
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input
-            id="username"
-            type="text"
-            formControlName="username"
-            data-testid="username-input"
-            placeholder="Choose a username"
-            autocomplete="username"
-            [disabled]="isSubmitting()"
-          />
-          <app-form-error
-            [control]="form.get('username')"
-            [message]="usernameValidationMessage"
-          />
-        </div>
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input
+              id="username"
+              type="text"
+              formControlName="username"
+              data-testid="username-input"
+              placeholder="Choose a username"
+              autocomplete="username"
+              [disabled]="isSubmitting()"
+            />
+            <app-form-error
+              [control]="form.get('username')"
+              [message]="usernameValidationMessage"
+            />
+          </div>
 
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            formControlName="email"
-            data-testid="email-input"
-            placeholder="Enter your email address"
-            autocomplete="email"
-            [disabled]="isSubmitting()"
-          />
-          <app-form-error
-            [control]="form.get('email')"
-            message="Please enter a valid email address (max 255 characters)"
-          />
-        </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              data-testid="email-input"
+              placeholder="Enter your email address"
+              autocomplete="email"
+              [disabled]="isSubmitting()"
+            />
+            <app-form-error
+              [control]="form.get('email')"
+              message="Please enter a valid email address (max 255 characters)"
+            />
+          </div>
 
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            formControlName="password"
-            data-testid="password-input"
-            placeholder="Create a password (min 8 chars)"
-            autocomplete="new-password"
-            [disabled]="isSubmitting()"
-          />
-          <app-form-error
-            [control]="form.get('password')"
-            [message]="passwordValidationMessage"
-          />
-        </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              formControlName="password"
+              data-testid="password-input"
+              placeholder="Create a password (min 8 chars)"
+              autocomplete="new-password"
+              [disabled]="isSubmitting()"
+            />
+            <app-form-error
+              [control]="form.get('password')"
+              [message]="passwordValidationMessage"
+            />
+          </div>
 
-        <button
-          type="submit"
-          class="login-button"
-          [disabled]="form.invalid || isSubmitting()"
-          data-testid="submit-button"
-        >
-          @if (isSubmitting()) {
-            Creating Account...
+          <button
+            type="submit"
+            class="login-button"
+            [disabled]="form.invalid || isSubmitting()"
+            data-testid="submit-button"
+          >
+            @if (isSubmitting()) {
+              Creating Account...
+            } @else {
+              Create Account
+            }
+          </button>
+        </form>
+      } @else {
+        <h2>Verify Email</h2>
+        <p class="login-subtitle">
+          Please enter the 6-digit OTP sent to your email.
+          @if (timerSeconds() > 0) {
+            <span class="timer-text" style="color: var(--accent); font-weight: bold;">(Expires in {{ timerDisplay() }})</span>
           } @else {
-            Create Account
+            <span class="timer-text" style="color: var(--error); font-weight: bold;">(Code Expired)</span>
           }
-        </button>
-      </form>
+        </p>
+
+        <form [formGroup]="otpForm" (ngSubmit)="onVerifyOtp()">
+          <div class="form-group">
+            <label for="otpCode">OTP Code</label>
+            <input
+              id="otpCode"
+              type="text"
+              pattern="[0-9]*"
+              inputmode="numeric"
+              maxlength="6"
+              formControlName="otpCode"
+              placeholder="123456"
+              [disabled]="isSubmitting() || timerSeconds() === 0"
+            />
+            <app-form-error
+              [control]="otpForm.get('otpCode')"
+              message="Please enter the 6-digit code"
+            />
+          </div>
+
+          <button
+            type="submit"
+            class="login-button"
+            [disabled]="otpForm.invalid || isSubmitting() || timerSeconds() === 0"
+          >
+            @if (isSubmitting()) {
+              Verifying...
+            } @else if (timerSeconds() === 0) {
+              Code Expired
+            } @else {
+              Verify OTP
+            }
+          </button>
+
+          <button
+            type="button"
+            class="resend-button"
+            (click)="onResendOtp()"
+            [disabled]="isResending() || isSubmitting()"
+          >
+            @if (isResending()) {
+              Sending OTP...
+            } @else {
+              Resend OTP
+            }
+          </button>
+        </form>
+      }
 
       <div class="register-text">Already have an account? <a routerLink="/sign-in">Sign in</a></div>
     </div>

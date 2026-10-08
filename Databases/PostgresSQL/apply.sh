@@ -34,7 +34,7 @@ echo "Port:     $PORT"
 echo "Database: $DATABASE"
 echo "User:     $USER"
 
-# apply schema then seed data
+# apply schema then seed data, then price alerts
 psql \
     --host="$HOST" \
     --port="$PORT" \

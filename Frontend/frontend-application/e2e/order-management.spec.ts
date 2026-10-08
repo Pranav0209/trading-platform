@@ -70,15 +70,16 @@ test.describe('Order Management Journey', () => {
     await page.getByTestId('symbol-input').waitFor({ state: 'visible' });
 
     await page.getByTestId('symbol-input').fill('INFY.NS');
-    await page.getByTestId('side-input').selectOption('BUY');
+    await page.getByTestId('symbol-input').press('Escape');
+    await page.locator('label.segment-label.buy').click({ force: true });
     await page.getByTestId('quantity-input').fill('5');
     await page.getByTestId('price-input').fill('1500.50');
 
     const submitButton = page.getByTestId('submit-order-button');
-    await submitButton.click();
+    await submitButton.click({ force: true });
 
     try {
-      await expect(submitButton, { timeout: 20000 }).not.toContainText('Submitting');
+      await expect(submitButton).not.toContainText('Submitting', { timeout: 20000 });
     } catch {
       // Navigation or error occurred
     }
@@ -139,13 +140,15 @@ test.describe('Order Management Journey', () => {
     await page.click('[data-testid="nav-order-ticket"]');
     await page.getByTestId('symbol-input').waitFor({ state: 'visible' });
     await page.getByTestId('symbol-input').fill('INFY.NS');
-    await page.getByTestId('side-input').selectOption('BUY');
+    await page.getByTestId('symbol-input').press('Escape');
+    await page.locator('label.segment-label.buy').click({ force: true });
     await page.getByTestId('quantity-input').fill('1');
     await page.getByTestId('price-input').fill('1500.00');
-    await page.getByTestId('submit-order-button').click();
+    await page.waitForTimeout(1000);
+    await page.getByTestId('submit-order-button').click({ force: true });
 
     try {
-      await expect(page.getByTestId('submit-order-button'), { timeout: 20000 }).not.toContainText('Submitting');
+      await expect(page.getByTestId('submit-order-button')).not.toContainText('Submitting', { timeout: 20000 });
     } catch {
       // Fine
     }

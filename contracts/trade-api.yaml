@@ -73,6 +73,14 @@ tags:
     description: Placing and cancelling orders.
   - name: Accounts
     description: Account details, cash balance, holdings and order history.
+  - name: Watchlists
+    description: Manage user watchlists.
+  - name: Instruments
+    description: Instrument information.
+  - name: Advice
+    description: Trade advice and signals.
+  - name: Price Alerts
+    description: Manage price alerts on instruments.
 
 security:
   - bearerAuth: []
@@ -375,10 +383,10 @@ paths:
         '404':
           $ref: '#/components/responses/AccountNotFound'
 
-  /api/v1/accounts/{id}/positions:
+  /api/v1/accounts/{id}/portfolio:
     get:
       tags: [Accounts]
-      operationId: getPositions
+      operationId: getPortfolio
       summary: Get holdings
       description: |
         Net held quantity and average cost per instrument. Positions with a net quantity of zero are
@@ -394,7 +402,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PositionResponse'
+                  $ref: '#/components/schemas/PortfolioResponse'
               examples:
                 holdings:
                   value:
@@ -539,6 +547,26 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorised'
 
+  /api/v1/watchlists/{id}:
+    delete:
+      tags: [Watchlists]
+      operationId: deleteWatchlist
+      summary: Delete a watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Watchlist deleted successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
   /api/v1/watchlists/{id}/symbols/{symbol}:
     post:
       tags: [Watchlists]
@@ -621,6 +649,257 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorised'
 
+  /api/v1/advice/{id}:
+    get:
+      tags: [Advice]
+      operationId: getAdvice
+      summary: Get trade advice and signals
+      description: |
+        Returns BUY/SELL/HOLD signals for every stock the user currently owns or has added to their watchlist.
+      parameters:
+        - $ref: '#/components/parameters/AccountIdPath'
+      responses:
+        '200':
+          description: Advice generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdviceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          $ref: '#/components/responses/AccountNotActive'
+        '404':
+          $ref: '#/components/responses/AccountNotFound'
+
+  /api/v1/accounts/{accountId}/alerts:
+    get:
+      tags: [Price Alerts]
+      operationId: getAlerts
+      summary: List all price alerts for an account
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: The numeric account key, ACCOUNTS.id.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: state
+          in: query
+          required: false
+          description: Filter by alert state.
+          schema:
+            type: string
+            enum: [ACTIVE, TRIGGERED, DORMANT]
+      responses:
+        '200':
+          description: List of price alerts
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [alerts, count, limit]
+                properties:
+                  alerts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AlertResponse'
+                  count:
+                    type: integer
+                  limit:
+                    type: integer
+                    description: Maximum alerts allowed per account
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          $ref: '#/components/responses/AccountNotActive'
+        '404':
+          $ref: '#/components/responses/AccountNotFound'
+
+    post:
+      tags: [Price Alerts]
+      operationId: createAlert
+      summary: Create a new price alert
+      description: Creates an ACTIVE price alert. Limit is 100 per account.
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: The numeric account key, ACCOUNTS.id.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAlertRequest'
+      responses:
+        '201':
+          description: Alert created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          $ref: '#/components/responses/AccountNotActive'
+        '404':
+          $ref: '#/components/responses/AccountNotFound'
+        '409':
+          description: Alert limit exceeded for account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errorCode: WLT-409
+                message: Active alert limit exceeded
+
+  /api/v1/accounts/{accountId}/alerts/{alertId}:
+    get:
+      tags: [Price Alerts]
+      operationId: getAlert
+      summary: Get a specific price alert
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: The numeric account key, ACCOUNTS.id.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: alertId
+          in: path
+          required: true
+          description: The alert identifier.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Alert details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          $ref: '#/components/responses/AccountNotActive'
+        '404':
+          description: Alert not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errorCode: WLT-404
+                message: Alert not found
+
+    delete:
+      tags: [Price Alerts]
+      operationId: deleteAlert
+      summary: Delete a price alert
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: The numeric account key, ACCOUNTS.id.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: alertId
+          in: path
+          required: true
+          description: The alert identifier.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '204':
+          description: Alert deleted
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          $ref: '#/components/responses/AccountNotActive'
+        '404':
+          description: Alert not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errorCode: WLT-404
+                message: Alert not found
+
+  /api/v1/accounts/{accountId}/alerts/{alertId}/reset:
+    post:
+      tags: [Price Alerts]
+      operationId: resetAlert
+      summary: Reset a triggered alert back to ACTIVE
+      description: |
+        Transitions an alert from TRIGGERED back to ACTIVE so it monitors
+        the instrument again.
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          description: The numeric account key, ACCOUNTS.id.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: alertId
+          in: path
+          required: true
+          description: The alert identifier.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Alert reset
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertResponse'
+        '400':
+          description: Alert is not in TRIGGERED state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errorCode: VAL-422
+                message: Alert is not in TRIGGERED state
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '403':
+          $ref: '#/components/responses/AccountNotActive'
+        '404':
+          description: Alert not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                errorCode: WLT-404
+                message: Alert not found
+
 components:
 
   securitySchemes:
@@ -699,6 +978,18 @@ components:
               value:
                 errorCode: VAL-422
                 message: Invalid input
+
+    NotFound:
+      description: The requested watchlist resource does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            notFound:
+              value:
+                errorCode: WLT-404
+                message: Watchlist not found
 
   schemas:
 
@@ -950,7 +1241,7 @@ components:
           format: date-time
           example: '2026-09-28T09:14:22Z'
 
-    PositionResponse:
+    PortfolioResponse:
       type: object
       additionalProperties: false
       required: [accountId, symbol, quantity, averageCost]
@@ -986,7 +1277,7 @@ components:
       properties:
         errorCode:
           type: string
-          enum: [ACC-404, ACC-403, INS-404, ORD-400, ORD-409, VAL-422, AUTH-401]
+          enum: [ACC-404, ACC-403, INS-404, ORD-400, ORD-409, VAL-422, AUTH-401, WLT-404, WLT-409]
           description: |
             | Code | HTTP | Meaning |
             |---|---|---|
@@ -997,6 +1288,8 @@ components:
             | `ORD-409` | 409 | Insufficient holdings, duplicate order, or order not cancellable |
             | `VAL-422` | 422 | Invalid input |
             | `AUTH-401` | 401 | Unauthorised or invalid token |
+            | `WLT-404` | 404 | Watchlist or alert not found |
+            | `WLT-409` | 409 | Watchlist or alert conflict |
           example: ORD-409
         message:
           type: string
@@ -1043,3 +1336,145 @@ components:
           type: string
         tradable:
           type: boolean
+
+    AdviceResponse:
+      type: object
+      additionalProperties: false
+      required: [accountId, generatedAt, signals]
+      properties:
+        accountId:
+          type: integer
+          format: int64
+        generatedAt:
+          type: string
+          format: date-time
+        signals:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignalResponse'
+
+    SignalResponse:
+      type: object
+      additionalProperties: false
+      required: [symbol, source, signal, score, reasons, stale]
+      properties:
+        symbol:
+          type: string
+        source:
+          type: string
+          enum: [HOLDING, WATCHLIST, BOTH]
+        signal:
+          type: string
+          enum: [BUY, SELL, HOLD, INSUFFICIENT_DATA]
+        score:
+          type: integer
+          format: int32
+        reasons:
+          type: array
+          items:
+            type: string
+        indicatorValues:
+          type: object
+          additionalProperties: true
+        stale:
+          type: boolean
+        priceTimestamp:
+          type: string
+          format: date-time
+
+    CreateAlertRequest:
+      type: object
+      additionalProperties: false
+      required: [symbol, direction, threshold]
+      properties:
+        symbol:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: Instrument symbol.
+          example: AAPL
+
+        direction:
+          type: string
+          enum: [ABOVE, BELOW]
+          description: |
+            ABOVE: Alert fires when price rises through the threshold.
+            BELOW: Alert fires when price falls through the threshold.
+          example: ABOVE
+
+        threshold:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          multipleOf: 0.01
+          description: Price level for the alert.
+          example: 150.00
+
+    AlertResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - accountId
+        - symbol
+        - displayName
+        - direction
+        - threshold
+        - state
+        - deliveryStatus
+        - createdAt
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+
+        accountId:
+          type: integer
+          format: int64
+          example: 1
+
+        symbol:
+          type: string
+          example: AAPL
+
+        displayName:
+          type: string
+          example: Apple Inc.
+
+        direction:
+          type: string
+          enum: [ABOVE, BELOW]
+          example: ABOVE
+
+        threshold:
+          type: number
+          format: double
+          example: 150.00
+
+        state:
+          type: string
+          enum: [ACTIVE, TRIGGERED, DORMANT]
+          description: |
+            ACTIVE: Monitoring prices and will fire when the threshold is crossed.
+            TRIGGERED: Threshold was crossed and notification was attempted.
+            DORMANT: Alert has stopped monitoring after triggering and waits for reset.
+
+        lastFiredAt:
+          type: [string, 'null']
+          format: date-time
+          description: When the alert last transitioned to TRIGGERED.
+
+        deliveryStatus:
+          type: string
+          enum: [PENDING, DELIVERED, FAILED]
+          description: Status of the last notification delivery attempt.
+
+        failureReason:
+          type: [string, 'null']
+          description: Reason for failed notification delivery.
+
+        createdAt:
+          type: string
+          format: date-time
+          example: '2026-10-08T05:20:00Z'

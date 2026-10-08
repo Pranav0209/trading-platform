@@ -4,6 +4,9 @@ import { Session } from '../../core/auth/session';
 import { AccountsService } from '../../../generated/trade/api/accounts.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ErrorCodeMapper } from '../../core/error/error-code-mapper';
+import { ProfileService } from '../../../generated/auth/api/profile.service';
+import { ToastService } from '../../core/notifications/toast.service';
+import { FormsModule } from '@angular/forms';
 
 /**
  * User Profile Page - displays personal information
@@ -13,7 +16,7 @@ import { ErrorCodeMapper } from '../../core/error/error-code-mapper';
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './profile.html',
   styleUrl: './profile.css',
 })
@@ -22,6 +25,8 @@ export class Profile {
   private readonly accountsService = inject(AccountsService);
   private readonly errorCodeMapper = inject(ErrorCodeMapper);
   private readonly ngZone = inject(NgZone);
+  private readonly profileService = inject(ProfileService);
+  private readonly toastService = inject(ToastService);
 
   // Signals for JWT payload data
   username = signal<string>('');
@@ -33,6 +38,17 @@ export class Profile {
   accountNumber = signal<string>('');
   isLoading = signal<boolean>(true);
   error = signal<string>('');
+  
+  // Preferences data
+  notificationChannel = signal<string>('EMAIL');
+  isUpdatingPreference = signal<boolean>(false);
+
+  // Email update state
+  newEmail = signal<string>('');
+  emailUpdateStep = signal<'input' | 'otp'>('input');
+  otpCode = signal<string>('');
+  isUpdatingEmail = signal<boolean>(false);
+  isEditingEmail = signal<boolean>(false);
 
   // Computed values
   userRole = computed(() => this.roles()[0] || 'User');
@@ -49,6 +65,24 @@ export class Profile {
 
   constructor() {
     this.initializeFromToken();
+    this.loadUserProfile();
+    this.loadPreferences();
+  }
+
+  /**
+   * Fetch latest user profile from API to ensure email is up to date
+   */
+  private loadUserProfile(): void {
+    this.profileService.getCurrentUser().subscribe({
+      next: (user) => {
+        if (user.email) {
+          this.email.set(user.email);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load user profile:', err);
+      }
+    });
   }
 
   /**
@@ -105,5 +139,108 @@ export class Profile {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  /**
+   * Fetch user preferences
+   */
+  private loadPreferences(): void {
+    this.profileService.getPreferences()
+      .subscribe({
+        next: (prefs) => {
+          this.notificationChannel.set(prefs.notificationChannel);
+        },
+        error: (err) => {
+          console.error('Failed to load preferences:', err);
+        }
+      });
+  }
+
+  /**
+   * Update notification channel preference
+   */
+  updatePreference(channel: string): void {
+    if (this.notificationChannel() === channel) return;
+    
+    this.isUpdatingPreference.set(true);
+    // TypeScript might expect an object matching UpdatePreferenceRequest or similar
+    this.profileService.updatePreferences({ notificationChannel: channel as any })
+      .subscribe({
+        next: (prefs) => {
+          this.notificationChannel.set(prefs.notificationChannel);
+          this.isUpdatingPreference.set(false);
+          this.toastService.success(`Notification preference updated to ${channel === 'EMAIL' ? 'Email' : 'Push'}`);
+        },
+        error: (err) => {
+          console.error('Failed to update preference:', err);
+          this.isUpdatingPreference.set(false);
+          this.toastService.error('Failed to update notification preference');
+        }
+      });
+  }
+
+  /**
+   * Request email update
+   */
+  requestEmailUpdate(): void {
+    if (!this.newEmail() || !this.newEmail().includes('@')) {
+      this.toastService.error('Please enter a valid email address');
+      return;
+    }
+
+    this.isUpdatingEmail.set(true);
+    this.profileService.requestEmailUpdate({ newEmail: this.newEmail() })
+      .subscribe({
+        next: () => {
+          this.toastService.success(`OTP sent to ${this.newEmail()}`);
+          this.emailUpdateStep.set('otp');
+          this.isUpdatingEmail.set(false);
+        },
+        error: (err) => {
+          console.error('Failed to request email update:', err);
+          this.toastService.error(err.error?.message || 'Failed to request email update');
+          this.isUpdatingEmail.set(false);
+        }
+      });
+  }
+
+  /**
+   * Verify OTP and complete email update
+   */
+  verifyEmailUpdate(): void {
+    if (!this.otpCode() || this.otpCode().length < 6) {
+      this.toastService.error('Please enter a valid OTP');
+      return;
+    }
+
+    this.isUpdatingEmail.set(true);
+    this.profileService.verifyEmailUpdate({ 
+      newEmail: this.newEmail(),
+      otpCode: this.otpCode() 
+    }).subscribe({
+        next: () => {
+          this.toastService.success('Email updated successfully!');
+          this.email.set(this.newEmail());
+          
+          // Reset state
+          this.newEmail.set('');
+          this.otpCode.set('');
+          this.emailUpdateStep.set('input');
+          this.isUpdatingEmail.set(false);
+          this.isEditingEmail.set(false);
+        },
+        error: (err) => {
+          console.error('Failed to verify OTP:', err);
+          this.toastService.error(err.error?.message || 'Invalid or expired OTP');
+          this.isUpdatingEmail.set(false);
+        }
+      });
+  }
+
+  cancelEmailUpdate(): void {
+    this.newEmail.set('');
+    this.otpCode.set('');
+    this.emailUpdateStep.set('input');
+    this.isEditingEmail.set(false);
   }
 }

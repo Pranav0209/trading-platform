@@ -30,12 +30,42 @@
         </div>
 
         <!-- Email Row -->
-        <div class="detail-row">
-          <div class="detail-label">
-            <span class="material-icons detail-icon">email</span>
-            <span>Email Address</span>
+        <div class="detail-row" style="flex-direction: column; align-items: stretch; gap: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div class="detail-label">
+              <span class="material-icons detail-icon">email</span>
+              <span>Email Address</span>
+            </div>
+            <span class="detail-value" style="display: flex; align-items: center; justify-content: flex-end; gap: 10px;">
+              {{ displayEmail() }}
+              <button class="icon-button" (click)="isEditingEmail.set(true)" *ngIf="!isEditingEmail()" title="Update Email" style="background: none; border: none; cursor: pointer; color: var(--primary-green-light); padding: 0;">
+                <span class="material-icons" style="font-size: 18px;">edit</span>
+              </button>
+            </span>
           </div>
-          <span class="detail-value">{{ displayEmail() }}</span>
+
+          <!-- Email Update Form -->
+          <div *ngIf="isEditingEmail() && emailUpdateStep() === 'input'" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(0,103,71,0.2);">
+            <div style="display: flex; gap: 10px;">
+              <input type="email" [ngModel]="newEmail()" (ngModelChange)="newEmail.set($event)" placeholder="New email address" class="preference-select" style="flex: 1;" [disabled]="isUpdatingEmail()">
+              <button (click)="requestEmailUpdate()" class="primary-button" [disabled]="isUpdatingEmail() || !newEmail()" style="padding: 8px 16px; border-radius: 6px; border: none; background: var(--primary-green-light); color: white; cursor: pointer;">
+                {{ isUpdatingEmail() ? 'Sending...' : 'Send OTP' }}
+              </button>
+              <button (click)="cancelEmailUpdate()" class="secondary-button" [disabled]="isUpdatingEmail()" style="padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border-light); background: transparent; cursor: pointer;">Cancel</button>
+            </div>
+          </div>
+
+          <!-- OTP Verification Form -->
+          <div *ngIf="emailUpdateStep() === 'otp'" style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(0,103,71,0.2);">
+            <p style="font-size: 12px; margin-top: 0; margin-bottom: 10px; color: var(--text-secondary-light);">Enter the 6-digit OTP sent to {{ newEmail() }}</p>
+            <div style="display: flex; gap: 10px;">
+              <input type="text" pattern="[0-9]*" inputmode="numeric" [ngModel]="otpCode()" (ngModelChange)="otpCode.set($event)" placeholder="000000" maxlength="6" class="preference-select" style="flex: 1; letter-spacing: 2px;" [disabled]="isUpdatingEmail()">
+              <button (click)="verifyEmailUpdate()" class="primary-button" [disabled]="isUpdatingEmail() || !otpCode() || otpCode().length < 6" style="padding: 8px 16px; border-radius: 6px; border: none; background: var(--primary-green-light); color: white; cursor: pointer;">
+                {{ isUpdatingEmail() ? 'Verifying...' : 'Verify' }}
+              </button>
+              <button (click)="cancelEmailUpdate()" class="secondary-button" [disabled]="isUpdatingEmail()" style="padding: 8px 16px; border-radius: 6px; border: 1px solid var(--border-light); background: transparent; cursor: pointer;">Cancel</button>
+            </div>
+          </div>
         </div>
 
         <!-- Last Login Row -->
@@ -45,6 +75,34 @@
             <span>Last Login</span>
           </div>
           <span class="detail-value">{{ getCurrentDate() }}</span>
+        </div>
+      </div>
+
+      <!-- Preferences Section -->
+      <div class="profile-header" style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+        <div class="profile-title">
+          <h2>Preferences</h2>
+        </div>
+      </div>
+      
+      <div class="profile-details">
+        <!-- Notification Channel Row -->
+        <div class="detail-row" style="align-items: center;">
+          <div class="detail-label">
+            <span class="material-icons detail-icon">notifications</span>
+            <span>Trade Notifications</span>
+          </div>
+          <div class="preference-control">
+            <select 
+              [ngModel]="notificationChannel()" 
+              (ngModelChange)="updatePreference($event)"
+              [disabled]="isUpdatingPreference()"
+              class="preference-select">
+              <option value="EMAIL">Email</option>
+              <option value="PUSH">Push Notification</option>
+            </select>
+            <span *ngIf="isUpdatingPreference()" class="loading-spinner material-icons" style="font-size: 16px; margin-left: 8px; animation: spin 1s linear infinite;">sync</span>
+          </div>
         </div>
       </div>
     </section>

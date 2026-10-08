@@ -4,6 +4,10 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { ResendOtpDto } from './dto/resend-otp.dto';
+import { RequestEmailUpdateDto } from './dto/request-email-update.dto';
+import { VerifyEmailUpdateDto } from './dto/verify-email-update.dto';
 import { JwtAuthGuard } from './guards/jwt.guard';
 
 @ApiTags('Auth')
@@ -86,6 +90,40 @@ export class AuthController {
     });
 
     return { message: 'Logged out successfully' };
+  }
+
+  @ApiOperation({ summary: 'Verify Registration OTP' })
+  @ApiResponse({ status: 200, description: 'Account activated successfully.' })
+  @HttpCode(200)
+  @Post('verify-otp')
+  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto) {
+    return this.authService.verifyOtp(verifyOtpDto.email, verifyOtpDto.otpCode);
+  }
+
+  @ApiOperation({ summary: 'Resend Registration OTP' })
+  @ApiResponse({ status: 200, description: 'OTP resent successfully.' })
+  @HttpCode(200)
+  @Post('resend-otp')
+  async resendOtp(@Body() resendOtpDto: ResendOtpDto) {
+    return this.authService.resendOtp(resendOtpDto.email);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Request OTP to update email' })
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @Post('request-email-update')
+  async requestEmailUpdate(@Body() dto: RequestEmailUpdateDto, @Request() req: any) {
+    return this.authService.requestEmailUpdate(req.user.userId, dto.newEmail);
+  }
+
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Verify OTP to update email' })
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(200)
+  @Post('verify-email-update')
+  async verifyEmailUpdate(@Body() dto: VerifyEmailUpdateDto, @Request() req: any) {
+    return this.authService.verifyEmailUpdate(req.user.userId, dto.newEmail, dto.otpCode);
   }
 
   @ApiBearerAuth()

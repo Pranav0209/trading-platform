@@ -110,6 +110,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setStatus(OrderStatus.CANCELLED);
+        eventPublisher.publishEvent(new OrderUpdatedEvent(order));
+        
         return response(order, "Order cancelled");
     }
 

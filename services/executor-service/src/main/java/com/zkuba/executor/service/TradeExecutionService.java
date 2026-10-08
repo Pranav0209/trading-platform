@@ -1,18 +1,20 @@
 package com.zkuba.executor.service;
 
-import com.zkuba.executor.client.CurrencyConversionClient;
-import com.zkuba.executor.client.FauxnanceQuoteClient;
+import com.zkuba.executor.client.CurrencyConverter;
+import com.zkuba.executor.client.QuoteClient;
 import com.zkuba.executor.client.PricingUnavailableException;
 import com.zkuba.executor.client.QuoteResponse;
 import com.zkuba.executor.domain.entity.Account;
 import com.zkuba.executor.domain.entity.Order;
 import com.zkuba.executor.domain.entity.Position;
+import com.zkuba.executor.domain.entity.RealisedPnl;
 import com.zkuba.executor.engine.FillDecision;
-import com.zkuba.executor.engine.FillRuleEngine;
+import com.zkuba.executor.engine.FillRuleEvaluator;
 import com.zkuba.executor.event.TradeEventPayload;
 import com.zkuba.executor.repository.AccountRepository;
 import com.zkuba.executor.repository.OrderRepository;
 import com.zkuba.executor.repository.PositionRepository;
+import com.zkuba.executor.repository.RealisedPnlRepository;
 import com.zkuba.executor.domain.enums.AccountStatus;
 import com.zkuba.executor.domain.enums.OrderSide;
 import com.zkuba.executor.domain.enums.OrderStatus;
@@ -40,13 +42,16 @@ public class TradeExecutionService {
     private PositionRepository positionRepository;
 
     @Autowired
-    private FauxnanceQuoteClient quoteClient;
+    private RealisedPnlRepository realisedPnlRepository;
 
     @Autowired
-    private FillRuleEngine fillRuleEngine;
+    private QuoteClient quoteClient;
 
     @Autowired
-    private CurrencyConversionClient currencyConversionClient;
+    private FillRuleEvaluator fillRuleEngine;
+
+    @Autowired
+    private CurrencyConverter currencyConversionClient;
 
     // if 2 threads try to update exact same account at same time, db wil throw
     // OptimisticLockingException, if that happes we tell spring to not crash and
@@ -141,9 +146,28 @@ public class TradeExecutionService {
             updateAccount(account, newBalance);
             updateBuyPosition(account.getId(), order.getSymbol(), order.getQuantity(), executedPriceInAccountCurrency, position);
         } else {
+            // For SELL orders: capture average cost BEFORE updating position
+            // (position row is deleted when qty reaches 0, so we must record P&L now)
+            BigDecimal averageCostBeforeSell = position != null ? position.getAverageCost() : BigDecimal.ZERO;
+            
             BigDecimal newBalance = account.getCashBalance().add(totalValueInAccountCurrency);
             updateAccount(account, newBalance);
             updateSellPosition(position, order.getQuantity());
+            
+            // Record realised P&L in same transaction
+            BigDecimal realisedPnl = executedPriceInAccountCurrency.subtract(averageCostBeforeSell)
+                    .multiply(BigDecimal.valueOf(order.getQuantity()));
+            RealisedPnl pnlRecord = new RealisedPnl(
+                    order.getId(),
+                    account.getId(),
+                    order.getSymbol(),
+                    order.getQuantity(),
+                    executedPriceInAccountCurrency,
+                    averageCostBeforeSell,
+                    realisedPnl,
+                    executedOn
+            );
+            realisedPnlRepository.save(pnlRecord);
         }
 
         return Optional.of(buildFilledEvent(order, account.getCashBalance(), position, totalValueInAccountCurrency));

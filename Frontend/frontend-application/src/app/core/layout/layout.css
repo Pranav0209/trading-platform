@@ -4,7 +4,6 @@
 
 .dashboard-layout {
   display: flex;
-  height: 100dvh;
   min-height: 100dvh;
 }
 
@@ -12,6 +11,9 @@
   width: var(--sidebar-width);
   display: flex;
   flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
 }
 
 html:not(.dark-theme) .sidebar {

@@ -35,6 +35,7 @@ public class OrderEventPublisher {
                 order.getQuantity(),
                 order.getLimitPrice(),
                 order.getIdempotencyKey(),
+                order.getStatus() != null ? order.getStatus().name() : "PENDING",
                 order.getCreatedAt() != null ? order.getCreatedAt().toInstant() : Instant.now()
         );
 
@@ -76,6 +77,7 @@ public class OrderEventPublisher {
                 order.getQuantity(),
                 order.getLimitPrice(),
                 order.getIdempotencyKey(),
+                order.getStatus() != null ? order.getStatus().name() : "PENDING",
                 order.getCreatedAt() != null ? order.getCreatedAt().toInstant() : Instant.now()
         );
 

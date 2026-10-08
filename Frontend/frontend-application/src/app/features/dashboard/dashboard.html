@@ -10,33 +10,56 @@
   <!-- PORTFOLIO SUMMARY CARDS -->
   <section class="summary-cards">
     <div class="card summary-card">
-      <div class="card-title">Portfolio Value</div>
+      <div class="card-title">Invested Value</div>
       <div class="card-value financial-value">
-        {{ portfolioSummary().portfolioValue | currency: accountCurrency(): 'symbol' }}
+        {{ portfolioSummary().investedValue | currency: accountCurrency() : 'symbol' }}
       </div>
       <div class="card-meta">
-        <span class="positive">+{{ portfolioSummary().todayPnL | currency: accountCurrency(): 'symbol' }} today</span>
-        <span class="badge positive">+{{ portfolioSummary().todayPnLPercent }}%</span>
+        <span class="muted">Amount invested across holdings</span>
       </div>
     </div>
 
     <div class="card summary-card">
-      <div class="card-title">Today's P&L</div>
-      <div class="card-value financial-value positive">
-        +{{ portfolioSummary().todayPnL | currency: accountCurrency(): 'symbol' }}
+      <div class="card-title">Current Holdings Value</div>
+      <div
+        class="card-value financial-value"
+        [class.positive]="portfolioSummary().unrealizedPnL > 0"
+        [class.negative]="portfolioSummary().unrealizedPnL < 0"
+      >
+        {{ portfolioSummary().currentHoldingsValue | currency: accountCurrency() : 'symbol' }}
       </div>
       <div class="card-meta">
-        <span class="badge positive">+{{ portfolioSummary().todayPnLPercent }}%</span>
+        <span [class.positive]="portfolioSummary().unrealizedPnL > 0" [class.negative]="portfolioSummary().unrealizedPnL < 0">
+          {{ portfolioSummary().unrealizedPnL > 0 ? '+' : '' }}{{ portfolioSummary().unrealizedPnL
+            | currency: accountCurrency() : 'symbol' }} vs invested
+        </span>
+        <span
+          class="badge"
+          [class.positive]="portfolioSummary().unrealizedPnLPercent >= 0"
+          [class.negative]="portfolioSummary().unrealizedPnLPercent < 0"
+        >
+          {{ portfolioSummary().unrealizedPnLPercent > 0 ? '+' : '' }}{{ portfolioSummary().unrealizedPnLPercent }}%
+        </span>
       </div>
     </div>
 
     <div class="card summary-card">
       <div class="card-title">Available Balance</div>
       <div class="card-value financial-value">
-        {{ portfolioSummary().availableBalance | currency: accountCurrency(): 'symbol' }}
+        {{ portfolioSummary().availableBalance | currency: accountCurrency() : 'symbol' }}
       </div>
       <div class="card-meta">
-        <span class="muted">Available to trade</span>
+        <span class="muted">Cash available to trade</span>
+      </div>
+    </div>
+
+    <div class="card summary-card">
+      <div class="card-title">Total Portfolio</div>
+      <div class="card-value financial-value">
+        {{ portfolioSummary().portfolioValue | currency: accountCurrency() : 'symbol' }}
+      </div>
+      <div class="card-meta">
+        <span class="muted">Holdings plus available balance</span>
       </div>
     </div>
   </section>
@@ -49,35 +72,89 @@
         <div class="card-header">
           <h3 class="card-title">Portfolio Performance</h3>
           <div class="time-selectors" role="tablist" aria-label="Performance range">
-            <button type="button">1D</button>
-            <button type="button">1W</button>
-            <button type="button" class="active">1M</button>
-            <button type="button">6M</button>
-            <button type="button">1Y</button>
-            <button type="button">ALL</button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === '1D'"
+              (click)="setChartTimeRange('1D')"
+            >
+              1D
+            </button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === '1W'"
+              (click)="setChartTimeRange('1W')"
+            >
+              1W
+            </button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === '1M'"
+              (click)="setChartTimeRange('1M')"
+            >
+              1M
+            </button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === '6M'"
+              (click)="setChartTimeRange('6M')"
+            >
+              6M
+            </button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === '1Y'"
+              (click)="setChartTimeRange('1Y')"
+            >
+              1Y
+            </button>
+            <button
+              type="button"
+              [class.active]="chartTimeRange() === 'ALL'"
+              (click)="setChartTimeRange('ALL')"
+            >
+              ALL
+            </button>
           </div>
         </div>
 
         <div class="chart-summary">
-          <div class="chart-value financial-value">{{ 1248620.40 | currency: accountCurrency(): 'symbol' }}</div>
-          <div class="chart-change positive">+{{ 18245.20 | currency: accountCurrency(): 'symbol' }} (+1.48%)</div>
+          <div class="chart-value financial-value">
+            {{ portfolioSummary().portfolioValue | currency: accountCurrency() : 'symbol' }}
+          </div>
+          <div
+            class="chart-change"
+            [class.positive]="chartChange() >= 0"
+            [class.negative]="chartChange() < 0"
+          >
+            {{ chartChange() >= 0 ? '+' : ''
+            }}{{ chartChange() | currency: accountCurrency() : 'symbol' }} (Total Realised P&L)
+          </div>
         </div>
 
         <div class="mock-chart" aria-hidden="true">
           <svg viewBox="0 0 800 200" preserveAspectRatio="none" class="chart-svg">
             <defs>
               <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stop-color="#00D084" stop-opacity="0.28" />
-                <stop offset="100%" stop-color="#00D084" stop-opacity="0.02" />
+                <stop
+                  offset="0%"
+                  [attr.stop-color]="chartChange() >= 0 ? '#00D084' : '#ef4444'"
+                  stop-opacity="0.28"
+                />
+                <stop
+                  offset="100%"
+                  [attr.stop-color]="chartChange() >= 0 ? '#00D084' : '#ef4444'"
+                  stop-opacity="0.02"
+                />
               </linearGradient>
             </defs>
             <path
-              d="M0,180 L50,160 L100,170 L150,130 L200,140 L250,90 L300,110 L350,60 L400,80 L450,40 L500,50 L550,20 L600,30 L650,10 L700,25 L750,5 L800,15 L800,200 L0,200 Z"
+              [attr.d]="chartFill() || 'M0,180 L800,180 L800,200 L0,200 Z'"
               fill="url(#chartGradient)"
             />
             <path
-              d="M0,180 L50,160 L100,170 L150,130 L200,140 L250,90 L300,110 L350,60 L400,80 L450,40 L500,50 L550,20 L600,30 L650,10 L700,25 L750,5 L800,15"
+              [attr.d]="chartPath() || 'M0,180 L800,180'"
               class="chart-line"
+              [style.stroke]="chartChange() >= 0 ? '#00D084' : '#ef4444'"
               fill="none"
               stroke-width="2"
             />
@@ -93,7 +170,56 @@
       </div>
     </section>
 
+    <section class="allocation-section">
+      <div class="card allocation-card">
+        <div class="card-header">
+          <h3 class="card-title">Holdings Allocation</h3>
+        </div>
+
+        @if (holdingSlices().length > 0) {
+          <div class="allocation-content">
+            <div class="pie-chart-wrapper" aria-hidden="true">
+              <svg viewBox="0 0 120 120" class="pie-chart">
+                @for (slice of holdingSlices(); track slice.label) {
+                  <path [attr.d]="slice.path" [attr.fill]="slice.color"></path>
+                }
+                <circle cx="60" cy="60" r="25" class="pie-chart-inner"></circle>
+              </svg>
+              <div class="pie-chart-center">
+                <span class="pie-chart-label">Holdings</span>
+                <strong>{{ holdingsTotal() | currency: accountCurrency() : 'symbol':'1.0-0' }}</strong>
+              </div>
+            </div>
+
+            <div class="allocation-legend">
+              @for (slice of holdingSlices(); track slice.label) {
+                <div class="legend-item">
+                  <span class="legend-swatch" [style.background]="slice.color"></span>
+                  <div class="legend-copy">
+                    <span class="legend-label">{{ slice.label }}</span>
+                    <span class="legend-value">
+                      {{ slice.percent | percent:'1.0-1' }}
+                      <small>{{ slice.value | currency: accountCurrency() : 'symbol':'1.0-0' }}</small>
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="allocation-empty muted">Portfolio allocation will appear once holdings are available.</div>
+        }
+      </div>
+    </section>
+
     <!-- HOLDINGS (Summary) -->
-    <app-positions title="Holdings" [showViewAll]="true"></app-positions>
+    <app-portfolio title="Portfolio" [showViewAll]="true"></app-portfolio>
+
+    <!-- REALISED P&L (Summary) -->
+    <app-realised-pnl
+      title="Recent Realised P&L"
+      [showViewAll]="true"
+      [accountId]="accountId()"
+    ></app-realised-pnl>
   </section>
 </div>

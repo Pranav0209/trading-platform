@@ -204,6 +204,149 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorised'
 
+  /auth/verify-otp:
+    post:
+      tags: [Auth]
+      operationId: verifyOtp
+      security: []
+      summary: Verify Registration OTP
+      description: Verifies the OTP sent to the user's email during registration and activates the account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyOtpRequest'
+      responses:
+        '200':
+          description: Account activated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '409':
+          description: Account is already active.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/resend-otp:
+    post:
+      tags: [Auth]
+      operationId: resendOtp
+      summary: Resend OTP
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: OTP resent
+  /auth/request-email-update:
+    post:
+      tags: [Profile]
+      operationId: requestEmailUpdate
+      summary: Request OTP to update email
+      description: Sends an OTP to the new email address for verification.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestEmailUpdateRequest'
+      responses:
+        '200':
+          description: OTP sent to new email address.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '409':
+          description: Email is already in use.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/verify-email-update:
+    post:
+      tags: [Profile]
+      operationId: verifyEmailUpdate
+      summary: Verify OTP to update email
+      description: Verifies the OTP sent to the new email address and updates the user's email.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailUpdateRequest'
+      responses:
+        '200':
+          description: Email updated successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+
+  /preferences:
+    get:
+      tags: [Profile]
+      operationId: getPreferences
+      summary: Get current user preferences
+      description: Returns the user's notification channel preference based on the verified JWT token.
+      responses:
+        '200':
+          description: User preferences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferenceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+    put:
+      tags: [Profile]
+      operationId: updatePreferences
+      summary: Update current user preferences
+      description: Updates the user's notification channel preference. Scoped to the verified JWT token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePreferenceRequest'
+      responses:
+        '200':
+          description: Updated user preferences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreferenceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorised'
 components:
 
   securitySchemes:
@@ -380,6 +523,59 @@ components:
             Deliberately vague on this service for login failures. Returns different codes for throttle
             (AUTH-429) vs auth failure (AUTH-401) so frontend can show appropriate messaging.
           example: Unauthorised
+
+    VerifyOtpRequest:
+      type: object
+      additionalProperties: false
+      required: [email, otpCode]
+      properties:
+        email:
+          type: string
+          format: email
+        otpCode:
+          type: string
+          minLength: 6
+          maxLength: 6
+
+    RequestEmailUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [newEmail]
+      properties:
+        newEmail:
+          type: string
+          format: email
+
+    VerifyEmailUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [newEmail, otpCode]
+      properties:
+        newEmail:
+          type: string
+          format: email
+        otpCode:
+          type: string
+          minLength: 6
+          maxLength: 6
+
+    UpdatePreferenceRequest:
+      type: object
+      additionalProperties: false
+      required: [notificationChannel]
+      properties:
+        notificationChannel:
+          type: string
+          enum: [EMAIL, PUSH]
+
+    PreferenceResponse:
+      type: object
+      additionalProperties: false
+      required: [notificationChannel]
+      properties:
+        notificationChannel:
+          type: string
+          enum: [EMAIL, PUSH]
 
 security:
   - bearerAuth: []

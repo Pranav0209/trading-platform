@@ -6,7 +6,7 @@ import com.zkuba.trading.dto.request.CreateAccountRequest;
 import com.zkuba.trading.dto.response.AccountResponse;
 import com.zkuba.trading.dto.response.BalanceResponse;
 import com.zkuba.trading.dto.response.OrderHistoryEntry;
-import com.zkuba.trading.dto.response.PositionResponse;
+import com.zkuba.trading.dto.response.PortfolioResponse;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -22,7 +22,7 @@ public interface AccountService {
 
     BalanceResponse getBalance(Long accountId, Long userId);
 
-    List<PositionResponse> getPositionsResponse(Long accountId, Long userId);
+    List<PortfolioResponse> getPortfolioResponse(Long accountId, Long userId);
 
     List<OrderHistoryEntry> getOrderHistory(
             Long accountId,

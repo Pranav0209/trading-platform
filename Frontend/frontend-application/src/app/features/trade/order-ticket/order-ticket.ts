@@ -6,10 +6,13 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { OrdersService } from '../../../../generated/trade/api/orders.service';
 import { OrderSide } from '../../../../generated/trade/model/orderSide';
 import { PlaceOrderRequest } from '../../../../generated/trade/model/placeOrderRequest';
+import { InstrumentsService } from '../../../../generated/trade/api/instruments.service';
+import { InstrumentResponse } from '../../../../generated/trade/model/instrumentResponse';
 import { Session } from '../../../core/auth/session';
 import { DashboardService } from '../../dashboard/dashboard.service';
 import { ErrorCodeMapper } from '../../../core/error/error-code-mapper';
 import { ToastService } from '../../../core/notifications/toast.service';
+import { MarketDataService } from '../../../core/services/market-data.service';
 
 const SYMBOL_PATTERN = /^(?:[A-Z][A-Z0-9]*(?:\.(?:NS|BO))?|FX:[A-Z]{6}|X:[A-Z0-9]+)$/;
 const PRICE_PATTERN = /^\d+(?:\.\d{1,2})?$/;
@@ -30,6 +33,14 @@ export class OrderTicket implements OnInit {
   private readonly toastService = inject(ToastService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly instrumentsService = inject(InstrumentsService);
+  private readonly marketData = inject(MarketDataService);
+
+  quotes = this.marketData.quotes;
+
+  availableInstruments = signal<InstrumentResponse[]>([]);
+  filteredInstruments = signal<InstrumentResponse[]>([]);
+  showDropdown = signal(false);
 
   readonly orderSides = [OrderSide.Buy, OrderSide.Sell];
   readonly orderTypes = ['LIMIT', 'MARKET'];
@@ -55,6 +66,29 @@ export class OrderTicket implements OnInit {
     if (symbolParam) {
       this.form.controls.symbol.setValue(symbolParam);
     }
+
+    this.instrumentsService.getInstruments().subscribe({
+      next: (instruments) => {
+        const tradable = instruments.filter(i => i.tradable);
+        this.availableInstruments.set(tradable);
+        this.filteredInstruments.set(tradable);
+      },
+      error: (e) => console.error('Failed to load instruments', e)
+    });
+
+    this.form.controls.symbol.valueChanges.subscribe(value => {
+      if (!value) {
+        this.filteredInstruments.set(this.availableInstruments());
+        return;
+      }
+      const lower = value.toLowerCase();
+      this.filteredInstruments.set(
+        this.availableInstruments().filter(i => 
+          i.symbol.toLowerCase().includes(lower) || 
+          i.displayName.toLowerCase().includes(lower)
+        )
+      );
+    });
     
     // Dynamically require or hide the price field based on order type
     this.form.controls.orderType.valueChanges.subscribe(type => {
@@ -132,6 +166,53 @@ export class OrderTicket implements OnInit {
 
     const price = Number(rawPrice);
     return !Number.isFinite(price) || price <= 0;
+  }
+
+  selectInstrument(symbol: string) {
+    this.form.controls.symbol.setValue(symbol);
+    this.showDropdown.set(false);
+  }
+
+  hideDropdown() {
+    setTimeout(() => {
+      this.showDropdown.set(false);
+    }, 200); // small delay to allow click event to register
+  }
+
+  get summarySymbol() { return this.form.controls.symbol.value; }
+  get summarySide() { return this.form.controls.side.value; }
+  get summaryType() { return this.form.controls.orderType.value; }
+  get summaryQuantity() { return Number(this.form.controls.quantity.value) || 0; }
+  get summaryLimitPrice() { return Number(this.form.controls.price.value) || 0; }
+  
+  get summaryPrice(): number | null {
+    if (this.summaryType === 'LIMIT') {
+      return this.summaryLimitPrice;
+    } else {
+      return this.getCachedPrice(this.summarySymbol);
+    }
+  }
+
+  get summaryTotal(): number | null {
+    const p = this.summaryPrice;
+    if (p && this.summaryQuantity) {
+      return p * this.summaryQuantity;
+    }
+    return null;
+  }
+
+  getCachedPrice(symbol: string): number | null {
+    if (!symbol) return null;
+    try {
+      const cached = localStorage.getItem('zkuba_quotes');
+      if (cached) {
+        const quotes = JSON.parse(cached);
+        return quotes[symbol]?.price || null;
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+    return null;
   }
 
   private parseAccountId(token: string | null): number | null {

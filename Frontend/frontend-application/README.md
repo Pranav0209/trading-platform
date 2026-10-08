@@ -1,59 +1,98 @@
-# TradingUi
+# Frontend Application (Trading UI)
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.24.
+Welcome to the **Trading UI**! This repository contains the user-facing web application for the Trading Platform. It is a modern, reactive single-page application (SPA) built with Angular.
 
-## Development server
+## 📖 Overview
 
-To start a local development server, run:
+The Frontend application connects to multiple microservices (Auth Service, Order Service, etc.) to provide users with real-time trading dashboards, portfolio management, user authentication, and market data visualization.
 
+It relies on **OpenAPI Generators** to automatically generate TypeScript clients for API interactions, ensuring strict type safety between the frontend and the backend.
+
+## 🛠️ Tech Stack
+
+- **Framework:** Angular 21
+- **Language:** TypeScript
+- **State/Reactivity:** RxJS
+- **UI Components:** Angular Material
+- **API Client Generation:** OpenAPI Generator CLI
+- **Unit Testing:** Vitest
+- **E2E Testing:** Playwright
+- **Environment Management:** Custom `build-env.js` via dotenv
+
+## 📁 Architecture & Folder Breakdown
+
+The application is structured following the Angular LIFT principle inside `src/app/`:
+
+- **`core/`**: Singleton services and core logic that is only instantiated once.
+  - `auth/`: Authentication interceptors and route guards.
+  - `trade/`: Core trading services and API wrappers.
+  - `error/`: Global error handling logic.
+  - `notifications/`: Snackbars or toast notifications.
+  - `theme/`: Theme and styling configuration.
+- **`features/`**: Feature-based modules encapsulating distinct domains of the app.
+  - `dashboard/`: Overview of market metrics and quick actions.
+  - `trade/`: Order placement forms and market data streams.
+  - `auth/`: Login, Registration, and OTP components.
+  - `portfolio/` / `account/`: Holdings and user account settings.
+  - `admin/`: Admin-specific views (if applicable).
+- **`shared/`**: Dumb components and utilities reused across features.
+  - `form-error/`: Standardized form validation messages.
+  - `skeleton-loader/`: Loading placeholders.
+
+## ⚙️ Environment Variables
+
+We use `.env` files locally, which are parsed by `build-env.js` and injected into the Angular environment. Copy the provided `.env.example` to `.env`:
+
+| Variable | Description |
+|---|---|
+| `NG_APP_AUTH_API_URL` | The base URL of the Auth Service |
+| `NG_APP_TRADE_API_URL` | The base URL of the Order/Trade Service |
+| `NG_APP_PORT` | The port the UI runs on (usually 4200) |
+| `NG_APP_ENVIRONMENT` | e.g. `development`, `production` |
+
+## 🚀 Getting Started
+
+### 1. Prerequisites
+- Node.js (v18+ recommended)
+- `npm` (Node Package Manager)
+
+### 2. Installation
 ```bash
-ng serve
+cd Frontend/frontend-application
+npm install
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
+### 3. Generate API Clients (Important!)
+Before running the app, generate the latest TypeScript API clients using the OpenAPI specs:
 ```bash
-ng generate component component-name
+npm run generate:clients
 ```
+*Note: This parses the JSON files in the `openapi/` folder and outputs code into the project.*
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
+### 4. Run the Application
 ```bash
-ng generate --help
+# Starts the dev server using the custom build script
+npm run start
 ```
+Navigate to `http://localhost:4200`.
 
-## Building
+## 🧪 Testing
 
-To build the project run:
+We use modern, fast testing frameworks rather than Karma/Jasmine or Protractor.
 
-```bash
-ng build
-```
+- **Unit Tests (Vitest)**: 
+  ```bash
+  npm run test
+  ```
+- **End-to-End Tests (Playwright)**: 
+  ```bash
+  npm run e2e          # Run headlessly
+  npm run e2e:ui       # Run with Playwright UI mode
+  npm run e2e:debug    # Run in debug mode
+  ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## 🤝 Development Workflow for New Devs
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+1. **Strict Typing**: Never use `any`. Rely on the models generated by the OpenAPI client. If an API contract changes, update the backend OpenAPI spec, copy the JSON to `openapi/`, and run `npm run generate:clients`.
+2. **Feature Modules**: Keep feature components scoped. Do not import `features/trade` components into `features/auth`. If something needs to be shared, move it to `shared/`.
+3. **RxJS Subscriptions**: Always clean up your RxJS Observables. Use `takeUntilDestroyed()`, the `AsyncPipe`, or implement `OnDestroy` to prevent memory leaks when components unmount.

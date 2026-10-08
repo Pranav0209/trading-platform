@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -32,12 +32,47 @@ export class Register {
   protected readonly passwordValidationMessage = registerPasswordValidationMessage;
 
   isSubmitting = signal(false);
+  isResending = signal(false);
+  isOtpStep = signal(false);
+  registeredEmail = signal('');
 
   form = this.fb.nonNullable.group({
     username: ['', usernameValidators],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(255)]],
     password: ['', registerPasswordValidators],
   });
+
+  otpForm = this.fb.nonNullable.group({
+    otpCode: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6), Validators.pattern('^[0-9]{6}$')]],
+  });
+
+  // Timer state
+  timerSeconds = signal(120);
+  timerDisplay = computed(() => {
+    const mins = Math.floor(this.timerSeconds() / 60);
+    const secs = this.timerSeconds() % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  });
+  private timerInterval: any;
+
+  ngOnDestroy(): void {
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
+  }
+
+  private startTimer(): void {
+    this.timerSeconds.set(120);
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    
+    this.timerInterval = setInterval(() => {
+      if (this.timerSeconds() > 0) {
+        this.timerSeconds.update(s => s - 1);
+      } else {
+        clearInterval(this.timerInterval);
+      }
+    }, 1000);
+  }
 
   onSubmit(): void {
     if (this.form.invalid) {
@@ -53,7 +88,33 @@ export class Register {
       password: val.password
     }).subscribe({
       next: (res: any) => {
-        this.toastService.success('Account created successfully! Please sign in.');
+        this.toastService.success('User created! Please check your email for the OTP.');
+        this.registeredEmail.set(val.email);
+        this.isOtpStep.set(true);
+        this.isSubmitting.set(false);
+        this.startTimer();
+      },
+      error: (err: HttpErrorResponse) => {
+        const errorMsg = this.errorCodeMapper.mapErrorToMessage(err);
+        this.toastService.error(errorMsg);
+        this.isSubmitting.set(false);
+      }
+    });
+  }
+
+  onVerifyOtp(): void {
+    if (this.otpForm.invalid) {
+      this.toastService.warning('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    this.isSubmitting.set(true);
+    this.authService.verifyOtp({
+      email: this.registeredEmail(),
+      otpCode: this.otpForm.getRawValue().otpCode
+    }).subscribe({
+      next: () => {
+        this.toastService.success('Account activated successfully! Please sign in.');
         this.router.navigate(['/sign-in']);
       },
       error: (err: HttpErrorResponse) => {
@@ -62,5 +123,27 @@ export class Register {
         this.isSubmitting.set(false);
       }
     });
+  }
+
+  onResendOtp(): void {
+    this.isResending.set(true);
+    this.authService.resendOtp({
+      email: this.registeredEmail()
+    }).subscribe({
+      next: () => {
+        this.toastService.success('OTP resent successfully! Check your email.');
+        this.startTimer();
+        this.isResending.set(false);
+      },
+      error: (err: HttpErrorResponse) => {
+        const errorMsg = this.errorCodeMapper.mapErrorToMessage(err);
+        this.toastService.error(errorMsg);
+        this.isResending.set(false);
+      }
+    });
+  }
+
+  goBack(): void {
+    this.router.navigate(['/sign-in']);
   }
 }

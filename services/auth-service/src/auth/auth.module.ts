@@ -8,6 +8,7 @@ import { UsersModule } from '../users/users.module';
 import { RefreshToken } from '../refresh-tokens/refresh-token.entity';
 import { LoginAttempt } from './login-attempt.entity';
 import { LoginThrottleService } from './login-throttle.service';
+import { EmailJSService } from '../core/emailjs.service';
 
 @Module({
   imports: [
@@ -22,7 +23,8 @@ import { LoginThrottleService } from './login-throttle.service';
       inject: [ConfigService],
     }),
   ],
-  providers: [AuthService, LoginThrottleService],
+  providers: [AuthService, LoginThrottleService, EmailJSService],
   controllers: [AuthController],
+  exports: [JwtModule],
 })
 export class AuthModule {}

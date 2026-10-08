@@ -8,15 +8,30 @@
 
     <nav class="nav-menu">
       @if (!isAdmin()) {
-        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" data-testid="nav-dashboard">
+        <a
+          routerLink="/dashboard"
+          routerLinkActive="active"
+          class="nav-item"
+          data-testid="nav-dashboard"
+        >
           <span class="material-icons icon" aria-hidden="true">dashboard</span>
           Dashboard
         </a>
-        <a routerLink="/watchlist" routerLinkActive="active" class="nav-item" data-testid="nav-watchlist">
+        <a
+          routerLink="/watchlist"
+          routerLinkActive="active"
+          class="nav-item"
+          data-testid="nav-watchlist"
+        >
           <span class="material-icons icon" aria-hidden="true">visibility</span>
           Watchlist
         </a>
-        <a routerLink="/trade" routerLinkActive="active" class="nav-item" data-testid="nav-order-ticket">
+        <a
+          routerLink="/trade"
+          routerLinkActive="active"
+          class="nav-item"
+          data-testid="nav-order-ticket"
+        >
           <span class="material-icons icon" aria-hidden="true">candlestick_chart</span>
           Trade
         </a>
@@ -24,13 +39,35 @@
           <span class="material-icons icon" aria-hidden="true">receipt_long</span>
           Orders
         </a>
-        <a routerLink="/positions" routerLinkActive="active" class="nav-item" data-testid="nav-positions">
-          <span class="material-icons icon" aria-hidden="true">show_chart</span>
-          Positions
+        <a routerLink="/smart-rules" routerLinkActive="active" class="nav-item" data-testid="nav-smart-rules">
+          <span class="material-icons icon" aria-hidden="true">rule</span>
+          Smart Rules
         </a>
-        <a routerLink="/holdings" routerLinkActive="active" class="nav-item" data-testid="nav-holdings">
-          <span class="material-icons icon" aria-hidden="true">account_balance_wallet</span>
-          Holdings
+        <a
+          routerLink="/portfolio"
+          routerLinkActive="active"
+          class="nav-item"
+          data-testid="nav-portfolio"
+        >
+          <span class="material-icons icon" aria-hidden="true">show_chart</span>
+          Portfolio
+        </a>
+        <a
+          routerLink="/realised-pnl"
+          routerLinkActive="active"
+          class="nav-item"
+          data-testid="nav-pnl"
+        >
+          <span class="material-icons icon" aria-hidden="true">trending_up</span>
+          P&L History
+        </a>
+        <a routerLink="/alerts" routerLinkActive="active" class="nav-item" data-testid="nav-alerts">
+          <span class="material-icons icon" aria-hidden="true">notifications_active</span>
+          Alerts
+        </a>
+        <a routerLink="/advice" routerLinkActive="active" class="nav-item" data-testid="nav-advice">
+          <span class="material-icons icon" aria-hidden="true">auto_graph</span>
+          Advice
         </a>
       } @else {
         <a routerLink="/admin" routerLinkActive="active" class="nav-item">
@@ -58,9 +95,7 @@
     <header class="top-header">
       <div class="user-controls">
         <app-theme-toggle></app-theme-toggle>
-        <button class="icon-btn" type="button" aria-label="View notifications">
-          <span class="material-icons" aria-hidden="true">notifications</span>
-        </button>
+
         <div class="user-profile" (click)="toggleDropdown()">
           <div class="avatar">{{ userInitial() | uppercase }}</div>
           <span class="name">

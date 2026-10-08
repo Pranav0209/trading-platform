@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefreshToken } from '../refresh-tokens/refresh-token.entity';
 import * as crypto from 'crypto';
+import { EmailJSService } from '../core/emailjs.service';
 
 @Injectable()
 export class AuthService {
@@ -21,33 +22,165 @@ export class AuthService {
     private configService: ConfigService,
     @InjectRepository(RefreshToken)
     private refreshTokenRepository: Repository<RefreshToken>,
+    private emailJSService: EmailJSService,
   ) {}
+
+  private generateOtp(): string {
+    return crypto.randomInt(100000, 1000000).toString();
+  }
 
   async register(registerDto: RegisterDto) {
     const existingUser = await this.usersService.findOneByUsername(registerDto.username);
     const existingEmail = await this.usersService.findOneByEmail(registerDto.email);
-    if (existingUser || existingEmail) {
+    
+    // If user exists and is already ACTIVE, fail the registration
+    if ((existingUser && existingUser.status === 'ACTIVE') || (existingEmail && existingEmail.status === 'ACTIVE')) {
       throw new ConflictException({ errorCode: 'AUTH-409', message: 'Registration failed' });
     }
 
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(registerDto.password, salt);
 
-    const newUser = await this.usersService.create({
-      username: registerDto.username,
-      email: registerDto.email,
-      passwordHash,
-      role: 'CUSTOMER',
-      status: 'ACTIVE',
-    });
+    const otpCode = this.generateOtp();
+    const otpExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+    const hashedOtp = await bcrypt.hash(otpCode, 10);
+
+    let targetUser = existingUser || existingEmail;
+    
+    if (targetUser) {
+      // User is PENDING, we can just update their record to allow re-registration
+      const updatedUser = await this.usersService.update(targetUser.id, {
+        username: registerDto.username,
+        email: registerDto.email,
+        passwordHash,
+        otpCode: hashedOtp,
+        otpExpiresAt,
+      });
+      if (!updatedUser) {
+        throw new ConflictException({ errorCode: 'AUTH-500', message: 'Failed to update pending user' });
+      }
+      targetUser = updatedUser;
+    } else {
+      targetUser = await this.usersService.create({
+        username: registerDto.username,
+        email: registerDto.email,
+        passwordHash,
+        role: 'CUSTOMER',
+        status: 'PENDING',
+        notificationChannel: 'EMAIL',
+        otpCode: hashedOtp,
+        otpExpiresAt,
+      });
+    }
+
+    await this.emailJSService.sendOtpEmail(targetUser.email, otpCode);
 
     return {
-      id: newUser.id.toString(),
-      username: newUser.username,
-      email: newUser.email,
-      roles: [newUser.role],
-      createdOn: newUser.createdAt,
+      message: 'Registration successful. Please check your email for the OTP to activate your account.',
+      id: targetUser.id.toString(),
+      username: targetUser.username,
+      email: targetUser.email,
     };
+  }
+
+  async verifyOtp(email: string, otpCode: string) {
+    const user = await this.usersService.findOneByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'User not found or invalid OTP' });
+    }
+
+    if (user.status !== 'PENDING') {
+      throw new ConflictException({ errorCode: 'AUTH-409', message: 'User is already active' });
+    }
+
+    if (!user.otpCode || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
+    }
+
+    const isOtpValid = await bcrypt.compare(otpCode, user.otpCode);
+    if (!isOtpValid) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
+    }
+
+    await this.usersService.update(user.id, {
+      status: 'ACTIVE',
+      otpCode: null,
+      otpExpiresAt: null,
+    });
+
+    return { message: 'Account activated successfully' };
+  }
+
+  async resendOtp(email: string) {
+    const user = await this.usersService.findOneByEmail(email);
+    if (!user) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'User not found' });
+    }
+
+    if (user.status !== 'PENDING') {
+      throw new ConflictException({ errorCode: 'AUTH-409', message: 'User is already active' });
+    }
+
+    const otpCode = this.generateOtp();
+    const otpExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+    const hashedOtp = await bcrypt.hash(otpCode, 10);
+
+    await this.usersService.update(user.id, {
+      otpCode: hashedOtp,
+      otpExpiresAt,
+    });
+
+    await this.emailJSService.sendOtpEmail(user.email, otpCode);
+    return { message: 'OTP resent successfully. Please check your email.' };
+  }
+
+  async requestEmailUpdate(userId: number, newEmail: string) {
+    const existingEmail = await this.usersService.findOneByEmail(newEmail);
+    if (existingEmail && existingEmail.id !== userId) {
+      throw new ConflictException({ errorCode: 'AUTH-409', message: 'Email is already in use' });
+    }
+
+    const otpCode = this.generateOtp();
+    const otpExpiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+    const hashedOtp = await bcrypt.hash(otpCode, 10);
+
+    await this.usersService.update(userId, {
+      otpCode: hashedOtp,
+      otpExpiresAt,
+      pendingNewEmail: newEmail,
+    });
+
+    await this.emailJSService.sendOtpEmail(newEmail, otpCode);
+    return { message: 'OTP sent to new email address' };
+  }
+
+  async verifyEmailUpdate(userId: number, newEmail: string, otpCode: string) {
+    const user = await this.usersService.findOneById(userId);
+    if (!user) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'User not found' });
+    }
+
+    if (user.pendingNewEmail !== newEmail) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
+    }
+
+    if (!user.otpCode || !user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
+    }
+
+    const isOtpValid = await bcrypt.compare(otpCode, user.otpCode);
+    if (!isOtpValid) {
+      throw new UnauthorizedException({ errorCode: 'AUTH-401', message: 'Invalid or expired OTP' });
+    }
+
+    await this.usersService.update(userId, {
+      email: newEmail,
+      otpCode: null,
+      otpExpiresAt: null,
+      pendingNewEmail: null,
+    });
+
+    return { message: 'Email updated successfully' };
   }
 
   async login(loginDto: LoginDto, ipAddress: string = '0.0.0.0') {
@@ -187,6 +320,7 @@ export class AuthService {
     return {
       id: user.id.toString(),
       username: user.username,
+      email: user.email,
       accountId: accountId,
       roles: [user.role],
       createdOn: user.createdAt,
