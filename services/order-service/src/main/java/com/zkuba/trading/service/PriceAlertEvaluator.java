@@ -7,6 +7,7 @@ import com.zkuba.trading.domain.entity.PriceAlert.AlertState;
 import com.zkuba.trading.domain.entity.PriceAlert.DeliveryStatus;
 import com.zkuba.trading.domain.entity.PriceAlert.Direction;
 import com.zkuba.trading.repository.PriceAlertRepository;
+import com.zkuba.trading.service.PriceAlertService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -49,6 +50,7 @@ public class PriceAlertEvaluator {
 
     private final PriceAlertRepository alertRepository;
     private final NotificationService notificationService;
+    private final PriceAlertService priceAlertService;
     private final ObjectMapper objectMapper;
     private final CurrencyConversionService currencyConversionService;
 
@@ -97,10 +99,12 @@ public class PriceAlertEvaluator {
     public PriceAlertEvaluator(
             PriceAlertRepository alertRepository,
             NotificationService notificationService,
+            PriceAlertService priceAlertService,
             ObjectMapper objectMapper,
             CurrencyConversionService currencyConversionService) {
         this.alertRepository = alertRepository;
         this.notificationService = notificationService;
+        this.priceAlertService = priceAlertService;
         this.objectMapper = objectMapper;
         this.currencyConversionService = currencyConversionService;
     }
@@ -210,11 +214,31 @@ public class PriceAlertEvaluator {
                 entity.setUpdatedAt(OffsetDateTime.now());
 
                 alertRepository.save(entity);
+                log.debug("Alert {} triggered for {} at threshold {}", entity.getId(), symbol, alert.threshold());
 
                 final BigDecimal finalPrice = priceInAccountCurrency;
+                final Long alertId = entity.getId();
+                
+                // Deliver notification asynchronously - reload entity to avoid detachment
                 java.util.concurrent.CompletableFuture.runAsync(() -> {
-                    deliverAlert(entity, finalPrice);
-                    alertRepository.save(entity);
+                    try {
+                        log.debug("Starting async delivery for alert {}", alertId);
+                        // Reload entity from DB to ensure fresh state and avoid lazy-loading issues
+                        Optional<PriceAlert> freshEntityOpt = alertRepository.findById(alertId);
+                        if (freshEntityOpt.isPresent()) {
+                            PriceAlert freshEntity = freshEntityOpt.get();
+                            log.debug("Reloaded alert {} from DB, current delivery status: {}", alertId, freshEntity.getDeliveryStatus());
+                            
+                            // Deliver the notification (will update delivery status via transactional call)
+                            deliverAlert(freshEntity, finalPrice);
+                            
+                            log.debug("Alert {} delivery status updated via transactional call", alertId);
+                        } else {
+                            log.warn("Alert {} not found when attempting async delivery", alertId);
+                        }
+                    } catch (Exception e) {
+                        log.error("Error in async alert delivery for alert {}: {}", alertId, e.getMessage(), e);
+                    }
                 });
             }
 
@@ -237,9 +261,10 @@ public class PriceAlertEvaluator {
      * can see it and investigate their notification settings.
      */
     private void deliverAlert(PriceAlert alert, BigDecimal currentPrice) {
+        Long alertId = alert.getId();
         try {
             AlertNotificationPayload payload = new AlertNotificationPayload(
-                    alert.getId(),
+                    alertId,
                     alert.getAccount().getId(),
                     alert.getSymbol(),
                     alert.getDirection().name(),
@@ -249,15 +274,20 @@ public class PriceAlertEvaluator {
             );
 
             notificationService.sendPriceAlertNotification(payload);
-
-            alert.setDeliveryStatus(DeliveryStatus.DELIVERED);
-            alert.setFailureReason(null);
-            log.info("Alert {} notification delivered", alert.getId());
+            
+            // Update delivery status in a separate transactional call
+            // This ensures the delivery status change is persisted reliably
+            priceAlertService.updateAlertDeliveryStatus(alertId, DeliveryStatus.DELIVERED, null);
+            log.info("Alert {} notification delivered successfully", alertId);
 
         } catch (Exception e) {
-            log.error("Failed to deliver alert {} notification", alert.getId(), e);
-            alert.setDeliveryStatus(DeliveryStatus.FAILED);
-            alert.setFailureReason(e.getMessage());
+            log.error("Failed to deliver alert {} notification: {}", alertId, e.getMessage(), e);
+            // Update delivery status to FAILED in a separate transactional call
+            try {
+                priceAlertService.updateAlertDeliveryStatus(alertId, DeliveryStatus.FAILED, e.getMessage());
+            } catch (Exception updateError) {
+                log.error("Failed to update delivery status for alert {}: {}", alertId, updateError.getMessage(), updateError);
+            }
         }
     }
 

@@ -52,6 +52,13 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void sendPriceAlertNotification(AlertNotificationPayload payload) {
         try {
+            // Validate EmailJS configuration
+            if (serviceId == null || templateId == null || publicKey == null || privateKey == null) {
+                log.error("EmailJS configuration is incomplete. Service: {}, Template: {}, Public Key: {}, Private Key: {}", 
+                        serviceId != null, templateId != null, publicKey != null, privateKey != null);
+                throw new IllegalStateException("EmailJS configuration missing - check EMAILJS_* environment variables");
+            }
+
             // Resolve account and user
             Optional<Account> accountOpt = accountRepository.findById(payload.accountId());
             if (accountOpt.isEmpty()) {

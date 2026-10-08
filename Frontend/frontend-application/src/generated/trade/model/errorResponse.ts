@@ -15,7 +15,7 @@
  */
 export interface ErrorResponse { 
     /**
-     * | Code | HTTP | Meaning | |---|---|---| | `ACC-404` | 404 | Account not found | | `ACC-403` | 403 | Account not active, or not reachable with this token | | `INS-404` | 404 | Instrument not found or not tradable | | `ORD-400` | 400 | Insufficient funds | | `ORD-409` | 409 | Insufficient holdings, duplicate order, or order not cancellable | | `VAL-422` | 422 | Invalid input | | `AUTH-401` | 401 | Unauthorised or invalid token | 
+     * | Code | HTTP | Meaning | |---|---|---| | `ACC-404` | 404 | Account not found | | `ACC-403` | 403 | Account not active, or not reachable with this token | | `INS-404` | 404 | Instrument not found or not tradable | | `ORD-400` | 400 | Insufficient funds | | `ORD-409` | 409 | Insufficient holdings, duplicate order, or order not cancellable | | `VAL-422` | 422 | Invalid input | | `AUTH-401` | 401 | Unauthorised or invalid token | | `WLT-404` | 404 | Watchlist or alert not found | | `WLT-409` | 409 | Watchlist or alert conflict | 
      */
     errorCode: ErrorResponseErrorCodeEnum;
     /**
@@ -30,7 +30,9 @@ export enum ErrorResponseErrorCodeEnum {
     Ord400 = 'ORD-400',
     Ord409 = 'ORD-409',
     Val422 = 'VAL-422',
-    Auth401 = 'AUTH-401'
+    Auth401 = 'AUTH-401',
+    Wlt404 = 'WLT-404',
+    Wlt409 = 'WLT-409'
 };
 
 

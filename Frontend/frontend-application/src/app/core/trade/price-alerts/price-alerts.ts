@@ -4,9 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { WatchlistAlertService } from '../services/watchlist-alert.service';
-import { PriceAlert, CreateAlertRequest } from '../models/watchlist-alert.models';
+import { PriceAlertsService } from '../../../../generated/trade/api/priceAlerts.service';
+import { AlertResponse, GetAlerts200Response, CreateAlertRequest, CreateAlertRequestDirectionEnum } from '../../../../generated/trade/model/models';
 import { DashboardService } from '../../../features/dashboard/dashboard.service';
+import { Session } from '../../auth/session';
 
 @Component({
   selector: 'app-price-alerts',
@@ -16,19 +17,18 @@ import { DashboardService } from '../../../features/dashboard/dashboard.service'
   styleUrls: ['./price-alerts.css'],
 })
 export class PriceAlertsComponent implements OnInit, OnDestroy {
-  alerts: PriceAlert[] = [];
-  filteredAlerts: PriceAlert[] = [];
-  selectedState: string = 'ALL';
+  alerts: AlertResponse[] = [];
+  filteredAlerts: AlertResponse[] = [];
+  selectedState: 'ALL' | 'ACTIVE' | 'TRIGGERED' | 'DORMANT' = 'ALL';
   isLoadingAlerts = false;
   isCreatingAlert = false;
   error: string | null = null;
-  accountId: number = 0;
 
-  // Create alert form
+  // Create alert form with proper typing
   newAlertForm = {
     symbol: '',
-    direction: 'ABOVE' as 'ABOVE' | 'BELOW',
-    threshold: '',
+    direction: CreateAlertRequestDirectionEnum.Above,
+    threshold: 0 as number,
   };
 
   alertLimit = 100;
@@ -38,16 +38,16 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
   accountCurrency: any;
 
   constructor(
-    private watchlistAlertService: WatchlistAlertService,
+    private alertService: PriceAlertsService,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef,
-    private dashboardService: DashboardService
+    private dashboardService: DashboardService,
+    private session: Session
   ) {
     this.accountCurrency = this.dashboardService.accountCurrency;
   }
 
   ngOnInit(): void {
-    this.accountId = this.getAccountIdFromToken();
     
     // Pre-fill symbol from query parameter if provided (from watchlist)
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
@@ -71,18 +71,18 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
     this.isLoadingAlerts = true;
     this.error = null;
 
-    this.watchlistAlertService
-      .getAlerts(this.accountId)
+    this.alertService
+      .getAlerts(this.session.accountId())
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (response) => {
+        next: (response: GetAlerts200Response) => {
           this.alerts = response.alerts;
           this.alertLimit = response.limit;
           this.filterAlerts();
           this.isLoadingAlerts = false;
           this.cdr.markForCheck();
         },
-        error: (err) => {
+        error: (err: any) => {
           setTimeout(() => {
             this.error = `Failed to load alerts: ${err.error?.message || err.message}`;
             this.isLoadingAlerts = false;
@@ -113,7 +113,7 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const threshold = parseFloat(this.newAlertForm.threshold);
+    const threshold = Number(this.newAlertForm.threshold);
     if (isNaN(threshold) || threshold <= 0) {
       this.error = 'Threshold must be a positive number';
       return;
@@ -136,18 +136,18 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
       threshold,
     };
 
-    this.watchlistAlertService
-      .createAlert(this.accountId, request)
+    this.alertService
+      .createAlert(this.session.accountId(), request)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (alert) => {
+        next: (alert: AlertResponse) => {
           this.alerts.push(alert);
           this.filterAlerts();
           this.resetForm();
           this.isCreatingAlert = false;
           this.cdr.markForCheck();
         },
-        error: (err) => {
+        error: (err: any) => {
           setTimeout(() => {
             if (err.status === 409) {
               this.error = 'Alert limit exceeded. Delete some alerts first.';
@@ -164,13 +164,13 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
   /**
    * Delete an alert
    */
-  deleteAlert(alert: PriceAlert): void {
+  deleteAlert(alert: AlertResponse): void {
     if (!confirm(`Delete alert for ${alert.symbol}?`)) {
       return;
     }
 
-    this.watchlistAlertService
-      .deleteAlert(this.accountId, alert.id)
+    this.alertService
+      .deleteAlert(this.session.accountId(), alert.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: () => {
@@ -178,7 +178,7 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
           this.filterAlerts();
           this.cdr.markForCheck();
         },
-        error: (err) => {
+        error: (err: any) => {
           setTimeout(() => {
             this.error = `Failed to delete alert: ${err.error?.message || err.message}`;
             this.cdr.markForCheck();
@@ -190,16 +190,16 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
   /**
    * Reset a triggered alert back to ACTIVE
    */
-  resetAlert(alert: PriceAlert): void {
+  resetAlert(alert: AlertResponse): void {
     if (!confirm(`Reset alert for ${alert.symbol} to ACTIVE?`)) {
       return;
     }
 
-    this.watchlistAlertService
-      .resetAlert(this.accountId, alert.id)
+    this.alertService
+      .resetAlert(this.session.accountId(), alert.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (updatedAlert) => {
+        next: (updatedAlert: AlertResponse) => {
           const index = this.alerts.findIndex((a) => a.id === alert.id);
           if (index >= 0) {
             this.alerts[index] = updatedAlert;
@@ -207,7 +207,7 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
           }
           this.cdr.markForCheck();
         },
-        error: (err) => {
+        error: (err: any) => {
           setTimeout(() => {
             this.error = `Failed to reset alert: ${err.error?.message || err.message}`;
             this.cdr.markForCheck();
@@ -261,33 +261,9 @@ export class PriceAlertsComponent implements OnInit, OnDestroy {
   private resetForm(): void {
     this.newAlertForm = {
       symbol: '',
-      direction: 'ABOVE',
-      threshold: '',
+      direction: CreateAlertRequestDirectionEnum.Above,
+      threshold: 0,
     };
-  }
-
-  /**
-   * Extract accountId from JWT token
-   */
-  private getAccountIdFromToken(): number {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.warn('No token found in localStorage');
-      return 0;
-    }
-
-    try {
-      const payload = token.split('.')[1];
-      const decoded = JSON.parse(atob(payload));
-      const accountId = decoded.accountId || decoded.userId || 0;
-      if (!accountId) {
-        console.warn('No accountId or userId found in token', decoded);
-      }
-      return accountId;
-    } catch (e) {
-      console.error('Failed to decode token', e);
-      return 0;
-    }
   }
 
   /**

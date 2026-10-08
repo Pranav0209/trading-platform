@@ -136,13 +136,38 @@ public class PriceAlertServiceImpl implements PriceAlertService {
             throw new AlertValidationException("Alert is not in TRIGGERED state");
         }
 
+        // Reset to initial ACTIVE state with PENDING delivery status
         alert.setState(AlertState.ACTIVE);
+        alert.setLastFiredAt(null);
+        alert.setDeliveryStatus(PriceAlert.DeliveryStatus.PENDING);
+        alert.setFailureReason(null);
         alert.setUpdatedAt(OffsetDateTime.now());
         alert = alertRepository.save(alert);
 
-        log.info("Reset alert {} for account {} back to ACTIVE", alertId, accountId);
+        log.info("Reset alert {} for account {} back to ACTIVE with PENDING delivery status", alertId, accountId);
 
         return toResponse(alert);
+    }
+
+    /**
+     * Update delivery status for an alert after notification send attempt.
+     * This method is called by the PriceAlertEvaluator in a transactional context
+     * to ensure delivery status changes are persisted reliably.
+     */
+    @Transactional
+    public void updateAlertDeliveryStatus(Long alertId, PriceAlert.DeliveryStatus status, String failureReason) {
+        Optional<PriceAlert> alertOpt = alertRepository.findById(alertId);
+        if (alertOpt.isPresent()) {
+            PriceAlert alert = alertOpt.get();
+            alert.setDeliveryStatus(status);
+            alert.setFailureReason(failureReason);
+            alert.setUpdatedAt(OffsetDateTime.now());
+            alertRepository.save(alert);
+            log.info("Updated alert {} delivery status to {} with reason: {}", 
+                    alertId, status, failureReason != null ? failureReason : "none");
+        } else {
+            log.warn("Alert {} not found when updating delivery status", alertId);
+        }
     }
 
     /**
