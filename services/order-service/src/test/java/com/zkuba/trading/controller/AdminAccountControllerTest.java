@@ -28,7 +28,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(AdminAccountController.class)
+@WebMvcTest({AdminAccountController.class, com.zkuba.trading.exception.GlobalExceptionHandler.class})
 @AutoConfigureMockMvc(addFilters = false)
 class AdminAccountControllerTest {
 
@@ -80,7 +80,8 @@ class AdminAccountControllerTest {
         String requestJson = """
                 {
                     "userId": 10,
-                    "currency": "USD"
+                    "currency": "USD",
+                    "initialBalance": 1000.00
                 }
                 """;
 

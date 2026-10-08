@@ -10,7 +10,7 @@ import com.zkuba.trading.dto.request.CreateAccountRequest;
 import com.zkuba.trading.dto.response.AccountResponse;
 import com.zkuba.trading.dto.response.BalanceResponse;
 import com.zkuba.trading.dto.response.OrderHistoryEntry;
-import com.zkuba.trading.dto.response.PositionResponse;
+import com.zkuba.trading.dto.response.PortfolioResponse;
 import com.zkuba.trading.exception.AccountAlreadyExistsException;
 import com.zkuba.trading.exception.AccountNotActiveException;
 import com.zkuba.trading.exception.AccountNotFoundException;
@@ -323,12 +323,12 @@ class AccountServiceTest {
         }
 
         // =========================================================
-        // getPositionsResponse()
+        // getPortfolioResponse()
         // =========================================================
 
         @Test
-        @DisplayName("getPositionsResponse returns only positions with positive quantity")
-        void getPositionsResponse_FiltersZeroQuantity() {
+        @DisplayName("getPortfolioResponse returns only positions with positive quantity")
+        void getPortfolioResponse_FiltersZeroQuantity() {
 
                 Position activePosition = new Position();
                 activePosition.setAccountId(100L);
@@ -352,7 +352,7 @@ class AccountServiceTest {
                                                 activePosition,
                                                 zeroPosition));
 
-                List<PositionResponse> result = accountService.getPositionsResponse(
+                List<PortfolioResponse> result = accountService.getPortfolioResponse(
                                 100L,
                                 1L);
 
@@ -366,8 +366,8 @@ class AccountServiceTest {
         }
 
         @Test
-        @DisplayName("getPositionsResponse returns empty list when no positions exist")
-        void getPositionsResponse_NoPositions() {
+        @DisplayName("getPortfolioResponse returns empty list when no positions exist")
+        void getPortfolioResponse_NoPositions() {
 
                 when(accounts.findById(100L))
                                 .thenReturn(Optional.of(activeAccount));
@@ -375,7 +375,7 @@ class AccountServiceTest {
                 when(positionRepository.findByAccountId(100L))
                                 .thenReturn(List.of());
 
-                List<PositionResponse> result = accountService.getPositionsResponse(
+                List<PortfolioResponse> result = accountService.getPortfolioResponse(
                                 100L,
                                 1L);
 
