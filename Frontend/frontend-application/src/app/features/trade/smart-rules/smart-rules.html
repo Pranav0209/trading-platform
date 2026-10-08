@@ -12,7 +12,7 @@
       <div class="panel-header">
         <div>
           <h2>Create a rule chain</h2>
-          <p>Start with an outer rule, then nest stop-loss or follow-up exits beneath it.</p>
+          <p>Start with an outer rule, then nest follow-up exits beneath it.</p>
         </div>
         <button class="primary-btn" type="button" (click)="saveRule()" [disabled]="saving()">
           {{ saving() ? 'Saving...' : 'Save rule' }}
@@ -73,19 +73,26 @@
             <label>
               <span>Condition type</span>
               <select [(ngModel)]="rule.metricType" (ngModelChange)="onMetricChange(rule)">
-                <option *ngFor="let option of metricOptions" [ngValue]="option.value">{{ option.label }}</option>
+                <option *ngFor="let option of availableMetricOptions(rule)" [ngValue]="option.value">{{ option.label }}</option>
               </select>
             </label>
 
-            <label>
+            <label *ngIf="!usesPercentChangeDirection(rule)">
               <span>Operator</span>
               <select [(ngModel)]="rule.operator">
                 <option *ngFor="let option of operatorsFor(rule)" [ngValue]="option">{{ operatorLabels[option] }}</option>
               </select>
             </label>
 
+            <label *ngIf="usesPercentChangeDirection(rule)">
+              <span>Direction</span>
+              <select [(ngModel)]="rule.percentChangeDirection">
+                <option *ngFor="let option of percentChangeDirections" [ngValue]="option.value">{{ option.label }}</option>
+              </select>
+            </label>
+
             <label *ngIf="needsTargetValue(rule)">
-              <span>{{ rule.metricType === 'PERCENT_CHANGE' || rule.metricType === 'STOP_LOSS' ? 'Target %' : 'Target value' }}</span>
+              <span>{{ rule.metricType === 'PERCENT_CHANGE' ? 'Target %' : 'Target value' }}</span>
               <input type="number" min="0" step="0.01" [(ngModel)]="rule.targetValue" />
             </label>
 
@@ -132,7 +139,7 @@
       <div class="empty-state" *ngIf="!loading() && rules().length === 0">
         <div class="empty-icon">∿</div>
         <h3>No smart rules yet</h3>
-        <p>Create a rule on the left to automate entries, exits, crossovers, or stop-loss chains.</p>
+        <p>Create a rule on the left to automate entries, exits, crossover checks, or percentage-move reactions.</p>
       </div>
 
       <div class="loading-state" *ngIf="loading()">Loading rules...</div>
@@ -142,7 +149,7 @@
           <div class="saved-rule-header">
             <div>
               <span class="saved-rule-tag">{{ depth === 0 ? 'Root' : 'Child' }}</span>
-              <h3>{{ describeRule(rule) }}</h3>
+              <h3>{{ describeRule(rule, depth > 0) }}</h3>
             </div>
             <button *ngIf="depth === 0" class="ghost-btn danger" type="button" (click)="deleteRule(rule.id)" [disabled]="deletingRuleId() === rule.id">
               {{ deletingRuleId() === rule.id ? 'Removing...' : 'Delete' }}

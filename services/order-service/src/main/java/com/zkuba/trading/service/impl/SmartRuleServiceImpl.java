@@ -114,6 +114,14 @@ public class SmartRuleServiceImpl implements SmartRuleService {
             throw new SmartRuleValidationException("Buy rules must use a fixed quantity");
         }
 
+        if (request.action() == RuleAction.BUY && request.metricType() == MetricType.AVERAGE_COST) {
+            throw new SmartRuleValidationException("Average price rules are available only for sell rules");
+        }
+
+        if (request.action() == RuleAction.SELL && request.metricType() == MetricType.PRICE) {
+            throw new SmartRuleValidationException("Price rules are available only for buy rules");
+        }
+
         if (request.quantityMode() == QuantityMode.FIXED) {
             if (request.quantity() == null || request.quantity() < 1) {
                 throw new SmartRuleValidationException("Fixed quantity rules must include a quantity greater than zero");
@@ -170,8 +178,16 @@ public class SmartRuleServiceImpl implements SmartRuleService {
             }
         }
 
-        if (request.targetValue() != null && request.targetValue().compareTo(BigDecimal.ZERO) <= 0) {
+        if (request.targetValue() != null
+                && request.metricType() != MetricType.PERCENT_CHANGE
+                && request.targetValue().compareTo(BigDecimal.ZERO) <= 0) {
             throw new SmartRuleValidationException("Target value must be greater than zero");
+        }
+
+        if (request.metricType() == MetricType.PERCENT_CHANGE
+                && request.targetValue() != null
+                && request.targetValue().compareTo(BigDecimal.ZERO) == 0) {
+            throw new SmartRuleValidationException("Percent change target must be non-zero");
         }
     }
 
