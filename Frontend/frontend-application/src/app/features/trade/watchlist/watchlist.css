@@ -404,6 +404,15 @@ html.dark-theme .watchlist-row {
   background: var(--surface-hover);
 }
 
+.btn-text.danger {
+  color: #ef4444; /* red */
+}
+
+.btn-text.danger:hover {
+  color: #dc2626; /* darker red */
+  background: rgba(239, 68, 68, 0.08);
+}
+
 .icon-btn {
   background: none;
   border: none;

@@ -1,0 +1,172 @@
+<div class="standalone-wrapper">
+  <header class="page-header">
+    <h1>Smart Rules</h1>
+    <p class="subtitle">
+      Build chained trading rules that keep watching the market and place market orders when conditions match, even while you are logged out.
+    </p>
+  </header>
+
+  <div class="content-container">
+    <div class="content-grid">
+    <section class="builder-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Create a rule chain</h2>
+          <p>Start with an outer rule, then nest stop-loss or follow-up exits beneath it.</p>
+        </div>
+        <button class="primary-btn" type="button" (click)="saveRule()" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : 'Save rule' }}
+        </button>
+      </div>
+
+      <ng-template #ruleEditor let-rule let-parent="parent" let-depth="depth">
+        <div class="rule-card" [class.child-rule]="depth > 0">
+          <div class="rule-card-header">
+            <div>
+              <span class="rule-badge">{{ depth === 0 ? 'Outer rule' : 'Sub rule ' + depth }}</span>
+              <h3>{{ describeRule(rule) }}</h3>
+            </div>
+            <button *ngIf="parent" class="ghost-btn" type="button" (click)="removeChild(parent, parent.children.indexOf(rule))">Remove</button>
+          </div>
+
+          <div class="rule-grid">
+            <label>
+              <span>Action</span>
+              <select [(ngModel)]="rule.action" (ngModelChange)="onActionChange(rule)">
+                <option *ngFor="let option of actionOptions" [ngValue]="option">{{ option }}</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Quantity mode</span>
+              <select [(ngModel)]="rule.quantityMode" (ngModelChange)="onQuantityModeChange(rule)">
+                <option *ngFor="let option of availableQuantityModes(rule)" [ngValue]="option">{{ option }}</option>
+              </select>
+            </label>
+
+            <label *ngIf="rule.quantityMode === 'FIXED'">
+              <span>Quantity</span>
+              <input type="number" min="1" [(ngModel)]="rule.quantity" />
+            </label>
+
+            <div class="autocomplete-wrapper" style="position: relative;">
+              <label>
+                <span>Symbol</span>
+                <input 
+                  [disabled]="depth > 0" 
+                  [ngModel]="rule.symbol" 
+                  (ngModelChange)="onSymbolInput(rule, $event)" 
+                  placeholder="INFY.NS" 
+                  autocomplete="off"
+                  (focus)="depth === 0 ? showDropdown.set(true) : null"
+                  (blur)="hideDropdown()"
+                />
+              </label>
+              <ul class="autocomplete-dropdown" *ngIf="depth === 0 && showDropdown() && filteredInstruments().length > 0">
+                <li *ngFor="let inst of filteredInstruments()" (click)="selectInstrument(rule, inst.symbol)">
+                  <span class="symbol-name">{{ inst.symbol }}</span>
+                  <span class="company-name">{{ inst.displayName }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <label>
+              <span>Condition type</span>
+              <select [(ngModel)]="rule.metricType" (ngModelChange)="onMetricChange(rule)">
+                <option *ngFor="let option of metricOptions" [ngValue]="option.value">{{ option.label }}</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Operator</span>
+              <select [(ngModel)]="rule.operator">
+                <option *ngFor="let option of operatorsFor(rule)" [ngValue]="option">{{ operatorLabels[option] }}</option>
+              </select>
+            </label>
+
+            <label *ngIf="needsTargetValue(rule)">
+              <span>{{ rule.metricType === 'PERCENT_CHANGE' || rule.metricType === 'STOP_LOSS' ? 'Target %' : 'Target value' }}</span>
+              <input type="number" min="0" step="0.01" [(ngModel)]="rule.targetValue" />
+            </label>
+
+            <label *ngIf="needsLookback(rule)">
+              <span>Lookback</span>
+              <input type="number" min="2" [(ngModel)]="rule.lookbackPeriod" />
+            </label>
+
+            <label *ngIf="needsSecondaryLookback(rule)">
+              <span>Secondary lookback</span>
+              <input type="number" min="2" [(ngModel)]="rule.secondaryLookbackPeriod" />
+            </label>
+
+            <label *ngIf="needsStdDeviation(rule)">
+              <span>Std deviation</span>
+              <input type="number" min="0.5" step="0.1" [(ngModel)]="rule.standardDeviationMultiplier" />
+            </label>
+          </div>
+
+          <div class="rule-actions-row">
+            <button class="ghost-btn" type="button" (click)="addChild(rule)">+ Add sub rule</button>
+            <span class="rule-note" *ngIf="depth === 0">Sub rules are armed only after this outer rule has been placed.</span>
+          </div>
+
+          <div class="child-rules" *ngIf="rule.children.length > 0">
+            <ng-container *ngFor="let child of rule.children">
+              <ng-container *ngTemplateOutlet="ruleEditor; context: { $implicit: child, parent: rule, depth: depth + 1 }"></ng-container>
+            </ng-container>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-container *ngTemplateOutlet="ruleEditor; context: { $implicit: draft, parent: null, depth: 0 }"></ng-container>
+    </section>
+
+    <section class="rules-panel">
+      <div class="panel-header compact">
+        <div>
+          <h2>Armed rule chains</h2>
+          <p>These rules are stored server-side and monitored continuously.</p>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="!loading() && rules().length === 0">
+        <div class="empty-icon">∿</div>
+        <h3>No smart rules yet</h3>
+        <p>Create a rule on the left to automate entries, exits, crossovers, or stop-loss chains.</p>
+      </div>
+
+      <div class="loading-state" *ngIf="loading()">Loading rules...</div>
+
+      <ng-template #ruleTree let-rule let-depth="depth">
+        <article class="saved-rule-card" [class.nested]="depth > 0">
+          <div class="saved-rule-header">
+            <div>
+              <span class="saved-rule-tag">{{ depth === 0 ? 'Root' : 'Child' }}</span>
+              <h3>{{ describeRule(rule) }}</h3>
+            </div>
+            <button *ngIf="depth === 0" class="ghost-btn danger" type="button" (click)="deleteRule(rule.id)" [disabled]="deletingRuleId() === rule.id">
+              {{ deletingRuleId() === rule.id ? 'Removing...' : 'Delete' }}
+            </button>
+          </div>
+
+          <div class="saved-rule-meta">
+            <span>{{ rule.enabled ? 'Enabled' : 'Paused' }}</span>
+            <span *ngIf="rule.lastTriggeredAt">Last trigger {{ rule.lastTriggeredAt | date:'medium' }}</span>
+            <span *ngIf="rule.activatedAt">Armed from {{ rule.activatedAt | date:'medium' }}</span>
+          </div>
+
+          <div class="saved-rule-children" *ngIf="rule.children.length > 0">
+            <ng-container *ngFor="let child of rule.children">
+              <ng-container *ngTemplateOutlet="ruleTree; context: { $implicit: child, depth: depth + 1 }"></ng-container>
+            </ng-container>
+          </div>
+        </article>
+      </ng-template>
+
+      <ng-container *ngFor="let rule of rules()">
+        <ng-container *ngTemplateOutlet="ruleTree; context: { $implicit: rule, depth: 0 }"></ng-container>
+      </ng-container>
+    </section>
+  </div>
+  </div>
+</div>

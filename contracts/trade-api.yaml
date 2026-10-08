@@ -375,10 +375,10 @@ paths:
         '404':
           $ref: '#/components/responses/AccountNotFound'
 
-  /api/v1/accounts/{id}/positions:
+  /api/v1/accounts/{id}/portfolio:
     get:
       tags: [Accounts]
-      operationId: getPositions
+      operationId: getPortfolio
       summary: Get holdings
       description: |
         Net held quantity and average cost per instrument. Positions with a net quantity of zero are
@@ -394,7 +394,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PositionResponse'
+                  $ref: '#/components/schemas/PortfolioResponse'
               examples:
                 holdings:
                   value:
@@ -538,6 +538,26 @@ paths:
                 $ref: '#/components/schemas/WatchlistResponse'
         '401':
           $ref: '#/components/responses/Unauthorised'
+
+  /api/v1/watchlists/{id}:
+    delete:
+      tags: [Watchlists]
+      operationId: deleteWatchlist
+      summary: Delete a watchlist
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Watchlist deleted successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorised'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /api/v1/watchlists/{id}/symbols/{symbol}:
     post:
@@ -973,7 +993,7 @@ components:
           format: date-time
           example: '2026-09-28T09:14:22Z'
 
-    PositionResponse:
+    PortfolioResponse:
       type: object
       additionalProperties: false
       required: [accountId, symbol, quantity, averageCost]

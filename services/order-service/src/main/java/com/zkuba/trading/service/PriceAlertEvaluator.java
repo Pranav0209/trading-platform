@@ -11,12 +11,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Market Data Consumer for Price Alerts
@@ -47,6 +52,48 @@ public class PriceAlertEvaluator {
     private final ObjectMapper objectMapper;
     private final CurrencyConversionService currencyConversionService;
 
+    // Cache lightweight DTOs to prevent database starvation from high-frequency ticks.
+    // NOTE: We intentionally cache DTOs for 2 seconds. A newly created alert may take
+    // up to 2 seconds to be evaluated.
+    private final ConcurrentHashMap<String, CacheEntry> alertCache = new ConcurrentHashMap<>();
+    private static final long CACHE_TTL_MS = 2000;
+
+    private static class CacheEntry {
+        final List<PriceAlertData> alerts;
+        final long timestamp;
+        CacheEntry(List<PriceAlertData> alerts, long timestamp) {
+            this.alerts = alerts;
+            this.timestamp = timestamp;
+        }
+    }
+
+    /**
+     * Lightweight immutable DTO for in-memory alert evaluation
+     */
+    private record PriceAlertData(
+            Long id,
+            Long accountId,
+            String accountCurrency,
+            String symbol,
+            Direction direction,
+            BigDecimal threshold,
+            AlertState state,
+            OffsetDateTime createdAt
+    ) {
+        static PriceAlertData fromEntity(PriceAlert alert) {
+            return new PriceAlertData(
+                    alert.getId(),
+                    alert.getAccount().getId(),
+                    alert.getAccount().getCurrency() != null ? alert.getAccount().getCurrency() : "USD",
+                    alert.getSymbol(),
+                    alert.getDirection(),
+                    alert.getThreshold(),
+                    alert.getState(),
+                    alert.getCreatedAt()
+            );
+        }
+    }
+
     public PriceAlertEvaluator(
             PriceAlertRepository alertRepository,
             NotificationService notificationService,
@@ -72,7 +119,6 @@ public class PriceAlertEvaluator {
      * }
      */
     @KafkaListener(topics = "market-data", groupId = "price-alert-service")
-    @Transactional
     public void evaluateAlerts(String message) {
         try {
             Map<String, Object> quoteData = objectMapper.readValue(message, new TypeReference<Map<String, Object>>() {});
@@ -88,8 +134,20 @@ public class PriceAlertEvaluator {
 
             BigDecimal price = new BigDecimal(priceObj.toString());
 
-            // Find all ACTIVE alerts for this symbol
-            List<PriceAlert> alerts = alertRepository.findActiveAlertsForSymbol(symbol);
+            // Check cache first to avoid DB queries for every tick
+            long now = System.currentTimeMillis();
+            CacheEntry cacheEntry = alertCache.get(symbol);
+            List<PriceAlertData> alerts;
+            
+            if (cacheEntry != null && (now - cacheEntry.timestamp) < CACHE_TTL_MS) {
+                alerts = cacheEntry.alerts;
+            } else {
+                alerts = alertRepository.findActiveAlertsForSymbol(symbol)
+                        .stream()
+                        .map(PriceAlertData::fromEntity)
+                        .collect(Collectors.toList());
+                alertCache.put(symbol, new CacheEntry(alerts, now));
+            }
             
             if (alerts.isEmpty()) {
                 log.debug("No active alerts for symbol {}", symbol);
@@ -99,7 +157,7 @@ public class PriceAlertEvaluator {
             log.debug("Evaluating {} alerts for symbol {} at price {} {}", alerts.size(), symbol, price, quoteCurrency);
 
             // Evaluate each alert
-            for (PriceAlert alert : alerts) {
+            for (PriceAlertData alert : alerts) {
                 evaluateAlert(alert, price, quoteCurrency, symbol);
             }
 
@@ -110,64 +168,58 @@ public class PriceAlertEvaluator {
     }
 
     /**
-     * Evaluate a single alert against a price, converting to account currency first
+     * Evaluate a single alert DTO against a price, converting to account currency first
      */
-    private void evaluateAlert(PriceAlert alert, BigDecimal priceInQuoteCurrency, String quoteCurrency, String symbol) {
+    private void evaluateAlert(PriceAlertData alert, BigDecimal priceInQuoteCurrency, String quoteCurrency, String symbol) {
         try {
-            // Only evaluate ACTIVE alerts; TRIGGERED alerts are waiting for customer reset
-            if (alert.getState() != AlertState.ACTIVE) {
+            // Only evaluate ACTIVE alerts
+            if (alert.state() != AlertState.ACTIVE) {
                 return;
             }
 
-            // Get account currency
-            String accountCurrency = alert.getAccount().getCurrency() != null ? 
-                    alert.getAccount().getCurrency() : "USD";
-
             // Convert price to account currency if needed
             BigDecimal priceInAccountCurrency = priceInQuoteCurrency;
-            if (!quoteCurrency.equals(accountCurrency)) {
+            if (!quoteCurrency.equals(alert.accountCurrency())) {
                 try {
-                    BigDecimal rate = currencyConversionService.getConversionRate(quoteCurrency, accountCurrency);
+                    BigDecimal rate = currencyConversionService.getConversionRate(quoteCurrency, alert.accountCurrency());
                     priceInAccountCurrency = priceInQuoteCurrency.multiply(rate).setScale(4, java.math.RoundingMode.HALF_UP);
-                    log.debug("Converted price {} {} to {} {} using rate {}", 
-                            priceInQuoteCurrency, quoteCurrency, priceInAccountCurrency, accountCurrency, rate);
                 } catch (Exception e) {
                     log.warn("Failed to convert price from {} to {}, using original price. Error: {}", 
-                            quoteCurrency, accountCurrency, e.getMessage());
-                    // Use original price if conversion fails
+                            quoteCurrency, alert.accountCurrency(), e.getMessage());
                 }
             }
 
             boolean thresholdCrossed = false;
-
-            if (alert.getDirection() == Direction.ABOVE) {
-                // Alert fires when price rises through threshold
-                thresholdCrossed = priceInAccountCurrency.compareTo(alert.getThreshold()) >= 0;
-            } else if (alert.getDirection() == Direction.BELOW) {
-                // Alert fires when price falls through threshold
-                thresholdCrossed = priceInAccountCurrency.compareTo(alert.getThreshold()) <= 0;
+            if (alert.direction() == Direction.ABOVE) {
+                thresholdCrossed = priceInAccountCurrency.compareTo(alert.threshold()) >= 0;
+            } else if (alert.direction() == Direction.BELOW) {
+                thresholdCrossed = priceInAccountCurrency.compareTo(alert.threshold()) <= 0;
             }
 
             if (thresholdCrossed) {
-                log.info("Alert {} triggered for {} at {} {} (threshold: {} {}, direction: {})",
-                        alert.getId(), symbol, priceInAccountCurrency, accountCurrency, 
-                        alert.getThreshold(), accountCurrency, alert.getDirection());
+                // Short DB transaction: fetch actual entity and update
+                Optional<PriceAlert> entityOpt = alertRepository.findById(alert.id());
+                if (entityOpt.isEmpty() || entityOpt.get().getState() != AlertState.ACTIVE) {
+                    return; // Rule was deleted or already triggered
+                }
+                
+                PriceAlert entity = entityOpt.get();
+                entity.setState(AlertState.TRIGGERED);
+                entity.setLastFiredAt(OffsetDateTime.now());
+                entity.setDeliveryStatus(DeliveryStatus.PENDING);
+                entity.setUpdatedAt(OffsetDateTime.now());
 
-                // Transition to TRIGGERED
-                alert.setState(AlertState.TRIGGERED);
-                alert.setLastFiredAt(OffsetDateTime.now());
-                alert.setDeliveryStatus(DeliveryStatus.PENDING);
-                alert.setUpdatedAt(OffsetDateTime.now());
+                alertRepository.save(entity);
 
-                // Deliver notification through the notifications module
-                deliverAlert(alert, priceInAccountCurrency);
-
-                // Save updated alert
-                alertRepository.save(alert);
+                final BigDecimal finalPrice = priceInAccountCurrency;
+                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                    deliverAlert(entity, finalPrice);
+                    alertRepository.save(entity);
+                });
             }
 
         } catch (Exception e) {
-            log.error("Error evaluating alert {}", alert.getId(), e);
+            log.error("Error evaluating alert {}", alert.id(), e);
         }
     }
 

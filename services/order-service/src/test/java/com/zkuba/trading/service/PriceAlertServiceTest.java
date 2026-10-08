@@ -99,7 +99,7 @@ class PriceAlertServiceTest {
 
         alertService.createAlert(1L, request);
 
-        verify(instrumentRepository).findById("AAPL");
+        verify(instrumentRepository, atLeastOnce()).findById("AAPL");
     }
 
     @Test

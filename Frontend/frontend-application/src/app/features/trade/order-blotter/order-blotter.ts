@@ -50,6 +50,10 @@ export class OrderBlotter implements OnInit, OnDestroy {
   expandedOrderId = signal<string | null>(null);
   editFormData = signal<{ quantity: number; price: number } | null>(null);
   selectedRejectReason = signal<string | null>(null);
+  
+  // Filter state signals
+  searchSymbol = signal<string>('');
+  selectedStatuses = signal<Set<string>>(new Set());
 
   private refreshIntervalId: number | null = null;
   private refreshAbortController: AbortController | null = null;
@@ -112,9 +116,9 @@ export class OrderBlotter implements OnInit, OnDestroy {
       next: (orders: OrderHistoryEntry[]) => {
         this.isLoading.set(false);
         this.orders.set(orders);
-        this.dataSource.data = orders;
-        this.lastRefreshed.set(new Date());
         this.updateWorkingOrdersStatus(orders);
+        this.applyFilters();
+        this.lastRefreshed.set(new Date());
         this.refreshAttempts.set(this.refreshAttempts() + 1);
         this.dashboardService.refreshAccountData(this.accountId);
       },
@@ -123,6 +127,70 @@ export class OrderBlotter implements OnInit, OnDestroy {
         this.error.set(this.mapError(error));
       }
     });
+  }
+
+  /**
+   * Apply filters (status and symbol search) to the data source.
+   */
+  applyFilters(): void {
+    const filtered = this.getFilteredOrders();
+    this.dataSource.data = filtered;
+  }
+
+  /**
+   * Get filtered orders based on current status and symbol filters.
+   */
+  getFilteredOrders(): OrderHistoryEntry[] {
+    const selectedStatuses = this.selectedStatuses();
+    const searchSymbol = this.searchSymbol().toLowerCase().trim();
+
+    return this.orders().filter(order => {
+      // Filter by status
+      const statusMatch = selectedStatuses.size === 0 || selectedStatuses.has(order.status || '');
+      
+      // Filter by symbol (case-insensitive)
+      const symbolMatch = !searchSymbol || (order.symbol?.toLowerCase().includes(searchSymbol) ?? false);
+
+      return statusMatch && symbolMatch;
+    });
+  }
+
+  /**
+   * Toggle a status filter on/off.
+   */
+  toggleStatusFilter(status: string): void {
+    const statuses = new Set(this.selectedStatuses());
+    if (statuses.has(status)) {
+      statuses.delete(status);
+    } else {
+      statuses.add(status);
+    }
+    this.selectedStatuses.set(statuses);
+    this.applyFilters();
+  }
+
+  /**
+   * Update search symbol and apply filters.
+   */
+  onSearchSymbolChange(symbol: string): void {
+    this.searchSymbol.set(symbol);
+    this.applyFilters();
+  }
+
+  /**
+   * Clear all filters and reset to default (all statuses selected).
+   */
+  clearFilters(): void {
+    this.searchSymbol.set('');
+    this.selectedStatuses.set(new Set());
+    this.applyFilters();
+  }
+
+  /**
+   * Check if a status filter is currently selected.
+   */
+  isStatusSelected(status: string): boolean {
+    return this.selectedStatuses().has(status);
   }
 
   /**

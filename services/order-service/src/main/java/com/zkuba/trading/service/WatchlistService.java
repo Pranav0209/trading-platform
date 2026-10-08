@@ -13,4 +13,6 @@ public interface WatchlistService {
     void addSymbol(Long userId, Long watchlistId, String symbol);
 
     void removeSymbol(Long userId, Long watchlistId, String symbol);
+
+    void delete(Long userId, Long watchlistId);
 }

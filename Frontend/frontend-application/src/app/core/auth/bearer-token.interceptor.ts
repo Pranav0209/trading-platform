@@ -6,7 +6,7 @@ import {
   HttpClient,
 } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, throwError, switchMap, from, lastValueFrom } from 'rxjs';
+import { Observable, catchError, throwError, switchMap, from, lastValueFrom, BehaviorSubject, filter, take } from 'rxjs';
 import { Router } from '@angular/router';
 import { Session } from './session';
 import { environment } from '../../../environments/environment';
@@ -38,6 +38,9 @@ export class BearerTokenInterceptor implements HttpInterceptor {
   /** Path segments that indicate unauthenticated routes in the Auth service */
   private unauthenticatedAuthPaths = new Set(['/auth/login', '/auth/register', '/auth/refresh']);
 
+  private isRefreshing = false;
+  private refreshTokenSubject = new BehaviorSubject<string | null>(null);
+
   intercept(
     req: HttpRequest<any>,
     next: HttpHandler
@@ -66,24 +69,52 @@ export class BearerTokenInterceptor implements HttpInterceptor {
       catchError((error) => {
         // Only attempt refresh if it's a 401 AND the request wasn't already for login/refresh
         if (error.status === 401 && !isUnauthRoute) {
-          // Token is expired. Attempt silent refresh using HttpOnly cookie!
-          return from(this.attemptRefresh()).pipe(
-            switchMap((newAccessToken) => {
-              if (newAccessToken) {
-                // Refresh succeeded! Update session and retry original request
-                this.session.setToken(newAccessToken);
-                const retryReq = req.clone({
-                  setHeaders: { Authorization: `Bearer ${newAccessToken}` },
-                });
-                return next.handle(retryReq);
-              } else {
-                // Refresh failed. Auto-logout!
+          
+          if (!this.isRefreshing) {
+            this.isRefreshing = true;
+            this.refreshTokenSubject.next(null);
+
+            // Token is expired. Attempt silent refresh using HttpOnly cookie!
+            return from(this.attemptRefresh()).pipe(
+              switchMap((newAccessToken) => {
+                this.isRefreshing = false;
+
+                if (newAccessToken) {
+                  // Refresh succeeded! Update session and retry original request
+                  this.session.setToken(newAccessToken);
+                  this.refreshTokenSubject.next(newAccessToken);
+                  
+                  const retryReq = req.clone({
+                    setHeaders: { Authorization: `Bearer ${newAccessToken}` },
+                  });
+                  return next.handle(retryReq);
+                } else {
+                  // Refresh failed. Auto-logout!
+                  this.session.clearToken();
+                  this.router.navigate(['/sign-in']);
+                  return throwError(() => error);
+                }
+              }),
+              catchError((err) => {
+                this.isRefreshing = false;
                 this.session.clearToken();
                 this.router.navigate(['/sign-in']);
-                return throwError(() => error);
-              }
-            })
-          );
+                return throwError(() => err);
+              })
+            );
+          } else {
+            // Wait until the refresh token is acquired by another request
+            return this.refreshTokenSubject.pipe(
+              filter(token => token !== null),
+              take(1),
+              switchMap(token => {
+                const retryReq = req.clone({
+                  setHeaders: { Authorization: `Bearer ${token}` },
+                });
+                return next.handle(retryReq);
+              })
+            );
+          }
         }
         return throwError(() => error);
       })
