@@ -79,7 +79,7 @@ test.describe('Order Management Journey', () => {
     await submitButton.click({ force: true });
 
     try {
-      await expect(submitButton, { timeout: 20000 }).not.toContainText('Submitting');
+      await expect(submitButton).not.toContainText('Submitting', { timeout: 20000 });
     } catch {
       // Navigation or error occurred
     }
@@ -148,7 +148,7 @@ test.describe('Order Management Journey', () => {
     await page.getByTestId('submit-order-button').click({ force: true });
 
     try {
-      await expect(page.getByTestId('submit-order-button'), { timeout: 20000 }).not.toContainText('Submitting');
+      await expect(page.getByTestId('submit-order-button')).not.toContainText('Submitting', { timeout: 20000 });
     } catch {
       // Fine
     }

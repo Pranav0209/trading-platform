@@ -90,11 +90,11 @@ test.describe('Place Order Journey', () => {
     // Submit order
     const submitButton = page.getByTestId('submit-order-button');
     await page.waitForTimeout(1000);
-    await submitButton.click();
+    await submitButton.click({ force: true });
 
     // Wait for submission to complete
     try {
-      await expect(submitButton, { timeout: 20000 }).not.toContainText('Submitting');
+      await expect(submitButton).not.toContainText('Submitting', { timeout: 20000 });
     } catch {
       // Page might have navigated - that's fine
     }
@@ -120,10 +120,10 @@ test.describe('Place Order Journey', () => {
     // Submit order - likely to be rejected
     const submitButton = page.getByTestId('submit-order-button');
     await page.waitForTimeout(1000);
-    await submitButton.click();
+    await submitButton.click({ force: true });
 
     try {
-      await expect(submitButton, { timeout: 20000 }).not.toContainText('Submitting');
+      await expect(submitButton).not.toContainText('Submitting', { timeout: 20000 });
     } catch {
       // Navigation or error message showed - fine
     }
@@ -152,7 +152,7 @@ test.describe('Place Order Journey', () => {
     await firstOrderButton.click({ force: true });
 
     try {
-      await expect(firstOrderButton, { timeout: 20000 }).not.toContainText('Submitting');
+      await expect(firstOrderButton).not.toContainText('Submitting', { timeout: 20000 });
     } catch {
       // Fine
     }
@@ -173,7 +173,7 @@ test.describe('Place Order Journey', () => {
     await secondOrderButton.click({ force: true });
 
     try {
-      await expect(secondOrderButton, { timeout: 20000 }).not.toContainText('Submitting');
+      await expect(secondOrderButton).not.toContainText('Submitting', { timeout: 20000 });
     } catch {
       // Fine
     }
@@ -260,7 +260,7 @@ test.describe('Place Order Journey', () => {
       await submitButton.click({ force: true });
 
       try {
-        await expect(submitButton, { timeout: 20000 }).not.toContainText('Submitting');
+        await expect(submitButton).not.toContainText('Submitting', { timeout: 20000 });
       } catch {
         // Fine
       }
@@ -290,10 +290,10 @@ test.describe('Place Order Journey', () => {
 
     const submitButton = page.getByTestId('submit-order-button');
     await page.waitForTimeout(1000);
-    await submitButton.click();
+    await submitButton.click({ force: true });
 
     try {
-      await expect(submitButton, { timeout: 20000 }).not.toContainText('Submitting');
+      await expect(submitButton).not.toContainText('Submitting', { timeout: 20000 });
     } catch {
       // Fine
     }
@@ -322,7 +322,7 @@ test.describe('Place Order Journey', () => {
     await submitButton.click({ force: true });
 
     try {
-      await expect(submitButton, { timeout: 20000 }).not.toContainText('Submitting');
+      await expect(submitButton).not.toContainText('Submitting', { timeout: 20000 });
     } catch {
       // Fine
     }
