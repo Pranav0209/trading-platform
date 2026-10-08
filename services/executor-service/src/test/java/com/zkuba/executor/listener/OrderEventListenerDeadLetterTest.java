@@ -1,7 +1,7 @@
 package com.zkuba.executor.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zkuba.executor.client.FauxnanceQuoteClient;
+import com.zkuba.executor.client.QuoteClient;
 import com.zkuba.executor.domain.entity.Account;
 import com.zkuba.executor.domain.entity.Order;
 import com.zkuba.executor.domain.enums.AccountStatus;
@@ -72,7 +72,7 @@ class OrderEventListenerDeadLetterTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private FauxnanceQuoteClient quoteClient;
+    private QuoteClient quoteClient;
 
     @MockBean
     private AccountRepository accountRepository;

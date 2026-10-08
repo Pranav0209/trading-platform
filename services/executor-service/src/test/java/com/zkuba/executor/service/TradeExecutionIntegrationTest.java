@@ -1,7 +1,7 @@
 package com.zkuba.executor.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.zkuba.executor.client.FauxnanceQuoteClient;
+import com.zkuba.executor.client.QuoteClient;
 import com.zkuba.executor.client.QuoteResponse;
 import com.zkuba.executor.domain.entity.Account;
 import com.zkuba.executor.domain.entity.Order;
@@ -62,7 +62,7 @@ class TradeExecutionIntegrationTest {
     private ObjectMapper objectMapper;
 
     @MockBean
-    private FauxnanceQuoteClient fauxnanceQuoteClient;
+    private QuoteClient fauxnanceQuoteClient;
 
     @MockBean
     private KafkaTemplate<String, String> kafkaTemplate;

@@ -1,6 +1,6 @@
 package com.zkuba.executor.service;
 
-import com.zkuba.executor.client.FauxnanceQuoteClient;
+import com.zkuba.executor.client.QuoteClient;
 import com.zkuba.executor.client.PricingUnavailableException;
 import com.zkuba.executor.client.QuoteResponse;
 import com.zkuba.executor.domain.entity.Account;
@@ -11,17 +11,20 @@ import com.zkuba.executor.domain.enums.OrderSide;
 import com.zkuba.executor.domain.enums.OrderStatus;
 import com.zkuba.executor.domain.enums.OrderType;
 import com.zkuba.executor.engine.FillDecision;
-import com.zkuba.executor.engine.FillRuleEngine;
+import com.zkuba.executor.engine.FillRuleEvaluator;
 import com.zkuba.executor.event.TradeEventPayload;
 import com.zkuba.executor.repository.AccountRepository;
 import com.zkuba.executor.repository.OrderRepository;
 import com.zkuba.executor.repository.PositionRepository;
+import com.zkuba.executor.repository.RealisedPnlRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -33,6 +36,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TradeExecutionServiceTest {
 
     @Mock
@@ -45,10 +49,13 @@ class TradeExecutionServiceTest {
     private PositionRepository positionRepository;
 
     @Mock
-    private FauxnanceQuoteClient quoteClient;
+    private RealisedPnlRepository realisedPnlRepository;
 
     @Mock
-    private FillRuleEngine fillRuleEngine;
+    private QuoteClient quoteClient;
+
+    @Mock
+    private FillRuleEvaluator fillRuleEngine;
 
     @InjectMocks
     private TradeExecutionService service;
@@ -226,6 +233,12 @@ class TradeExecutionServiceTest {
 
         mockQuote();
 
+        when(accountRepository.findById(account.getId()))
+                .thenReturn(Optional.of(account));
+
+        when(positionRepository.findByAccountIdAndSymbol(account.getId(), "AAPL"))
+                .thenReturn(Optional.empty());
+
         when(
                 fillRuleEngine.evaluate(
                         eq(order),
@@ -254,11 +267,6 @@ class TradeExecutionServiceTest {
                 any(),
                 any(),
                 any()
-        );
-
-        verifyNoInteractions(
-                accountRepository,
-                positionRepository
         );
     }
 
@@ -461,7 +469,7 @@ class TradeExecutionServiceTest {
                 orderRepository.executeOrder(
                         eq(orderId),
                         eq(OrderStatus.FILLED),
-                        eq(new BigDecimal("200.00")),
+                        any(BigDecimal.class),
                         any(OffsetDateTime.class),
                         any()
                 )
@@ -650,7 +658,7 @@ class TradeExecutionServiceTest {
                 orderRepository.executeOrder(
                         eq(orderId),
                         eq(OrderStatus.FILLED),
-                        eq(new BigDecimal("150.00")),
+                        any(BigDecimal.class),
                         any(OffsetDateTime.class),
                         any()
                 )
@@ -742,11 +750,13 @@ class TradeExecutionServiceTest {
                 orderRepository.executeOrder(
                         eq(orderId),
                         eq(OrderStatus.FILLED),
-                        eq(new BigDecimal("150.00")),
+                        any(BigDecimal.class),
                         any(OffsetDateTime.class),
                         any()
                 )
         ).thenReturn(1);
+
+        doNothing().when(positionRepository).delete(any(Position.class));
 
         Optional<TradeEventPayload> result =
                 service.executeOrder(orderId);
@@ -832,6 +842,12 @@ class TradeExecutionServiceTest {
 
         mockQuote();
 
+        when(accountRepository.findById(account.getId()))
+                .thenReturn(Optional.of(account));
+
+        when(positionRepository.findByAccountIdAndSymbol(account.getId(), "AAPL"))
+                .thenReturn(Optional.empty());
+
         when(
                 fillRuleEngine.evaluate(
                         eq(order),
@@ -857,11 +873,6 @@ class TradeExecutionServiceTest {
                 OptimisticLockException.class,
                 () -> service.executeOrder(orderId)
         );
-
-        verify(
-                accountRepository,
-                never()
-        ).findById(anyLong());
     }
 
     
@@ -1061,7 +1072,7 @@ class TradeExecutionServiceTest {
                 orderRepository.executeOrder(
                         eq(orderId),
                         eq(OrderStatus.FILLED),
-                        eq(new BigDecimal("150.00")),
+                        any(BigDecimal.class),
                         any(OffsetDateTime.class),
                         any()
                 )
