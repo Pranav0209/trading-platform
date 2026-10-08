@@ -1,4 +1,6 @@
-package com.zkuba.trading.service;
+package com.zkuba.trading.service.impl;
+
+import com.zkuba.trading.service.*;
 
 import com.zkuba.trading.dto.response.PendingUserResponse;
 import com.zkuba.trading.repository.UserRepository;

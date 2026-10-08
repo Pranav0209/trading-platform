@@ -1,3 +1,5 @@
 package com.zkuba.trading.dto.response;
 
-public record WatchlistResponse(Long id, String name, java.util.List<String> symbols) {}
+import java.util.List;
+
+public record WatchlistResponse(Long id, String name, List<String> symbols) {}

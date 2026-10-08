@@ -1,4 +1,6 @@
-package com.zkuba.trading.service;
+package com.zkuba.trading.service.impl;
+
+import com.zkuba.trading.service.*;
 
 import com.zkuba.trading.domain.entity.Account;
 import com.zkuba.trading.domain.entity.RealisedPnl;
@@ -115,7 +117,7 @@ public class RealisedPnlServiceImpl implements RealisedPnlService {
         // Build response
         return new RealisedPnlHistoryResponse(
                 accountId,
-                "USD",  // TODO: Get from account entity if multi-currency support added
+                "USD",
                 from,
                 to,
                 records,

@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import com.zkuba.executor.client.QuoteResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -32,14 +33,14 @@ public class LimitOrderEvaluator {
     @KafkaListener(topics = "market-data", groupId = "executor-limit-order-service")
     public void evaluateLimitOrders(String message) {
         try {
-            Map<String, Object> quoteData = objectMapper.readValue(message, new TypeReference<>() {});
-            String symbol = (String) quoteData.get("symbol");
+            QuoteResponse.Data quoteData = objectMapper.readValue(message, QuoteResponse.Data.class);
+            String symbol = quoteData.symbol();
             if (symbol == null) return;
 
             List<Order> pendingOrders = orderRepository.findBySymbolAndStatus(symbol, OrderStatus.NEW);
             for (Order order : pendingOrders) {
                 try {
-                    tradeExecutionService.executeOrder(order.getId());
+                    tradeExecutionService.executeLimitOrder(order.getId(), quoteData);
                 } catch (Exception e) {
                     log.error("Failed to execute limit order {}", order.getId(), e);
                 }

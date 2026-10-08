@@ -40,6 +40,9 @@ public class NotificationServiceImpl implements NotificationService {
     @Value("${emailjs.private-key}")
     private String privateKey;
 
+    @Value("${emailjs.api-url:https://api.emailjs.com/api/v1.0/email/send}")
+    private String apiUrl;
+
     public NotificationServiceImpl(
             AccountRepository accountRepository,
             UserRepository userRepository,
@@ -78,7 +81,6 @@ public class NotificationServiceImpl implements NotificationService {
             if ("EMAIL".equals(user.getNotificationChannel())) {
                 sendEmailAlert(user.getEmail(), payload);
             } else if ("PUSH".equals(user.getNotificationChannel())) {
-                // TODO: Implement push notification channel
                 log.info("PUSH channel requested for alert {}. Push notifications not yet implemented.", payload.alertId());
             } else {
                 log.warn("Unknown notification channel for user {}: {}", user.getId(), user.getNotificationChannel());
@@ -156,7 +158,7 @@ public class NotificationServiceImpl implements NotificationService {
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
 
         try {
-            restTemplate.postForEntity("https://api.emailjs.com/api/v1.0/email/send", request, String.class);
+            restTemplate.postForEntity(apiUrl, request, String.class);
             log.info("Email notification sent to {} for reference {}", toEmail, referenceId);
         } catch (Exception e) {
             log.error("Failed to send email notification to {} for reference {}", toEmail, referenceId, e);

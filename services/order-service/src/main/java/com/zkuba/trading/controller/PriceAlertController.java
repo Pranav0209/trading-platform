@@ -5,6 +5,7 @@ import com.zkuba.trading.dto.request.CreateAlertRequest;
 import com.zkuba.trading.dto.response.AlertResponse;
 import com.zkuba.trading.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.zkuba.trading.service.PriceAlertService;
+import com.zkuba.trading.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,10 +21,12 @@ import java.util.Map;
 public class PriceAlertController {
 
     private final PriceAlertService alertService;
+    private final AccountService accountService;
     private static final long ALERT_LIMIT = 100L;
 
-    public PriceAlertController(PriceAlertService alertService) {
+    public PriceAlertController(PriceAlertService alertService, AccountService accountService) {
         this.alertService = alertService;
+        this.accountService = accountService;
     }
 
     /**
@@ -127,13 +130,9 @@ public class PriceAlertController {
     }
 
     /**
-     * Authorization check: verify the JWT token's accountId claim
-     * matches the resource accountId being accessed.
+     * Authorization check: verify the account belongs to the user.
      */
-    private void verifyAuthorization(Long tokenAccountId, Long resourceAccountId) {
-        if (!tokenAccountId.equals(resourceAccountId)) {
-            throw new com.zkuba.trading.exception.ForbiddenException(
-                    "ACC-403", "Account mismatch");
-        }
+    private void verifyAuthorization(Long userId, Long accountId) {
+        accountService.getAccountAndValidateAccess(accountId, userId);
     }
 }
