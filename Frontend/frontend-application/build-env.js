@@ -8,31 +8,89 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
-// Parse .env file
-const envPath = path.join(__dirname, '.env');
-if (!fs.existsSync(envPath)) {
-  console.error('❌ FATAL: .env file not found!');
-  console.error('   Create .env from .env.example and configure your URLs');
-  process.exit(1);
+function parseSimpleYaml(content) {
+  const root = {};
+  const stack = [{ indent: -1, value: root }];
+
+  content.split(/\r?\n/).forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      return;
+    }
+
+    const match = /^(\s*)([A-Za-z0-9_-]+):(?:\s*(.*))?$/.exec(line);
+    if (!match) {
+      return;
+    }
+
+    const indent = match[1].length;
+    const key = match[2];
+    const rawValue = (match[3] || '').trim();
+
+    while (stack.length > 1 && indent <= stack[stack.length - 1].indent) {
+      stack.pop();
+    }
+
+    const parent = stack[stack.length - 1].value;
+    if (!rawValue) {
+      parent[key] = {};
+      stack.push({ indent, value: parent[key] });
+      return;
+    }
+
+    parent[key] = rawValue.replace(/^['"]|['"]$/g, '');
+  });
+
+  return root;
 }
 
-const envContent = fs.readFileSync(envPath, 'utf8');
+function buildBaseUrl(serviceConfig) {
+  if (!serviceConfig || !serviceConfig.url) {
+    return undefined;
+  }
+
+  return serviceConfig.port ? `${serviceConfig.url}:${serviceConfig.port}` : serviceConfig.url;
+}
+
+// Parse optional .env file overrides
+const envPath = path.join(__dirname, '.env');
+const commonConfigPath = process.env.COMMON_CONFIG_PATH
+  ? path.resolve(__dirname, process.env.COMMON_CONFIG_PATH)
+  : path.resolve(__dirname, '..', '..', 'Config', 'application.yml');
+
+const commonConfig = fs.existsSync(commonConfigPath)
+  ? parseSimpleYaml(fs.readFileSync(commonConfigPath, 'utf8'))
+  : {};
+
+if (!fs.existsSync(commonConfigPath)) {
+  console.warn('Warning: Config/application.yml not found. Falling back to legacy frontend defaults.');
+}
+
 const envVars = {};
 
-envContent.split('\n').forEach(line => {
-  const trimmed = line.trim();
-  if (trimmed && !trimmed.startsWith('#')) {
-    const [key, ...valueParts] = trimmed.split('=');
-    if (key) {
-      envVars[key] = valueParts.join('=');
+if (fs.existsSync(envPath)) {
+  const envContent = fs.readFileSync(envPath, 'utf8');
+
+  envContent.split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const [key, ...valueParts] = trimmed.split('=');
+      if (key) {
+        envVars[key] = valueParts.join('=');
+      }
     }
-  }
-});
+  });
+}
+
+const defaultAuthApiUrl = buildBaseUrl(commonConfig.services && commonConfig.services.auth)
+  || 'http://localhost:8080';
+const defaultTradeApiUrl = buildBaseUrl(commonConfig.services && commonConfig.services.order)
+  || 'http://localhost:8081';
 
 // Show env vars only in development (not in CI/CD logs)
 const isDev = !process.env.CI && envVars['NG_APP_ENVIRONMENT'] !== 'production' && envVars['NG_APP_ENVIRONMENT'] !== 'staging';
 if (isDev) {
-  console.log('✓ Loaded environment variables from .env:');
+  console.log('✓ Loaded frontend configuration from Config/application.yml with optional .env overrides:');
   Object.entries(envVars).forEach(([key, value]) => {
     if (key.startsWith('NG_APP_')) {
       console.log(`  ${key}=${value}`);
@@ -47,15 +105,15 @@ const environmentContent = `// Auto-generated from .env file during build
 // Do not edit manually - will be overwritten on next build
 
 export const environment = {
-  authApiUrl: '${envVars['NG_APP_AUTH_API_URL'] || 'http://localhost:3000'}',
-  tradeApiUrl: '${envVars['NG_APP_TRADE_API_URL'] || 'http://localhost:8081'}',
+  authApiUrl: '${envVars['NG_APP_AUTH_API_URL'] || defaultAuthApiUrl}',
+  tradeApiUrl: '${envVars['NG_APP_TRADE_API_URL'] || defaultTradeApiUrl}',
   environment: '${envVars['NG_APP_ENVIRONMENT'] || 'development'}',
 };
 `;
 
 // Validate configuration
-const authApiUrl = envVars['NG_APP_AUTH_API_URL'];
-const tradeApiUrl = envVars['NG_APP_TRADE_API_URL'];
+const authApiUrl = envVars['NG_APP_AUTH_API_URL'] || defaultAuthApiUrl;
+const tradeApiUrl = envVars['NG_APP_TRADE_API_URL'] || defaultTradeApiUrl;
 const env = envVars['NG_APP_ENVIRONMENT'] || 'development';
 
 // Warn if using localhost in production

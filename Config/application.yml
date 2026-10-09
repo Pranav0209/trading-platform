@@ -18,4 +18,4 @@ database:
   user: postgres
 kafka:
   host: kafka
-  port: 9092
+  port: 29092
