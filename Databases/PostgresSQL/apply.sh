@@ -4,11 +4,22 @@ set -euo pipefail
 
 # resolve paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MIGRATIONS_DIR="$SCRIPT_DIR/init"
 ENV_FILE="$SCRIPT_DIR/.env"
+SCHEMA_FILE="$SCRIPT_DIR/schema.sql"
+SEED_FILE="$SCRIPT_DIR/seed-data.sql"
 
 if [[ ! -f "$ENV_FILE" ]]; then
     echo "ERROR: .env file not found at $ENV_FILE"
+    exit 1
+fi
+
+if [[ ! -f "$SCHEMA_FILE" ]]; then
+    echo "ERROR: schema file not found at $SCHEMA_FILE"
+    exit 1
+fi
+
+if [[ ! -f "$SEED_FILE" ]]; then
+    echo "ERROR: seed data file not found at $SEED_FILE"
     exit 1
 fi
 
@@ -41,8 +52,8 @@ psql \
     --username="$USER" \
     --dbname="$DATABASE" \
     -v ON_ERROR_STOP=1 \
-    -f "$MIGRATIONS_DIR/01-schema.sql" \
-    -f "$MIGRATIONS_DIR/02-seed-data.sql"
+    -f "$SCHEMA_FILE" \
+    -f "$SEED_FILE"
 
 echo "Database setup completed successfully."
 
