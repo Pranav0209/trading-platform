@@ -29,6 +29,8 @@ class PriceAlertEvaluatorTest {
     @Mock
     private NotificationService notificationService;
     @Mock
+    private PriceAlertService priceAlertService;
+    @Mock
     private CurrencyConversionService currencyConversionService;
 
     // Use a real ObjectMapper since it's just JSON parsing
@@ -41,7 +43,7 @@ class PriceAlertEvaluatorTest {
 
     @BeforeEach
     void setUp() {
-        evaluator = new PriceAlertEvaluator(alertRepository, notificationService, objectMapper, currencyConversionService);
+        evaluator = new PriceAlertEvaluator(alertRepository, notificationService, priceAlertService, objectMapper, currencyConversionService);
         
         account = new Account();
         account.setId(1L);

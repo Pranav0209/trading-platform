@@ -240,7 +240,7 @@ class SmartRuleServiceImplTest {
     void createRule_WithChildren() {
         CreateSmartRuleRequest childReq = new CreateSmartRuleRequest(
                 "AAPL", RuleAction.SELL, QuantityMode.ALL, null,
-                MetricType.PRICE, ComparisonOperator.GREATER_THAN, new BigDecimal("200"),
+                MetricType.AVERAGE_COST, ComparisonOperator.GREATER_THAN, new BigDecimal("200"),
                 null, null, null, true, null
         );
         CreateSmartRuleRequest req = new CreateSmartRuleRequest(

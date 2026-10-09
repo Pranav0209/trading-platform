@@ -15,6 +15,8 @@ import com.zkuba.executor.listener.OrderEventListener;
 import com.zkuba.executor.repository.AccountRepository;
 import com.zkuba.executor.repository.OrderRepository;
 import com.zkuba.executor.repository.PositionRepository;
+import com.zkuba.executor.repository.RealisedPnlRepository;
+import com.zkuba.executor.repository.SmartRuleRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -57,6 +59,12 @@ class TradeExecutionIntegrationTest {
 
     @MockBean
     private PositionRepository positionRepository;
+
+    @MockBean
+    private RealisedPnlRepository realisedPnlRepository;
+
+    @MockBean
+    private SmartRuleRepository smartRuleRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -144,6 +152,13 @@ class TradeExecutionIntegrationTest {
 
         when(positionRepository.save(any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // ============================================================
+        // SMART RULE REPOSITORY
+        // ============================================================
+
+        when(smartRuleRepository.findBySymbolAndEnabledTrue("AAPL"))
+                .thenReturn(java.util.Collections.emptyList());
 
         // ============================================================
         // FAUXNANCE QUOTE
