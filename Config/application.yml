@@ -1,0 +1,58 @@
+# Application Configuration
+# This is the centralized configuration file for the entire Trading System
+# Environment-specific values should be overridden via environment variables or .env files
+
+# Frontend Application
+frontend:
+  url: http://localhost
+  port: 4200
+
+# Microservices Configuration
+services:
+  auth:
+    url: http://localhost
+    port: 3000
+    name: auth-service
+  order:
+    url: http://localhost
+    port: 8081
+    name: order-service
+  executor:
+    url: http://localhost
+    port: 8082
+    name: executor-service
+
+# Database Configuration
+database:
+  type: postgresql
+  host: localhost
+  port: 5432
+  name: trading_system_db
+  user: postgres
+  # Password should be provided via DATABASE_PASSWORD environment variable
+  # Never commit passwords to version control
+
+# Kafka Configuration
+kafka:
+  host: kafka
+  port: 29092
+  brokers: "kafka:29092"
+
+# JWT Configuration
+jwt:
+  secret: your-jwt-secret-key  # MUST be changed in production
+  token_expiry: 15m
+  refresh_token_expiry_days: 7
+
+# Third-party API Configuration (Fauxnance)
+fauxnance:
+  base_url: https://api.fauxnance.com
+  # API key should be provided via FAUXNANCE_API_KEY environment variable
+
+# Logging
+logging:
+  level: INFO
+  app_level: DEBUG
+
+# Application Environment
+environment: development  # development, staging, production

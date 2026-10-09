@@ -1,0 +1,51 @@
+-- Reset script to clean the database
+-- Use with caution: this will delete all data
+
+BEGIN;
+
+-- Disable foreign key constraints temporarily
+ALTER TABLE IF EXISTS auth.refresh_tokens DISABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS auth.login_attempts DISABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS accounts DISABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS watchlists DISABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS watchlist_items DISABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS orders DISABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS positions DISABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS pnl DISABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS price_alerts DISABLE TRIGGER ALL;
+
+-- Delete all data
+DELETE FROM pnl;
+DELETE FROM price_alerts;
+DELETE FROM positions;
+DELETE FROM orders;
+DELETE FROM watchlist_items;
+DELETE FROM watchlists;
+DELETE FROM accounts;
+DELETE FROM instruments;
+DELETE FROM auth.login_attempts;
+DELETE FROM auth.refresh_tokens;
+DELETE FROM auth.users;
+
+-- Reset sequences
+ALTER SEQUENCE IF EXISTS auth.users_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS auth.refresh_tokens_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS auth.login_attempts_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS accounts_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS watchlists_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS positions_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS pnl_id_seq RESTART WITH 1;
+ALTER SEQUENCE IF EXISTS price_alerts_id_seq RESTART WITH 1;
+
+-- Re-enable foreign key constraints
+ALTER TABLE IF EXISTS price_alerts ENABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS pnl ENABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS positions ENABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS orders ENABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS watchlist_items ENABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS watchlists ENABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS accounts ENABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS auth.login_attempts ENABLE TRIGGER ALL;
+ALTER TABLE IF EXISTS auth.refresh_tokens ENABLE TRIGGER ALL;
+
+COMMIT;
