@@ -1,4 +1,6 @@
-package com.zkuba.trading.service;
+package com.zkuba.trading.service.impl;
+
+import com.zkuba.trading.service.*;
 
 import com.zkuba.trading.domain.entity.Account;
 import com.zkuba.trading.domain.entity.Order;
@@ -132,6 +134,14 @@ public class OrderServiceImpl implements OrderService {
 
         int newQuantity = request.quantity() != null ? request.quantity() : order.getQuantity();
         BigDecimal newLimitPrice = request.limitPrice() != null ? request.limitPrice() : order.getLimitPrice();
+
+        if (newQuantity <= 0) {
+            throw new InvalidOrderException("Quantity must be positive");
+        }
+
+        if (order.getOrderType() == OrderType.MARKET && newLimitPrice != null) {
+            throw new InvalidOrderException("Limit price cannot be set for market orders");
+        }
 
         if (newLimitPrice != null && newLimitPrice.signum() <= 0) {
             throw new InvalidOrderException("Limit price must be positive");

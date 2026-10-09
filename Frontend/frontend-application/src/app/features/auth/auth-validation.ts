@@ -1,11 +1,11 @@
 import { ValidatorFn, Validators } from '@angular/forms';
 
-export const AUTH_USERNAME_PATTERN = /^[a-zA-Z0-9._-]+$/;
-export const AUTH_USERNAME_MIN_LENGTH = 3;
+const AUTH_USERNAME_PATTERN = /^[a-zA-Z0-9._-]+$/;
+const AUTH_USERNAME_MIN_LENGTH = 3;
 export const AUTH_USERNAME_MAX_LENGTH = 50;
-export const AUTH_PASSWORD_MIN_LENGTH = 8;
+const AUTH_PASSWORD_MIN_LENGTH = 8;
 export const AUTH_PASSWORD_MAX_LENGTH = 128;
-export const REGISTER_PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)\S+$/;
+const REGISTER_PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)\S+$/;
 
 export const usernameValidators: ValidatorFn[] = [
   Validators.required,

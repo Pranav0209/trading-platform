@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -158,7 +159,7 @@ class TradeExecutionIntegrationTest {
         // ============================================================
 
         when(smartRuleRepository.findBySymbolAndEnabledTrue("AAPL"))
-                .thenReturn(java.util.Collections.emptyList());
+                .thenReturn(Collections.emptyList());
 
         // ============================================================
         // FAUXNANCE QUOTE

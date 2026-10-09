@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.function.Function;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -194,7 +195,7 @@ class FauxnanceQuoteClientTest {
 
         doReturn(requestHeadersSpec)
                 .when(requestHeadersUriSpec)
-                .uri(any(java.util.function.Function.class));
+                .uri(any(Function.class));
 
         when(requestHeadersSpec.retrieve())
                 .thenReturn(responseSpec);
@@ -222,7 +223,7 @@ class FauxnanceQuoteClientTest {
 
         verify(restClient).get();
         verify(requestHeadersUriSpec)
-                .uri(any(java.util.function.Function.class));
+                .uri(any(Function.class));
         verify(requestHeadersSpec).retrieve();
         verify(responseSpec)
                 .body(BatchQuoteResponse.class);
@@ -233,7 +234,7 @@ class FauxnanceQuoteClientTest {
 
         doReturn(requestHeadersSpec)
                 .when(requestHeadersUriSpec)
-                .uri(any(java.util.function.Function.class));
+                .uri(any(Function.class));
 
         when(requestHeadersSpec.retrieve())
                 .thenThrow(new RuntimeException("Connection failed"));
@@ -273,7 +274,7 @@ class FauxnanceQuoteClientTest {
 
         doReturn(requestHeadersSpec)
                 .when(requestHeadersUriSpec)
-                .uri(any(java.util.function.Function.class));
+                .uri(any(Function.class));
 
         when(requestHeadersSpec.retrieve())
                 .thenReturn(responseSpec);
@@ -289,7 +290,7 @@ class FauxnanceQuoteClientTest {
         assertNotNull(result);
 
         verify(requestHeadersUriSpec)
-                .uri(any(java.util.function.Function.class));
+                .uri(any(Function.class));
     }
 
     @Test
@@ -341,7 +342,7 @@ class FauxnanceQuoteClientTest {
 
         doReturn(requestHeadersSpec)
                 .when(requestHeadersUriSpec)
-                .uri(any(java.util.function.Function.class));
+                .uri(any(Function.class));
 
         when(requestHeadersSpec.retrieve())
                 .thenReturn(responseSpec);
@@ -394,7 +395,7 @@ class FauxnanceQuoteClientTest {
 
         doReturn(requestHeadersSpec)
                 .when(requestHeadersUriSpec)
-                .uri(any(java.util.function.Function.class));
+                .uri(any(Function.class));
 
         when(requestHeadersSpec.retrieve())
                 .thenReturn(responseSpec);
@@ -503,7 +504,7 @@ class FauxnanceQuoteClientTest {
 
         doReturn(requestHeadersSpec)
                 .when(requestHeadersUriSpec)
-                .uri(any(java.util.function.Function.class));
+                .uri(any(Function.class));
 
         when(requestHeadersSpec.retrieve())
                 .thenReturn(responseSpec);
@@ -548,7 +549,7 @@ class FauxnanceQuoteClientTest {
 
         doReturn(requestHeadersSpec)
                 .when(requestHeadersUriSpec)
-                .uri(any(java.util.function.Function.class));
+                .uri(any(Function.class));
 
         when(requestHeadersSpec.retrieve())
                 .thenReturn(responseSpec);

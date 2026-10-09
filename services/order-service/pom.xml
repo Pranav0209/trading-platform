@@ -99,12 +99,7 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- Environment Variables from .env file -->
-    <dependency>
-      <groupId>io.github.cdimascio</groupId>
-      <artifactId>java-dotenv</artifactId>
-      <version>3.0.0</version>
-    </dependency>
+
 
     <!-- HTTP Client for RestClient -->
     <dependency>

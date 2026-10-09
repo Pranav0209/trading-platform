@@ -31,8 +31,14 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import com.zkuba.trading.security.JwtService;
+import com.zkuba.trading.exception.GlobalExceptionHandler;
 
-@WebMvcTest({PortfolioController.class, com.zkuba.trading.exception.GlobalExceptionHandler.class})
+@WebMvcTest({PortfolioController.class, GlobalExceptionHandler.class})
 class PortfolioControllerTest {
 
     @Autowired
@@ -42,7 +48,7 @@ class PortfolioControllerTest {
     private RealisedPnlService realisedPnlService;
 
     @MockBean
-    private com.zkuba.trading.security.JwtService jwtService;
+    private JwtService jwtService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -54,8 +60,8 @@ class PortfolioControllerTest {
     @BeforeEach
     void setUp() {
         AuthenticatedUser user = new AuthenticatedUser(1L, "user1", "USER");
-        org.springframework.security.core.Authentication auth = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(user, null, List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("USER")));
-        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(auth);
+        Authentication auth = new UsernamePasswordAuthenticationToken(user, null, List.of(new SimpleGrantedAuthority("USER")));
+        SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
     @Test
@@ -211,7 +217,7 @@ class PortfolioControllerTest {
 
     @Test
     void testGetRealisedPnlHistory_Unauthorized_NoJwt() throws Exception {
-        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        SecurityContextHolder.clearContext();
         // Given: Request without JWT
         Long accountId = 1L;
 

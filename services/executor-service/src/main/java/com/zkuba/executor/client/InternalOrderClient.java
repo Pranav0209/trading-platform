@@ -10,11 +10,16 @@ import org.springframework.web.client.RestClient;
 public class InternalOrderClient {
 
     private final RestClient restClient;
+    private final String internalSecret;
 
-    public InternalOrderClient(@Value("${order.service.base-url}") String orderServiceBaseUrl) {
+    public InternalOrderClient(
+            @Value("${order.service.base-url}") String orderServiceBaseUrl,
+            @Value("${jwt.secret}") String internalSecret) {
+        this.internalSecret = internalSecret;
         this.restClient = RestClient.builder()
                 .baseUrl(orderServiceBaseUrl)
                 .defaultHeader("Accept", MediaType.APPLICATION_JSON_VALUE)
+                .defaultHeader("X-Internal-Secret", internalSecret)
                 .build();
     }
 

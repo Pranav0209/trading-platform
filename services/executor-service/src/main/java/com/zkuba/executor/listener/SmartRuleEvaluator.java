@@ -20,7 +20,10 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import com.zkuba.executor.domain.enums.OrderSide;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -122,7 +125,7 @@ public class SmartRuleEvaluator {
                 } else if (cce == null || (now - cce.timestamp) >= CANDLE_CACHE_TTL_MS) {
                     // Prevent concurrent background fetches for the same symbol
                     candleCache.put(symbol, new CandleCacheEntry(cce != null ? cce.candles : null, now + CANDLE_CACHE_TTL_MS));
-                    java.util.concurrent.CompletableFuture.runAsync(() -> {
+                    CompletableFuture.runAsync(() -> {
                         try {
                             CandleResponse resp = candleClient.getCandles(symbol);
                             if (resp != null && resp.data() != null) {
@@ -142,7 +145,7 @@ public class SmartRuleEvaluator {
             List<Long> accountIds = rules.stream().map(r -> r.getAccount().getId()).distinct().toList();
             Map<Long, Position> positionsByAccount = positionRepository.findByAccountIdInAndSymbol(accountIds, symbol)
                     .stream()
-                    .collect(java.util.stream.Collectors.toMap(p -> p.getAccountId(), p -> p));
+                    .collect(Collectors.toMap(p -> p.getAccountId(), p -> p));
 
             for (SmartRule rule : rules) {
                 Position position = positionsByAccount.get(rule.getAccount().getId());
@@ -272,13 +275,13 @@ public class SmartRuleEvaluator {
         }
 
         try {
-            java.util.concurrent.CompletableFuture.runAsync(() -> {
+            CompletableFuture.runAsync(() -> {
                 try {
                     internalOrderClient.placeMarketOrder(
                             rule.getAccount().getUserId(),
                             rule.getAccount().getId(),
                             rule.getSymbol(),
-                            rule.getAction() == RuleAction.BUY ? com.zkuba.executor.domain.enums.OrderSide.BUY : com.zkuba.executor.domain.enums.OrderSide.SELL,
+                            rule.getAction() == RuleAction.BUY ? OrderSide.BUY : OrderSide.SELL,
                             quantity,
                             "smart-rule-" + rule.getId() + "-" + UUID.randomUUID());
                 } catch (Exception exception) {

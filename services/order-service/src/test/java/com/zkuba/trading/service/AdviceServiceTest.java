@@ -24,6 +24,7 @@ import com.zkuba.trading.repository.PositionRepository;
 import com.zkuba.trading.repository.WatchlistRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -89,8 +90,8 @@ class AdviceServiceTest {
         IndicatorCalculator.Indicators indicators = new IndicatorCalculator.Indicators(null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         when(indicatorCalculator.calculate(any())).thenReturn(indicators);
         
-        SignalResponse sigAapl = new SignalResponse("AAPL", SignalSource.BOTH, SignalType.HOLD, 50, List.of("Reason"), java.util.Map.of(), false, Instant.now());
-        SignalResponse sigTsla = new SignalResponse("TSLA", SignalSource.WATCHLIST, SignalType.BUY, 80, List.of("Reason"), java.util.Map.of(), false, Instant.now());
+        SignalResponse sigAapl = new SignalResponse("AAPL", SignalSource.BOTH, SignalType.HOLD, 50, List.of("Reason"), Map.of(), false, Instant.now());
+        SignalResponse sigTsla = new SignalResponse("TSLA", SignalSource.WATCHLIST, SignalType.BUY, 80, List.of("Reason"), Map.of(), false, Instant.now());
         
         when(signalEngine.generateSignal(eq("AAPL"), eq(SignalSource.BOTH), any(), any(), anyBoolean())).thenReturn(sigAapl);
         when(signalEngine.generateSignal(eq("TSLA"), eq(SignalSource.WATCHLIST), any(), any(), anyBoolean())).thenReturn(sigTsla);

@@ -8,6 +8,10 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,10 +57,10 @@ public class MarketDataStreamService {
     }
 
     public void broadcast(QuotePayload quote) {
-        Map<String, QuotePayload> convertedQuotes = new java.util.concurrent.ConcurrentHashMap<>();
+        Map<String, QuotePayload> convertedQuotes = new ConcurrentHashMap<>();
         
         for (UserEmitter userEmitter : emitters) {
-            java.util.concurrent.CompletableFuture.runAsync(() -> {
+            CompletableFuture.runAsync(() -> {
                 try {
                     String currency = userEmitter.accountCurrency;
                     QuotePayload payload = convertedQuotes.computeIfAbsent(currency, k -> convertQuoteToAccountCurrency(quote, k));
@@ -79,17 +83,17 @@ public class MarketDataStreamService {
 
         // Get conversion rate from quote currency to account currency
         try {
-            java.math.BigDecimal rate = currencyConversionService.getConversionRate(quote.currency(), accountCurrency);
+            BigDecimal rate = currencyConversionService.getConversionRate(quote.currency(), accountCurrency);
             
             return new QuotePayload(
                     quote.symbol(),
-                    quote.price().multiply(rate).setScale(4, java.math.RoundingMode.HALF_UP),
-                    quote.bid().multiply(rate).setScale(4, java.math.RoundingMode.HALF_UP),
-                    quote.ask().multiply(rate).setScale(4, java.math.RoundingMode.HALF_UP),
+                    quote.price().multiply(rate).setScale(4, RoundingMode.HALF_UP),
+                    quote.bid().multiply(rate).setScale(4, RoundingMode.HALF_UP),
+                    quote.ask().multiply(rate).setScale(4, RoundingMode.HALF_UP),
                     accountCurrency,
-                    quote.change().multiply(rate).setScale(4, java.math.RoundingMode.HALF_UP),
+                    quote.change().multiply(rate).setScale(4, RoundingMode.HALF_UP),
                     quote.changePercent(), // percentage doesn't change
-                    quote.previousClose().multiply(rate).setScale(4, java.math.RoundingMode.HALF_UP),
+                    quote.previousClose().multiply(rate).setScale(4, RoundingMode.HALF_UP),
                     quote.asOf(),
                     quote.marketState()
             );

@@ -27,8 +27,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
+import com.zkuba.trading.exception.GlobalExceptionHandler;
 
-@WebMvcTest({AdminAccountController.class, com.zkuba.trading.exception.GlobalExceptionHandler.class})
+@WebMvcTest({AdminAccountController.class, GlobalExceptionHandler.class})
 @AutoConfigureMockMvc(addFilters = false)
 class AdminAccountControllerTest {
 

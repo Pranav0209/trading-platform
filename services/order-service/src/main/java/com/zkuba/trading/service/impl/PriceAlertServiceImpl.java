@@ -174,9 +174,9 @@ public class PriceAlertServiceImpl implements PriceAlertService {
      * Convert entity to response DTO, fetching display name
      */
     private AlertResponse toResponse(PriceAlert alert) {
-        Optional<com.zkuba.trading.domain.entity.Instrument> instrument =
+        Optional<Instrument> instrument =
                 instrumentRepository.findById(alert.getSymbol());
-        String displayName = instrument.map(com.zkuba.trading.domain.entity.Instrument::getDisplayName)
+        String displayName = instrument.map(Instrument::getDisplayName)
                 .orElse(alert.getSymbol());
 
         return AlertResponse.fromEntity(alert, displayName);
