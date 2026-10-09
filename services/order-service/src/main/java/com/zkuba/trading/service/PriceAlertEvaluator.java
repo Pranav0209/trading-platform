@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
+import java.math.RoundingMode;
 
 /**
  * Market Data Consumer for Price Alerts
@@ -186,7 +188,7 @@ public class PriceAlertEvaluator {
             if (!quoteCurrency.equals(alert.accountCurrency())) {
                 try {
                     BigDecimal rate = currencyConversionService.getConversionRate(quoteCurrency, alert.accountCurrency());
-                    priceInAccountCurrency = priceInQuoteCurrency.multiply(rate).setScale(4, java.math.RoundingMode.HALF_UP);
+                    priceInAccountCurrency = priceInQuoteCurrency.multiply(rate).setScale(4, RoundingMode.HALF_UP);
                 } catch (Exception e) {
                     log.warn("Failed to convert price from {} to {}, using original price. Error: {}", 
                             quoteCurrency, alert.accountCurrency(), e.getMessage());
@@ -220,7 +222,7 @@ public class PriceAlertEvaluator {
                 final Long alertId = entity.getId();
                 
                 // Deliver notification asynchronously - reload entity to avoid detachment
-                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                CompletableFuture.runAsync(() -> {
                     try {
                         log.debug("Starting async delivery for alert {}", alertId);
                         // Reload entity from DB to ensure fresh state and avoid lazy-loading issues

@@ -21,6 +21,9 @@ import com.zkuba.executor.domain.enums.OrderStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.dao.OptimisticLockingFailureException;
+import jakarta.persistence.OptimisticLockException;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
@@ -53,54 +56,82 @@ public class TradeExecutionService {
     @Autowired
     private CurrencyConverter currencyConversionClient;
 
-    // if 2 threads try to update exact same account at same time, db wil throw
-    // OptimisticLockingException, if that happes we tell spring to not crash and
-    // just to wait 50ms and try upto 5 times
-    @Retryable(retryFor = {
-            OptimisticLockException.class }, maxAttempts = 5, backoff = @Backoff(delay = 50, multiplier = 2.0))
-    @Transactional
+    @Autowired
+    @Lazy
+    private TradeExecutionService self;
+
+    void setSelf(TradeExecutionService self) {
+        this.self = self;
+    }
+
     public Optional<TradeEventPayload> executeOrder(UUID orderId) {
+        return executeLimitOrder(orderId, null);
+    }
+
+    public Optional<TradeEventPayload> executeLimitOrder(UUID orderId, QuoteResponse.Data quoteData) {
         Order order = orderRepository.findById(orderId).orElse(null);
-        // to handle cancelled orders
         if (order == null || order.getStatus() != OrderStatus.NEW) {
-            // Already handled, do nothing (idempotency)
             return Optional.empty();
         }
 
-        // validation - fetch account early
+        Account account = accountRepository.findById(order.getAccountId()).orElseThrow();
+        if (account.getStatus() != AccountStatus.ACTIVE) {
+            return self.rejectInTransaction(order, "ACCOUNT_SUSPENDED");
+        }
+
+        if (quoteData == null) {
+            try {
+                QuoteResponse quoteResponse = quoteClient.getQuote(order.getSymbol());
+                quoteData = quoteResponse.data();
+            } catch (PricingUnavailableException e) {
+                return self.rejectInTransaction(order, "PRICING_UNAVAILABLE");
+            }
+        }
+
+        BigDecimal conversionRate = BigDecimal.ONE;
+        try {
+            String quoteCurrency = quoteData.currency();
+            if (quoteCurrency != null && !quoteCurrency.equalsIgnoreCase(account.getCurrency())) {
+                conversionRate = currencyConversionClient.getConversionRate(quoteCurrency, account.getCurrency());
+            }
+        } catch (PricingUnavailableException e) {
+            return self.rejectInTransaction(order, "PRICING_UNAVAILABLE");
+        }
+
+        return self.processExecutionInTransaction(orderId, quoteData, conversionRate);
+    }
+
+    @Transactional
+    public Optional<TradeEventPayload> rejectInTransaction(Order order, String reason) {
+        return Optional.of(rejectOrder(order, reason));
+    }
+
+    @Retryable(retryFor = {
+            OptimisticLockException.class, OptimisticLockingFailureException.class }, maxAttempts = 5, backoff = @Backoff(delay = 50, multiplier = 2.0))
+    @Transactional
+    public Optional<TradeEventPayload> processExecutionInTransaction(UUID orderId, QuoteResponse.Data quoteData, BigDecimal conversionRate) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null || order.getStatus() != OrderStatus.NEW) {
+            return Optional.empty();
+        }
+
         Account account = accountRepository.findById(order.getAccountId()).orElseThrow();
         if (account.getStatus() != AccountStatus.ACTIVE) {
             return Optional.of(rejectOrder(order, "ACCOUNT_SUSPENDED"));
         }
 
-        // fetching "live" market data, if price is not available-> reject order
-        QuoteResponse quoteResponse = null;
-        try {
-            quoteResponse = quoteClient.getQuote(order.getSymbol());
-        } catch (PricingUnavailableException e) {
-            return Optional.of(rejectOrder(order, "PRICING_UNAVAILABLE"));
-        }
-
-        // Validate holdings/cash BEFORE checking price - must reject if insufficient holdings/funds
-        // even if limit order price hasn't been met yet
         Position position = positionRepository.findByAccountIdAndSymbol(account.getId(), order.getSymbol())
                 .orElse(null);
 
-        // Pre-check for bounds - reject immediately if insufficient holdings/funds
-        // This prevents limit orders from sitting at NEW when they can never be filled
         if (order.getSide() == OrderSide.SELL) {
             int currentQty = position != null ? position.getQuantity() : 0;
             if (currentQty < order.getQuantity()) {
                 return Optional.of(rejectOrder(order, "INSUFFICIENT_HOLDINGS"));
             }
         }
-        // For BUY orders, we check cash balance after getting the execution price
 
-        // checks if order can be filled
-        FillDecision decision = fillRuleEngine.evaluate(order, quoteResponse.data());
+        FillDecision decision = fillRuleEngine.evaluate(order, quoteData);
 
-        // check decison, if price not met(limit case), we leave order status as new &
-        // come back later, for any other reason we reject directly
         if (!decision.isFilled()) {
             if ("PRICE_NOT_MET".equals(decision.rejectReason())) {
                 return Optional.empty();
@@ -110,21 +141,9 @@ public class TradeExecutionService {
 
         BigDecimal executedPrice = decision.executedPrice();
         BigDecimal totalValueInStockCurrency = executedPrice.multiply(BigDecimal.valueOf(order.getQuantity()));
-
-        BigDecimal conversionRate = BigDecimal.ONE;
-        try {
-            String quoteCurrency = quoteResponse.data().currency();
-            if (quoteCurrency != null && !quoteCurrency.equalsIgnoreCase(account.getCurrency())) {
-                conversionRate = currencyConversionClient.getConversionRate(quoteCurrency, account.getCurrency());
-            }
-        } catch (PricingUnavailableException e) {
-            return Optional.of(rejectOrder(order, "PRICING_UNAVAILABLE"));
-        }
-
         BigDecimal totalValueInAccountCurrency = totalValueInStockCurrency.multiply(conversionRate);
         BigDecimal executedPriceInAccountCurrency = totalValueInAccountCurrency.divide(BigDecimal.valueOf(order.getQuantity()), 4, RoundingMode.HALF_UP);
 
-        // Check BUY order has sufficient funds at execution price
         if (order.getSide() == OrderSide.BUY && account.getCashBalance().compareTo(totalValueInAccountCurrency) < 0) {
             return Optional.of(rejectOrder(order, "INSUFFICIENT_FUNDS"));
         }

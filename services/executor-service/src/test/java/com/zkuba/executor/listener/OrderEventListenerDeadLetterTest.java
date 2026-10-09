@@ -164,31 +164,9 @@ class OrderEventListenerDeadLetterTest {
      */
     @Test
     void messageIsRetriedAndThenSentToDeadLetterTopic() throws Exception {
-        System.out.println("\n=== Dead-Letter Test: OrderEventListener Processing ===\n");
-        
         // Send the order event to 'orders' topic
         // OrderEventListener (auto-wired via @SpringBootTest) will consume it
-        System.out.println("1. Sending ORDER_PLACED event to 'orders' topic...");
         kafkaTemplate.send("orders", String.valueOf(1), VALID_ORDER_PLACED_EVENT).get();
-        System.out.println("   ✓ Message sent");
-        System.out.println("");
-
-        System.out.println("2. OrderEventListener consuming message from 'orders' topic...");
-        System.out.println("   - Calls TradeExecutionService.executeOrder()");
-        System.out.println("   - Calls FauxnanceQuoteClient.getQuote() → FAILS with 5xx");
-        System.out.println("   - Exception is RestClientException (NOT fatal, IS retryable)");
-        System.out.println("");
-
-        System.out.println("3. Spring Kafka Error Handler applies backoff & retries:");
-        System.out.println("   - Delay 1s → Retry 1 fails");
-        System.out.println("   - Delay 2s → Retry 2 fails");
-        System.out.println("   - Delay 4s → Retry 3 fails");
-        System.out.println("   - Delay 8s → Retry 4 fails");
-        System.out.println("   - Delay 16s → Retry 5 fails");
-        System.out.println("   - Total: ~31s, Budget exhausted");
-        System.out.println("");
-
-        System.out.println("4. Waiting 35 seconds for retries to exhaust...");
         
         // Consume from orders.DLT synchronously
         try (var consumer = createDLTConsumer()) {
@@ -206,26 +184,7 @@ class OrderEventListenerDeadLetterTest {
 
         boolean messageReceived = (dltMessage != null);
 
-        System.out.println("   ✓ 35 seconds elapsed");
-        System.out.println("");
-
-        if (messageReceived && dltMessage != null) {
-            System.out.println("5. ✓ MESSAGE SUCCESSFULLY DEAD-LETTERED!");
-            System.out.println("");
-            System.out.println("   Topic: " + dltMessage.topic());
-            System.out.println("   Partition: " + dltMessage.partition());
-            System.out.println("   Headers:");
-            for (org.apache.kafka.common.header.Header header : dltMessage.headers()) {
-                String value = new String(header.value() != null ? header.value() : "null".getBytes());
-                System.out.println("     " + header.key() + ": " + value);
-            }
-            System.out.println("   Message value: " + dltMessage.value().substring(0, Math.min(100, dltMessage.value().length())) + "...");
-            System.out.println("");
-            System.out.println("✓✓✓ TEST PASSED ✓✓✓");
-            System.out.println("OrderEventListener processed message → Retried with backoff → Sent to orders.DLT");
-        } else {
-            System.out.println("✗ TEST FAILED: Message did not appear in orders.DLT");
-            System.out.println("Make sure Kafka and PostgreSQL are running!");
+        if (!messageReceived) {
             assertTrue(false, "Dead-lettered message not found in orders.DLT");
         }
     }

@@ -67,6 +67,7 @@ class TradeExecutionServiceTest {
 
     @BeforeEach
     void setUp() {
+        service.setSelf(service);
 
         orderId = UUID.randomUUID();
 
@@ -827,7 +828,7 @@ class TradeExecutionServiceTest {
         ).thenReturn(0);
 
         assertThrows(
-                OptimisticLockException.class,
+                jakarta.persistence.OptimisticLockException.class,
                 () -> service.executeOrder(orderId)
         );
 
@@ -870,7 +871,7 @@ class TradeExecutionServiceTest {
         ).thenReturn(0);
 
         assertThrows(
-                OptimisticLockException.class,
+                jakarta.persistence.OptimisticLockException.class,
                 () -> service.executeOrder(orderId)
         );
     }

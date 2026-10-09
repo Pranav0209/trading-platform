@@ -17,6 +17,7 @@ import com.zkuba.trading.repository.WatchlistRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -58,7 +59,7 @@ public class AdviceService {
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
 
         if (!account.getUserId().equals(userId)) {
-            throw new org.springframework.security.access.AccessDeniedException("ACC-403");
+            throw new AccessDeniedException("ACC-403");
         }
 
         if (!"ACTIVE".equals(account.getStatus().name())) {

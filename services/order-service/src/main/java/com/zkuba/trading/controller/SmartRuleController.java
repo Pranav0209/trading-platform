@@ -5,6 +5,7 @@ import com.zkuba.trading.dto.response.SmartRuleResponse;
 import com.zkuba.trading.exception.ForbiddenException;
 import com.zkuba.trading.security.JwtAuthenticationFilter.AuthenticatedUser;
 import com.zkuba.trading.service.SmartRuleService;
+import com.zkuba.trading.service.AccountService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -23,9 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class SmartRuleController {
 
     private final SmartRuleService smartRuleService;
+    private final AccountService accountService;
 
-    public SmartRuleController(SmartRuleService smartRuleService) {
+    public SmartRuleController(SmartRuleService smartRuleService, AccountService accountService) {
         this.smartRuleService = smartRuleService;
+        this.accountService = accountService;
     }
 
     @GetMapping
@@ -56,9 +59,7 @@ public class SmartRuleController {
         smartRuleService.deleteRule(accountId, ruleId);
     }
 
-    private void verifyAuthorization(Long tokenAccountId, Long resourceAccountId) {
-        if (!tokenAccountId.equals(resourceAccountId)) {
-            throw new ForbiddenException("ACC-403", "Account mismatch");
-        }
+    private void verifyAuthorization(Long userId, Long accountId) {
+        accountService.getAccountAndValidateAccess(accountId, userId);
     }
 }

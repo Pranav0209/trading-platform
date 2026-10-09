@@ -56,6 +56,7 @@ class NotificationServiceImplTest {
         ReflectionTestUtils.setField(notificationService, "templateId", "testTemplate");
         ReflectionTestUtils.setField(notificationService, "publicKey", "testPublic");
         ReflectionTestUtils.setField(notificationService, "privateKey", "testPrivate");
+        ReflectionTestUtils.setField(notificationService, "apiUrl", "http://test-api.com");
     }
 
     @Test

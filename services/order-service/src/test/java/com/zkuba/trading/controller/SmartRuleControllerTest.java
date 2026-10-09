@@ -16,6 +16,8 @@ import com.zkuba.trading.dto.response.SmartRuleResponse;
 import com.zkuba.trading.exception.GlobalExceptionHandler;
 import com.zkuba.trading.security.JwtAuthenticationFilter;
 import com.zkuba.trading.service.SmartRuleService;
+import com.zkuba.trading.service.AccountService;
+import com.zkuba.trading.domain.entity.Account;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -30,6 +32,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
+import com.zkuba.trading.exception.ForbiddenException;
 
 @WebMvcTest(controllers = {SmartRuleController.class, GlobalExceptionHandler.class})
 @AutoConfigureMockMvc(addFilters = false)
@@ -47,6 +50,9 @@ class SmartRuleControllerTest {
     @MockBean
     private JwtService jwtService;
 
+    @MockBean
+    private AccountService accountService;
+
     @BeforeEach
     void setUp() {
         JwtAuthenticationFilter.AuthenticatedUser user = new JwtAuthenticationFilter.AuthenticatedUser(1L, "user@example.com", "ROLE_USER");
@@ -63,6 +69,7 @@ class SmartRuleControllerTest {
         );
 
         when(smartRuleService.getRules(1L)).thenReturn(List.of(resp));
+        when(accountService.getAccountAndValidateAccess(1L, 1L)).thenReturn(new Account());
 
         mockMvc.perform(get("/api/v1/accounts/{accountId}/smart-rules", 1L))
                 .andExpect(status().isOk())
@@ -71,6 +78,9 @@ class SmartRuleControllerTest {
 
     @Test
     void getRules_Forbidden() throws Exception {
+        doThrow(new ForbiddenException("ACC-403", "Account mismatch"))
+            .when(accountService).getAccountAndValidateAccess(2L, 1L);
+        
         mockMvc.perform(get("/api/v1/accounts/{accountId}/smart-rules", 2L))
                 .andExpect(status().isForbidden());
     }
@@ -90,6 +100,7 @@ class SmartRuleControllerTest {
         );
 
         when(smartRuleService.createRule(eq(1L), any(CreateSmartRuleRequest.class))).thenReturn(resp);
+        when(accountService.getAccountAndValidateAccess(1L, 1L)).thenReturn(new Account());
 
         mockMvc.perform(post("/api/v1/accounts/{accountId}/smart-rules", 1L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -100,6 +111,7 @@ class SmartRuleControllerTest {
 
     @Test
     void deleteRule_Success() throws Exception {
+        when(accountService.getAccountAndValidateAccess(1L, 1L)).thenReturn(new Account());
         mockMvc.perform(delete("/api/v1/accounts/{accountId}/smart-rules/{ruleId}", 1L, 10L))
                 .andExpect(status().isNoContent());
 

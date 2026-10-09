@@ -30,8 +30,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
+import com.zkuba.trading.exception.GlobalExceptionHandler;
 
-@WebMvcTest({AccountController.class, com.zkuba.trading.exception.GlobalExceptionHandler.class})
+@WebMvcTest({AccountController.class, GlobalExceptionHandler.class})
 @AutoConfigureMockMvc(addFilters = false)
 class AccountControllerTest {
 

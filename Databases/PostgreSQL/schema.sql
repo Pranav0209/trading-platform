@@ -99,41 +99,4 @@ CREATE TABLE IF NOT EXISTS price_alerts (
 CREATE INDEX IF NOT EXISTS idx_price_alerts_account_state ON price_alerts(account_id, state);
 CREATE INDEX IF NOT EXISTS idx_price_alerts_account_symbol ON price_alerts(account_id, symbol);
 
--- Indexes for API queries
-CREATE INDEX IF NOT EXISTS idx_price_alerts_account ON price_alerts(account_id);
-CREATE INDEX IF NOT EXISTS idx_price_alerts_created ON price_alerts(created_at DESC);
-
--- Constraint: maximum 100 active + triggered alerts per account
--- This is enforced in the application layer with a check before INSERT
--- Database constraint would be: create a check trigger or use a materialized view
--- For now, relying on application-level validation with COUNT query
-
-CREATE TABLE IF NOT EXISTS smart_rules (
-    id BIGSERIAL PRIMARY KEY,
-    account_id BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-    parent_rule_id BIGINT REFERENCES smart_rules(id) ON DELETE CASCADE,
-    symbol VARCHAR(20) NOT NULL REFERENCES instruments(symbol),
-    action VARCHAR(8) NOT NULL CHECK(action IN ('BUY', 'SELL')),
-    quantity_mode VARCHAR(8) NOT NULL CHECK(quantity_mode IN ('FIXED', 'HALF', 'ALL')),
-    quantity_value INTEGER,
-    metric_type VARCHAR(32) NOT NULL CHECK(metric_type IN ('PRICE', 'AVERAGE_COST', 'MOVING_AVERAGE', 'PERCENT_CHANGE', 'MOVING_AVERAGE_CROSSOVER', 'BOLLINGER_BAND', 'STOP_LOSS')),
-    comparison_operator VARCHAR(16) NOT NULL CHECK(comparison_operator IN ('GREATER_THAN', 'LESS_THAN', 'EQUAL_TO', 'CROSS_ABOVE', 'CROSS_BELOW', 'TOUCH_UPPER', 'TOUCH_LOWER')),
-    target_value NUMERIC(19,4),
-    lookback_period INTEGER,
-    secondary_lookback_period INTEGER,
-    std_deviation_multiplier NUMERIC(10,4),
-    enabled BOOLEAN NOT NULL DEFAULT TRUE,
-    condition_met BOOLEAN NOT NULL DEFAULT FALSE,
-    activation_reference_price NUMERIC(19,4),
-    activated_quantity INTEGER,
-    activated_at TIMESTAMPTZ,
-    last_triggered_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE INDEX IF NOT EXISTS idx_smart_rules_account ON smart_rules(account_id);
-CREATE INDEX IF NOT EXISTS idx_smart_rules_symbol_enabled ON smart_rules(symbol, enabled);
-CREATE INDEX IF NOT EXISTS idx_smart_rules_parent ON smart_rules(parent_rule_id);
-
 COMMIT;
