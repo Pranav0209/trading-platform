@@ -33,6 +33,7 @@ export class BearerTokenInterceptor implements HttpInterceptor {
   private allowedOrigins = new Set([
     this.authApiUrl, // Auth service - protected routes only
     this.tradeApiUrl, // Trade API - all routes
+    typeof window !== 'undefined' ? window.location.origin : '',
   ]);
 
   /** Path segments that indicate unauthenticated routes in the Auth service */
@@ -152,7 +153,13 @@ export class BearerTokenInterceptor implements HttpInterceptor {
   private isAllowedOrigin(url: string): boolean {
     try {
       const urlObj = new URL(url, window.location.href);
-      return this.allowedOrigins.has(`${urlObj.protocol}//${urlObj.host}`);
+      const origin = `${urlObj.protocol}//${urlObj.host}`;
+      return (
+        this.allowedOrigins.has(origin) ||
+        url.startsWith(this.authApiUrl) ||
+        url.startsWith(this.tradeApiUrl) ||
+        origin === window.location.origin
+      );
     } catch {
       // If URL parsing fails, assume it's not allowed
       return false;
