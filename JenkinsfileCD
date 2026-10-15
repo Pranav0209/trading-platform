@@ -26,6 +26,7 @@ pipeline {
     ORDER_REPO = 'etp-order-service'
     EXECUTOR_REPO = 'etp-executor-service'
     FRONTEND_REPO = 'etp-frontend'
+    MOCK_FAUXNANCE_REPO = 'etp-mock-fauxnance'
   }
 
   stages {
@@ -148,7 +149,7 @@ pipeline {
         }
         sh '''#!/usr/bin/env bash
             set -euo pipefail
-            for repo in "$AUTH_REPO" "$ORDER_REPO" "$EXECUTOR_REPO" "$FRONTEND_REPO"; do
+            for repo in "$AUTH_REPO" "$ORDER_REPO" "$EXECUTOR_REPO" "$FRONTEND_REPO" "$MOCK_FAUXNANCE_REPO"; do
               aws ecr describe-images --region "$AWS_REGION" --repository-name "$repo" --image-ids imageTag="$IMAGE_TAG" >/dev/null
             done
         '''
@@ -175,10 +176,12 @@ SECRETS_EOF
           kubectl -n "$K8S_NAMESPACE" set image deployment/order-service order-service="$REGISTRY/$ORDER_REPO:$IMAGE_TAG"
           kubectl -n "$K8S_NAMESPACE" set image deployment/executor-service executor-service="$REGISTRY/$EXECUTOR_REPO:$IMAGE_TAG"
           kubectl -n "$K8S_NAMESPACE" set image deployment/frontend frontend="$REGISTRY/$FRONTEND_REPO:$IMAGE_TAG"
+          kubectl -n "$K8S_NAMESPACE" set image deployment/mock-fauxnance mock-fauxnance="$REGISTRY/$MOCK_FAUXNANCE_REPO:$IMAGE_TAG"
           kubectl -n "$K8S_NAMESPACE" rollout status deployment/auth-service --timeout=180s
           kubectl -n "$K8S_NAMESPACE" rollout status deployment/order-service --timeout=180s
           kubectl -n "$K8S_NAMESPACE" rollout status deployment/executor-service --timeout=180s
           kubectl -n "$K8S_NAMESPACE" rollout status deployment/frontend --timeout=180s
+          kubectl -n "$K8S_NAMESPACE" rollout status deployment/mock-fauxnance --timeout=180s
           kubectl -n "$K8S_NAMESPACE" get pods -o wide
           kubectl -n "$K8S_NAMESPACE" get svc
         '''

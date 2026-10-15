@@ -24,10 +24,12 @@ pipeline {
     ORDER_REPO = 'etp-order-service'
     EXECUTOR_REPO = 'etp-executor-service'
     FRONTEND_REPO = 'etp-frontend'
+    MOCK_FAUXNANCE_REPO = 'etp-mock-fauxnance'
     AUTH_LOCAL_IMAGE = 'auth-service'
     ORDER_LOCAL_IMAGE = 'order-service'
     EXECUTOR_LOCAL_IMAGE = 'executor-service'
     FRONTEND_LOCAL_IMAGE = 'frontend'
+    MOCK_FAUXNANCE_LOCAL_IMAGE = 'mock-fauxnance'
   }
 
   stages {
@@ -52,6 +54,7 @@ pipeline {
           test -f services/order-service/Dockerfile
           test -f services/executor-service/Dockerfile
           test -f Frontend/frontend-application/Dockerfile
+          test -f services/mock-fauxnance/Dockerfile
         '''
       }
     }
@@ -66,7 +69,7 @@ pipeline {
             set -euo pipefail
             aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
 
-            for repo in "$AUTH_REPO" "$ORDER_REPO" "$EXECUTOR_REPO" "$FRONTEND_REPO"; do
+            for repo in "$AUTH_REPO" "$ORDER_REPO" "$EXECUTOR_REPO" "$FRONTEND_REPO" "$MOCK_FAUXNANCE_REPO"; do
               aws ecr describe-repositories --region "$AWS_REGION" --repository-names "$repo" >/dev/null 2>&1 || \
               aws ecr create-repository --region "$AWS_REGION" --repository-name "$repo" \
                 --image-scanning-configuration scanOnPush=true \
@@ -82,12 +85,14 @@ pipeline {
             docker build -t "$ORDER_LOCAL_IMAGE:$RELEASE_TAG" ./services/order-service
             docker build -t "$EXECUTOR_LOCAL_IMAGE:$RELEASE_TAG" ./services/executor-service
             docker build --build-arg "BUILD_ENV=$BUILD_ENV" -t "$FRONTEND_LOCAL_IMAGE:$RELEASE_TAG" ./Frontend/frontend-application
+            docker build -t "$MOCK_FAUXNANCE_LOCAL_IMAGE:$RELEASE_TAG" ./services/mock-fauxnance
 
             declare -A IMAGE_MAP=(
               ["$AUTH_REPO"]="$AUTH_LOCAL_IMAGE"
               ["$ORDER_REPO"]="$ORDER_LOCAL_IMAGE"
               ["$EXECUTOR_REPO"]="$EXECUTOR_LOCAL_IMAGE"
               ["$FRONTEND_REPO"]="$FRONTEND_LOCAL_IMAGE"
+              ["$MOCK_FAUXNANCE_REPO"]="$MOCK_FAUXNANCE_LOCAL_IMAGE"
             )
             for repo in "${!IMAGE_MAP[@]}"; do
               docker tag "${IMAGE_MAP[$repo]}:$RELEASE_TAG" "$REGISTRY/$repo:$RELEASE_TAG"

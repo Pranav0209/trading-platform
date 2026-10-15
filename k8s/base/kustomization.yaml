@@ -9,6 +9,7 @@ resources:
   - order-service.yaml
   - executor-service.yaml
   - frontend.yaml
+  - mock-fauxnance.yaml
 configMapGenerator:
   - name: etp-config
     envs: [config.env]
@@ -29,4 +30,7 @@ images:
     newTag: latest
   - name: etp-frontend
     newName: 931253428667.dkr.ecr.ap-south-1.amazonaws.com/etp-frontend
+    newTag: latest
+  - name: etp-mock-fauxnance
+    newName: 931253428667.dkr.ecr.ap-south-1.amazonaws.com/etp-mock-fauxnance
     newTag: latest

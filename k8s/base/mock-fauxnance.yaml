@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-fauxnance
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: mock-fauxnance }
+  template:
+    metadata:
+      labels: { app: mock-fauxnance }
+    spec:
+      securityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000 }
+      containers:
+        - name: mock-fauxnance
+          image: etp-mock-fauxnance
+          ports:
+            - { name: http, containerPort: 3001 }
+          startupProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 3
+            failureThreshold: 20
+          readinessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            periodSeconds: 15
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 128Mi }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mock-fauxnance
+spec:
+  type: ClusterIP
+  selector: { app: mock-fauxnance }
+  ports:
+    - { name: http, port: 3001, targetPort: http }

@@ -492,6 +492,19 @@ services:
       auth-service: { condition: service_started, required: false }
       order-service: { condition: service_started, required: false }
 
+  # ========================================================== MOCK FAUXNANCE
+  mock-fauxnance:
+    profiles: [mock-fauxnance, fauxnance]
+    image: ${MOCK_FAUXNANCE_IMAGE:-mock-fauxnance}:${IMAGE_TAG:-latest}
+    build:
+      context: ./services/mock-fauxnance
+      dockerfile: Dockerfile
+    <<: *restart
+    environment:
+      PORT: 3001
+    ports:
+      - "3001:3001"
+
 volumes:
   pgdata:
   kafkadata:

@@ -23,3 +23,6 @@ patches:
   - target: { kind: Service, name: executor-service }
     patch: |-
       - { op: replace, path: /spec/type, value: LoadBalancer }
+  - target: { kind: Service, name: mock-fauxnance }
+    patch: |-
+      - { op: replace, path: /spec/type, value: LoadBalancer }
