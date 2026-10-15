@@ -18,10 +18,8 @@ spec:
   rules:
     - http:
         paths:
-          - { path: /auth,        pathType: Prefix, backend: { service: { name: auth-service,  port: { number: 3000 } } } }
-          - { path: /preferences, pathType: Prefix, backend: { service: { name: auth-service,  port: { number: 3000 } } } }
-          - { path: /docs,        pathType: Prefix, backend: { service: { name: auth-service,  port: { number: 3000 } } } }
-          - { path: /api/v1,      pathType: Prefix, backend: { service: { name: order-service, port: { number: 8081 } } } }
-          - { path: /actuator/health, pathType: Prefix, backend: { service: { name: order-service, port: { number: 8081 } } } }
-          - { path: /health,          pathType: Exact,  backend: { service: { name: order-service, port: { number: 8081 } } } }
-          - { path: /,            pathType: Prefix, backend: { service: { name: frontend,      port: { number: 80 } } } }
+          - { path: /auth,   pathType: Prefix, backend: { service: { name: auth-service,  port: { number: 3000 } } } }
+          - { path: /docs,   pathType: Prefix, backend: { service: { name: auth-service,  port: { number: 3000 } } } }
+          - { path: /api/v1, pathType: Prefix, backend: { service: { name: order-service, port: { number: 8081 } } } }
+          - { path: /health, pathType: Exact,  backend: { service: { name: order-service, port: { number: 8081 } } } }
+          - { path: /,       pathType: Prefix, backend: { service: { name: frontend,      port: { number: 80 } } } }

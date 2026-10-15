@@ -459,7 +459,7 @@ services:
     profiles: [frontend]
     image: ${FRONTEND_IMAGE:-frontend}:${IMAGE_TAG:-latest}
     build:
-      context: ${FRONTEND_DIR:-./frontend}
+      context: ${FRONTEND_DIR:-./Frontend/frontend-application}
       dockerfile: ${FRONTEND_DOCKERFILE:-Dockerfile}
       additional_contexts:
         extra: ${FRONTEND_EXTRA_DIR:-./DockerFile}
