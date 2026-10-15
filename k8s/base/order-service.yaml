@@ -59,6 +59,7 @@ metadata:
   name: order-service
   annotations:
     alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "3600"
 spec:
   type: ClusterIP
   selector: { app: order-service }
