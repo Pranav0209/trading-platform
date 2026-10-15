@@ -169,14 +169,6 @@ DATABASE_URL=postgresql://postgres:password@database-1.cx8y2aek8lh7.ap-south-1.r
 SECRETS_EOF
           kubectl apply --dry-run=server -k "$K8S_OVERLAY"
           kubectl apply -k "$K8S_OVERLAY"
-          kubectl -n "$K8S_NAMESPACE" set image deployment/auth-service auth-service="$REGISTRY/$AUTH_REPO:$IMAGE_TAG"
-          kubectl -n "$K8S_NAMESPACE" set image deployment/order-service order-service="$REGISTRY/$ORDER_REPO:$IMAGE_TAG"
-          kubectl -n "$K8S_NAMESPACE" set image deployment/executor-service executor-service="$REGISTRY/$EXECUTOR_REPO:$IMAGE_TAG"
-          kubectl -n "$K8S_NAMESPACE" set image deployment/frontend frontend="$REGISTRY/$FRONTEND_REPO:$IMAGE_TAG"
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/auth-service --timeout=180s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/order-service --timeout=180s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/executor-service --timeout=180s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/frontend --timeout=180s
           kubectl -n "$K8S_NAMESPACE" get pods -o wide
           kubectl -n "$K8S_NAMESPACE" get svc
         '''
