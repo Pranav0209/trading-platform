@@ -33,6 +33,7 @@ pipeline {
       steps {
         deleteDir()
         checkout scm
+        sh 'echo "Checked out branch: $(git rev-parse --abbrev-ref HEAD)"'
         sh 'git rev-parse HEAD; test -f k8s/base/generated/application.yml'
         sh 'echo "Checked out commit: $(git rev-parse HEAD)"'
         script {
