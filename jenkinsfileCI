@@ -51,7 +51,7 @@ pipeline {
           test -f services/auth_service/Dockerfile
           test -f services/trade-api/Dockerfile
           test -f services/executor/Dockerfile
-          test -f frontend/Dockerfile
+          test -f Frontend/frontend-application/Dockerfile
         '''
       }
     }
@@ -81,7 +81,7 @@ pipeline {
             docker build -t "$AUTH_LOCAL_IMAGE:$RELEASE_TAG" ./services/auth_service
             docker build -t "$ORDER_LOCAL_IMAGE:$RELEASE_TAG" ./services/trade-api
             docker build -t "$EXECUTOR_LOCAL_IMAGE:$RELEASE_TAG" ./services/executor
-            docker build --build-arg "BUILD_ENV=$BUILD_ENV" -t "$FRONTEND_LOCAL_IMAGE:$RELEASE_TAG" ./frontend
+            docker build --build-arg "BUILD_ENV=$BUILD_ENV" -t "$FRONTEND_LOCAL_IMAGE:$RELEASE_TAG" ./Frontend/frontend-application
 
             declare -A IMAGE_MAP=(
               ["$AUTH_REPO"]="$AUTH_LOCAL_IMAGE"
