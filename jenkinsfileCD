@@ -160,12 +160,12 @@ pipeline {
           # Secrets are hardcoded here; no Jenkins credential is used.
           cat > k8s/base/secrets.env <<'SECRETS_EOF'
 # SECRETS. Copy to secrets.env (git-ignored) and fill in. Copied to base/secrets.env and turned into the Secret etp-secrets (guide 7.2).
-DB_PASSWORD=iykykykyk
-
-# at least 32 bytes:  node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-JWT_SECRET=whatthehell
-FAUXNANCE_API_KEY=dont_steal
-SMTP_PASS=lolllololo
+DB_PASSWORD=password
+DATABASE_PASSWORD=password
+JWT_SECRET=super-secret-jwt-token-key-must-be-32-chars-long!
+FAUXNANCE_API_KEY=fnx_dev_TpAsTLybaZBxjNc30DqZemvTc93Hk3tM
+EMAILJS_PRIVATE_KEY=tPBxA76BSf2Xt_mTCDJel
+DATABASE_URL=postgresql://postgres:password@database-1.cx8y2aek8lh7.ap-south-1.rds.amazonaws.com:5432/postgres?sslmode=no-verify
 SECRETS_EOF
           kubectl apply --dry-run=server -k "$K8S_OVERLAY"
           kubectl apply -k "$K8S_OVERLAY"
