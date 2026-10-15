@@ -34,8 +34,10 @@ pipeline {
         deleteDir()
         checkout scm
         sh 'git rev-parse HEAD; test -f k8s/base/generated/application.yml'
+        sh 'echo "Checked out commit: $(git rev-parse HEAD)"'
         script {
           if (!params.IMAGE_TAG?.trim()) {
+            sh 'echo "IMAGE_TAG is not set."'
             error('IMAGE_TAG is required. Run JenkinsfileCI first and enter its pushed ECR tag.')
           }
           env.DB_HOST = params.RDS_HOST.trim()
