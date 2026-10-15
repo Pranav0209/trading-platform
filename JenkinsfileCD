@@ -10,18 +10,18 @@ pipeline {
 
   parameters {
     string(name: 'AWS_REGION', defaultValue: 'ap-south-1', description: 'AWS region')
-    string(name: 'RDS_HOST', defaultValue: 'database-1.c52m040i8bb8.ap-south-1.rds.amazonaws.com', description: 'RDS endpoint')
+    string(name: 'RDS_HOST', defaultValue: 'database-1.cziio68eid23.ap-south-1.rds.amazonaws.com', description: 'RDS endpoint')
     string(name: 'RDS_PORT', defaultValue: '5432', description: 'RDS PostgreSQL port')
-    string(name: 'RDS_DATABASE', defaultValue: 'trading_system_db', description: 'RDS database name')
+    string(name: 'RDS_DATABASE', defaultValue: 'postgres', description: 'RDS database name')
     string(name: 'RDS_USER', defaultValue: 'postgres', description: 'RDS database user')
-    string(name: 'IMAGE_TAG', defaultValue: '', description: 'Required ECR tag produced by JenkinsfileCI')
+    string(name: 'IMAGE_TAG', defaultValue: '1.4', description: 'Required ECR tag produced by JenkinsfileCI')
     string(name: 'K8S_OVERLAY', defaultValue: 'k8s/overlays/four-lb', description: 'Kustomize overlay')
     string(name: 'K8S_NAMESPACE', defaultValue: 'default', description: 'Namespace used by the current manifests')
     booleanParam(name: 'AUTO_AUTHORIZE_RDS', defaultValue: true, description: 'Only after RDS connectivity fails, add the EKS node SG to RDS on TCP 5432')
   }
 
   environment {
-    EKS_CLUSTER_NAME = 'eks-cluster-1'
+    EKS_CLUSTER_NAME = 'etp-cluster-1'
     AUTH_REPO = 'etp-auth-service'
     ORDER_REPO = 'etp-order-service'
     EXECUTOR_REPO = 'etp-executor-service'
@@ -33,7 +33,12 @@ pipeline {
       steps {
         deleteDir()
         checkout scm
-        sh 'git rev-parse HEAD; test -f k8s/base/generated/application.yml'
+        sh '''
+          mkdir -p k8s/base/generated
+          cp Config/application.yml k8s/base/generated/application.yml
+          git rev-parse HEAD
+          test -f k8s/base/generated/application.yml
+        '''
         script {
           if (!params.IMAGE_TAG?.trim()) {
             error('IMAGE_TAG is required. Run JenkinsfileCI first and enter its pushed ECR tag.')
@@ -139,7 +144,7 @@ pipeline {
       steps {
         script {
             env.AWS_ACCOUNT_ID = sh(script: 'aws sts get-caller-identity --query Account --output text', returnStdout: true).trim()
-            env.REGISTRY = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${params.AWS_REGION}.amazonaws.com"
+            env.REGISTRY = "${env.AWS_ACCOUNT_ID}.dkr.ecr.${env.AWS_REGION}.amazonaws.com"
         }
         sh '''#!/usr/bin/env bash
             set -euo pipefail
@@ -154,15 +159,15 @@ pipeline {
       steps {
         sh '''#!/usr/bin/env bash
           set -euo pipefail
-          # Secrets are hardcoded here; no Jenkins credential is used.
-          cat > k8s/base/secrets.env <<'SECRETS_EOF'
-# SECRETS. Copy to secrets.env (git-ignored) and fill in. Copied to base/secrets.env and turned into the Secret etp-secrets (guide 7.2).
-DB_PASSWORD=iykykykyk
-
-# at least 32 bytes:  node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-JWT_SECRET=whatthehell
-FAUXNANCE_API_KEY=dont_steal
-SMTP_PASS=lolllololo
+          DB_HOST=$(awk -F= '$1 == "DB_HOST" {print $2}' k8s/base/config.env)
+          cat > k8s/base/secrets.env <<SECRETS_EOF
+# SECRETS for auth / order / executor (Secret etp-secrets)
+DB_PASSWORD=password
+DATABASE_PASSWORD=password
+JWT_SECRET=super-secret-jwt-token-key-must-be-32-chars-long!
+FAUXNANCE_API_KEY=fnx_dev_TpAsTLybaZBxjNc30DqZemvTc93Hk3tM
+EMAILJS_PRIVATE_KEY=tPBxA76BSf2Xt_mTCDJel
+DATABASE_URL=postgresql://postgres:password@${DB_HOST}:5432/postgres?sslmode=no-verify
 SECRETS_EOF
           kubectl apply --dry-run=server -k "$K8S_OVERLAY"
           kubectl apply -k "$K8S_OVERLAY"
