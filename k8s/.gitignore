@@ -1,4 +1,5 @@
 secrets.env
-generated/
+generated/*
+!generated/application.yml
 .build/
 deploy.env
