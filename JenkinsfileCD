@@ -10,7 +10,7 @@ pipeline {
 
   parameters {
     string(name: 'AWS_REGION', defaultValue: 'ap-south-1', description: 'AWS region')
-    string(name: 'RDS_HOST', defaultValue: 'database-1.cziio68eid23.ap-south-1.rds.amazonaws.com', description: 'RDS endpoint')
+    string(name: 'RDS_HOST', defaultValue: 'database-1.c1mgc66uqg0l.ap-south-1.rds.amazonaws.com', description: 'RDS endpoint')
     string(name: 'RDS_PORT', defaultValue: '5432', description: 'RDS PostgreSQL port')
     string(name: 'RDS_DATABASE', defaultValue: 'postgres', description: 'RDS database name')
     string(name: 'RDS_USER', defaultValue: 'postgres', description: 'RDS database user')
@@ -157,31 +157,26 @@ pipeline {
 
     stage('Inject secrets and deploy selected images') {
       steps {
-        sh '''#!/usr/bin/env bash
-          set -euo pipefail
-          DB_HOST=$(awk -F= '$1 == "DB_HOST" {print $2}' k8s/base/config.env)
-          cat > k8s/base/secrets.env <<SECRETS_EOF
-# SECRETS for auth / order / executor (Secret etp-secrets)
-DB_PASSWORD=password
-DATABASE_PASSWORD=password
-JWT_SECRET=super-secret-jwt-token-key-must-be-32-chars-long!
-FAUXNANCE_API_KEY=fnx_dev_TpAsTLybaZBxjNc30DqZemvTc93Hk3tM
-EMAILJS_PRIVATE_KEY=tPBxA76BSf2Xt_mTCDJel
-DATABASE_URL=postgresql://postgres:password@${DB_HOST}:5432/postgres?sslmode=no-verify
-SECRETS_EOF
-          kubectl apply --dry-run=server -k "$K8S_OVERLAY"
-          kubectl apply -k "$K8S_OVERLAY"
-          kubectl -n "$K8S_NAMESPACE" set image deployment/auth-service auth-service="$REGISTRY/$AUTH_REPO:$IMAGE_TAG"
-          kubectl -n "$K8S_NAMESPACE" set image deployment/order-service order-service="$REGISTRY/$ORDER_REPO:$IMAGE_TAG"
-          kubectl -n "$K8S_NAMESPACE" set image deployment/executor-service executor-service="$REGISTRY/$EXECUTOR_REPO:$IMAGE_TAG"
-          kubectl -n "$K8S_NAMESPACE" set image deployment/frontend frontend="$REGISTRY/$FRONTEND_REPO:$IMAGE_TAG"
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/auth-service --timeout=180s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/order-service --timeout=180s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/executor-service --timeout=180s
-          kubectl -n "$K8S_NAMESPACE" rollout status deployment/frontend --timeout=180s
-          kubectl -n "$K8S_NAMESPACE" get pods -o wide
-          kubectl -n "$K8S_NAMESPACE" get svc
-        '''
+        withCredentials([file(credentialsId: 'etp-secrets-env', variable: 'SECRETS_FILE')]) {
+          sh '''#!/usr/bin/env bash
+            set -euo pipefail
+            cp "$SECRETS_FILE" k8s/base/secrets.env
+            DB_HOST=$(awk -F= '$1 == "DB_HOST" {print $2}' k8s/base/config.env)
+            sed -i -E "s#\\${DB_HOST}#$DB_HOST#g" k8s/base/secrets.env
+            kubectl apply --dry-run=server -k "$K8S_OVERLAY"
+            kubectl apply -k "$K8S_OVERLAY"
+            kubectl -n "$K8S_NAMESPACE" set image deployment/auth-service auth-service="$REGISTRY/$AUTH_REPO:$IMAGE_TAG"
+            kubectl -n "$K8S_NAMESPACE" set image deployment/order-service order-service="$REGISTRY/$ORDER_REPO:$IMAGE_TAG"
+            kubectl -n "$K8S_NAMESPACE" set image deployment/executor-service executor-service="$REGISTRY/$EXECUTOR_REPO:$IMAGE_TAG"
+            kubectl -n "$K8S_NAMESPACE" set image deployment/frontend frontend="$REGISTRY/$FRONTEND_REPO:$IMAGE_TAG"
+            kubectl -n "$K8S_NAMESPACE" rollout status deployment/auth-service --timeout=180s
+            kubectl -n "$K8S_NAMESPACE" rollout status deployment/order-service --timeout=180s
+            kubectl -n "$K8S_NAMESPACE" rollout status deployment/executor-service --timeout=180s
+            kubectl -n "$K8S_NAMESPACE" rollout status deployment/frontend --timeout=180s
+            kubectl -n "$K8S_NAMESPACE" get pods -o wide
+            kubectl -n "$K8S_NAMESPACE" get svc
+          '''
+        }
       }
     }
   }
