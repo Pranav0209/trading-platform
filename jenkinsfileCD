@@ -197,6 +197,7 @@ SECRETS_EOF
           kubectl -n "$K8S_NAMESPACE" get pods -o wide
           kubectl -n "$K8S_NAMESPACE" get svc
         '''
+        }
       }
     }
   }
